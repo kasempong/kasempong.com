@@ -233,19 +233,22 @@ applyLang(currentLang);
   const cfgSave = document.getElementById('cfgSave');
 
   function openSettings() {
-    const c = loadConfig();
-    document.getElementById('cfg-name').value       = c.name;
-    document.getElementById('cfg-email').value      = c.email;
-    document.getElementById('cfg-pill').value       = c.pillText;
-    document.getElementById('cfg-pill-show').checked = c.pillShow;
-    document.getElementById('cfg-bio-en').value     = c.bioEn;
-    document.getElementById('cfg-bio-th').value     = c.bioTh;
-    document.getElementById('cfg-bio-zh').value     = c.bioZh;
-    document.getElementById('cfg-roles-en').value   = c.rolesEn;
-    document.getElementById('cfg-roles-th').value   = c.rolesTh;
-    document.getElementById('cfg-roles-zh').value   = c.rolesZh;
-    document.getElementById('cfg-pw').value         = '';
     settingsOverlay.hidden = false;
+    // Set values after overlay is visible to avoid rendering quirks
+    requestAnimationFrame(() => {
+      const c = loadConfig();
+      document.getElementById('cfg-name').value        = c.name;
+      document.getElementById('cfg-email').value       = c.email;
+      document.getElementById('cfg-pill').value        = c.pillText;
+      document.getElementById('cfg-pill-show').checked = c.pillShow;
+      document.getElementById('cfg-bio-en').value      = c.bioEn;
+      document.getElementById('cfg-bio-th').value      = c.bioTh;
+      document.getElementById('cfg-bio-zh').value      = c.bioZh;
+      document.getElementById('cfg-roles-en').value    = c.rolesEn;
+      document.getElementById('cfg-roles-th').value    = c.rolesTh;
+      document.getElementById('cfg-roles-zh').value    = c.rolesZh;
+      document.getElementById('cfg-pw').value          = '';
+    });
   }
 
   function closeSettings() { settingsOverlay.hidden = true; }
