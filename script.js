@@ -651,3 +651,25 @@ document.querySelectorAll('.pin, .section-title, .section-subtitle, .section-eye
   overlay.addEventListener('click', shut);
   document.addEventListener('keydown', e => { if (e.key === 'Escape') shut(); });
 })();
+
+// ── Island panel ──────────────────────────────────────────────
+(function () {
+  const btn     = document.getElementById('island-widget');
+  const panel   = document.getElementById('islandPanel');
+  const overlay = document.getElementById('islandOverlay');
+  const close   = document.getElementById('islandPanelClose');
+
+  function open() {
+    panel.classList.add('open');   panel.removeAttribute('aria-hidden');
+    overlay.classList.add('open'); overlay.removeAttribute('aria-hidden');
+  }
+  function shut() {
+    panel.classList.remove('open');   panel.setAttribute('aria-hidden','true');
+    overlay.classList.remove('open'); overlay.setAttribute('aria-hidden','true');
+  }
+
+  btn.addEventListener('click', open);
+  close.addEventListener('click', shut);
+  overlay.addEventListener('click', shut);
+  document.addEventListener('keydown', e => { if (e.key === 'Escape') shut(); });
+})();

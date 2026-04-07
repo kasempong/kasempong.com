@@ -32,9 +32,18 @@
   <canvas id="bg-canvas" aria-hidden="true"></canvas>
 
   <!-- ===== FLOATING ISLAND ===== -->
-  <a href="island.html" id="island-widget" aria-label="Enter the old forest">
+  <button id="island-widget" aria-label="Open island panel">
     <canvas id="island-canvas"></canvas>
-  </a>
+  </button>
+
+  <!-- ===== ISLAND PANEL ===== -->
+  <div class="island-overlay" id="islandOverlay" aria-hidden="true"></div>
+  <aside class="island-panel" id="islandPanel" aria-label="Island" aria-hidden="true">
+    <button class="island-panel-close" id="islandPanelClose" aria-label="Close">✕</button>
+    <div class="island-panel-body">
+      <!-- content coming soon -->
+    </div>
+  </aside>
 
   <!-- ===== NAVBAR ===== -->
   <nav class="navbar" id="navbar">
