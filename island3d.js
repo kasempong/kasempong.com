@@ -159,6 +159,76 @@ import * as THREE from 'three';
     butterflies.push({ g, lp, rp, phase, baseY: y });
   }
 
+  // Glow sprite helper — soft radial circle texture
+  function makeGlowSprite(color) {
+    const size = 64;
+    const cv = document.createElement('canvas');
+    cv.width = cv.height = size;
+    const ctx = cv.getContext('2d');
+    const r = size / 2;
+    const grad = ctx.createRadialGradient(r, r, 0, r, r, r);
+    const hex = '#' + color.toString(16).padStart(6, '0');
+    grad.addColorStop(0,   hex + 'ff');
+    grad.addColorStop(0.35, hex + 'aa');
+    grad.addColorStop(1,   hex + '00');
+    ctx.fillStyle = grad;
+    ctx.fillRect(0, 0, size, size);
+    const tex = new THREE.CanvasTexture(cv);
+    return new THREE.Sprite(new THREE.SpriteMaterial({ map: tex, transparent: true, depthWrite: false, blending: THREE.AdditiveBlending }));
+  }
+
+  // Orbiting butterflies around tree
+  const orbitButterflies = [];
+
+  const orbitDefs = [
+    { radius: 1.4, height: 2.8, speed: 0.7,  phase: 0,    flapSpeed: 6,   color1: 0x00eeff, color2: 0x0088cc, glowCol: 0x00eeff },
+    { radius: 1.1, height: 2.1, speed: -0.55, phase: 2.1,  flapSpeed: 7,   color1: 0xff40ff, color2: 0xaa00cc, glowCol: 0xff40ff },
+    { radius: 1.6, height: 3.4, speed: 0.45,  phase: 4.2,  flapSpeed: 5.5, color1: 0xffee00, color2: 0xff9900, glowCol: 0xffee00 },
+    { radius: 1.2, height: 1.7, speed: -0.9,  phase: 1.0,  flapSpeed: 8,   color1: 0x44ff88, color2: 0x118844, glowCol: 0x44ff88 },
+    { radius: 1.5, height: 3.0, speed: 0.6,   phase: 5.0,  flapSpeed: 6.5, color1: 0xff6644, color2: 0xff2200, glowCol: 0xff6644 },
+  ];
+
+  orbitDefs.forEach(({ radius, height, speed, phase, flapSpeed, color1, color2, glowCol }) => {
+    const g = new THREE.Group();
+
+    // Body
+    const bod = M(new THREE.CylinderGeometry(0.035, 0.035, 0.22, 5), 0x110800);
+    g.add(bod);
+
+    const mat1 = new THREE.MeshLambertMaterial({ color: color1, side: THREE.DoubleSide, transparent: true, opacity: 0.95, emissive: color1, emissiveIntensity: 0.6 });
+    const mat2 = new THREE.MeshLambertMaterial({ color: color2, side: THREE.DoubleSide, transparent: true, opacity: 0.80, emissive: color2, emissiveIntensity: 0.4 });
+
+    const lp = new THREE.Group();
+    g.add(lp);
+    const luW = new THREE.Mesh(new THREE.PlaneGeometry(0.42, 0.28), mat1);
+    luW.rotation.x = -Math.PI / 2;
+    luW.position.set(-0.22, 0.03, -0.03);
+    lp.add(luW);
+    const llW = new THREE.Mesh(new THREE.PlaneGeometry(0.34, 0.22), mat2);
+    llW.rotation.x = -Math.PI / 2;
+    llW.position.set(-0.19, 0.03, 0.11);
+    lp.add(llW);
+
+    const rp = new THREE.Group();
+    g.add(rp);
+    const ruW = new THREE.Mesh(new THREE.PlaneGeometry(0.42, 0.28), mat1);
+    ruW.rotation.x = -Math.PI / 2;
+    ruW.position.set(0.22, 0.03, -0.03);
+    rp.add(ruW);
+    const rlW = new THREE.Mesh(new THREE.PlaneGeometry(0.34, 0.22), mat2);
+    rlW.rotation.x = -Math.PI / 2;
+    rlW.position.set(0.19, 0.03, 0.11);
+    rp.add(rlW);
+
+    // Glow aura
+    const glow = makeGlowSprite(glowCol);
+    glow.scale.set(0.9, 0.9, 0.9);
+    g.add(glow);
+
+    scene.add(g);
+    orbitButterflies.push({ g, lp, rp, phase, radius, height, speed, flapSpeed });
+  });
+
   addButterfly(-1.1, 1.95, 0.35, 0xff7720, 0xffaa40, 0);
   addButterfly( 1.28, 1.88, 0.2, 0x9930cc, 0xbb55e8, 1.4);
 
@@ -168,11 +238,26 @@ import * as THREE from 'three';
     requestAnimationFrame(animate);
     t += 0.04;
 
+    // Ground butterflies flap
     butterflies.forEach(b => {
       const flap = Math.cos(t * 5 + b.phase) * 0.8;
       b.lp.rotation.z =  flap;
       b.rp.rotation.z = -flap;
       b.g.position.y = b.baseY + Math.sin(t * 1.8 + b.phase) * 0.08;
+    });
+
+    // Orbiting glowing butterflies
+    orbitButterflies.forEach(b => {
+      const angle = t * b.speed + b.phase;
+      b.g.position.set(
+        0.15 + Math.cos(angle) * b.radius,
+        b.height + Math.sin(t * 1.2 + b.phase) * 0.15,
+        0.05 + Math.sin(angle) * b.radius
+      );
+      b.g.rotation.y = -angle + Math.PI / 2;
+      const flap = Math.cos(t * b.flapSpeed) * 0.85;
+      b.lp.rotation.z =  flap;
+      b.rp.rotation.z = -flap;
     });
 
     renderer.render(scene, camera);
