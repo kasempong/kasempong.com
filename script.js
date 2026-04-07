@@ -405,6 +405,7 @@ applyLang(currentLang);
     let vy = (Math.random() < 0.5 ? 1 : -1) * (Math.random() * 0.3 + 0.25) * speed;
     let phase = Math.random() * Math.PI * 2;
     let bubbleTimer = null;
+    let dragging = false, dragOffX = 0, dragOffY = 0, prevX = sx, prevY = sy;
 
     function showMsg() {
       bubble.textContent = msgs[Math.floor(Math.random() * msgs.length)];
@@ -413,20 +414,55 @@ applyLang(currentLang);
       bubbleTimer = setTimeout(() => bubble.classList.remove('show'), 2800);
     }
 
+    // Drag start
+    wrap.addEventListener('mousedown', e => {
+      dragging = true; dragOffX = e.clientX - x; dragOffY = e.clientY - y;
+      vx = 0; vy = 0; wrap.style.cursor = 'grabbing'; e.preventDefault();
+    });
+    wrap.addEventListener('touchstart', e => {
+      dragging = true;
+      dragOffX = e.touches[0].clientX - x; dragOffY = e.touches[0].clientY - y;
+      vx = 0; vy = 0;
+    }, { passive: true });
+
+    // Drag move
+    window.addEventListener('mousemove', e => {
+      if (!dragging) return;
+      prevX = x; prevY = y;
+      x = e.clientX - dragOffX; y = e.clientY - dragOffY;
+    });
+    window.addEventListener('touchmove', e => {
+      if (!dragging) return;
+      prevX = x; prevY = y;
+      x = e.touches[0].clientX - dragOffX; y = e.touches[0].clientY - dragOffY;
+    }, { passive: true });
+
+    // Drag end — toss with release velocity
+    function endDrag() {
+      if (!dragging) return;
+      dragging = false;
+      vx = Math.max(-3, Math.min(3, (x - prevX) * 0.4));
+      vy = Math.max(-3, Math.min(3, (y - prevY) * 0.4));
+      wrap.style.cursor = 'grab';
+    }
+    window.addEventListener('mouseup', endDrag);
+    window.addEventListener('touchend', endDrag);
+
     wrap.addEventListener('click', showMsg);
-    wrap.addEventListener('touchend', e => { e.preventDefault(); showMsg(); }, { passive: false });
+    wrap.style.cursor = 'grab';
 
     return function update() {
-      phase += 0.011;
-      x += vx + Math.sin(phase) * 0.22;
-      y += vy + Math.cos(phase * 0.75) * 0.22;
-
-      const m = 55;
-      if (x < m) { vx = Math.abs(vx); }
-      if (x > window.innerWidth  - m) { vx = -Math.abs(vx); }
-      if (y < m) { vy = Math.abs(vy); }
-      if (y > window.innerHeight - m) { vy = -Math.abs(vy); }
-
+      if (!dragging) {
+        phase += 0.011;
+        x += vx + Math.sin(phase) * 0.22;
+        y += vy + Math.cos(phase * 0.75) * 0.22;
+        vx *= 0.98; vy *= 0.98;
+        const m = 55;
+        if (x < m) { vx = Math.abs(vx); }
+        if (x > window.innerWidth  - m) { vx = -Math.abs(vx); }
+        if (y < m) { vy = Math.abs(vy); }
+        if (y > window.innerHeight - m) { vy = -Math.abs(vy); }
+      }
       wrap.style.left   = x + 'px';
       wrap.style.top    = y + 'px';
       bubble.style.left = (x - 70) + 'px';
@@ -466,76 +502,72 @@ applyLang(currentLang);
 
 // ── Flying ships ──────────────────────────────────────────────
 (function () {
-  function spawnTrail(glyph, x, y, angle, opacity) {
-    const t = document.createElement('span');
-    t.className = 'flyship-trail';
-    t.textContent = glyph;
-    t.style.left      = x + 'px';
-    t.style.top       = y + 'px';
-    t.style.opacity   = opacity * 0.55;
-    t.style.transform = `translate(-50%, -50%) rotate(${angle}deg)`;
-    document.body.appendChild(t);
+  let active = false;
+
+  function spawnDot(x, y, opacity) {
+    const dot = document.createElement('span');
+    dot.className = 'flyship-trail';
+    dot.style.left    = x + 'px';
+    dot.style.top     = y + 'px';
+    dot.style.opacity = opacity * 0.8;
+    document.body.appendChild(dot);
     requestAnimationFrame(() => {
-      t.style.opacity = '0';
-      setTimeout(() => t.remove(), 900);
+      dot.style.opacity = '0';
+      setTimeout(() => dot.remove(), 600);
     });
   }
 
-  function spawnShip(glyph) {
-    const el = document.createElement('span');
-    el.className = 'flyship';
+  function spawnShip() {
+    if (active) return;
+    active = true;
+    const glyph    = Math.random() < 0.5 ? '🚀' : '🛸';
+    const el       = document.createElement('span');
+    el.className   = 'flyship';
     el.textContent = glyph;
     document.body.appendChild(el);
 
-    const goRight   = Math.random() < 0.5;
-    const baseY     = Math.random() * (window.innerHeight * 0.72) + 40;
-    const duration  = Math.random() * 3000 + 4000;
-    const startX    = goRight ? -60 : window.innerWidth + 60;
-    const endX      = goRight ? window.innerWidth + 60 : -60;
-    const waveAmp   = 18 + Math.random() * 18;
-    const waveFreq  = 3 + Math.random() * 2;
-    // 🚀 naturally points up-right; offset so it faces travel direction
+    const goRight  = Math.random() < 0.5;
+    const baseY    = Math.random() * (window.innerHeight * 0.72) + 40;
+    const duration = Math.random() * 3000 + 4000;
+    const startX   = goRight ? -60 : window.innerWidth + 60;
+    const endX     = goRight ? window.innerWidth + 60 : -60;
+    const waveAmp  = 18 + Math.random() * 18;
+    const waveFreq = 3 + Math.random() * 2;
     const baseAngle = goRight ? -40 : 140;
 
     const start = performance.now();
-    let lastX = startX, lastY = baseY, lastTrail = 0;
+    let lastX = startX, lastY = baseY, lastDot = 0;
 
     function tick(now) {
-      const t = Math.min((now - start) / duration, 1);
-      const x = startX + (endX - startX) * t;
-      const y = baseY + Math.sin(t * Math.PI * waveFreq) * waveAmp;
-      const opacity = t < 0.08 ? t / 0.08 : t > 0.92 ? (1 - t) / 0.08 : 1;
+      const t  = Math.min((now - start) / duration, 1);
+      const x  = startX + (endX - startX) * t;
+      const y  = baseY + Math.sin(t * Math.PI * waveFreq) * waveAmp;
+      const op = t < 0.08 ? t / 0.08 : t > 0.92 ? (1 - t) / 0.08 : 1;
 
-      const dx = x - lastX;
-      const dy = y - lastY;
-      const pathAngle = Math.atan2(dy, dx) * (180 / Math.PI);
-      const angle = baseAngle + pathAngle * 0.55;
+      const pathAngle = Math.atan2(y - lastY, x - lastX) * (180 / Math.PI);
+      const angle     = baseAngle + pathAngle * 0.55;
+      const rad       = (angle + 180) * Math.PI / 180; // tail = back of ship
+      const tailX     = x + Math.cos(rad) * 16;
+      const tailY     = y + Math.sin(rad) * 16;
 
       el.style.left      = x + 'px';
       el.style.top       = y + 'px';
-      el.style.opacity   = opacity;
-      el.style.transform = `translate(-50%, -50%) rotate(${angle}deg)`;
+      el.style.opacity   = op;
+      el.style.transform = `translate(-50%,-50%) rotate(${angle}deg)`;
 
-      if (now - lastTrail > 55) {
-        spawnTrail(glyph, lastX, lastY, angle, opacity);
-        lastTrail = now;
-      }
+      if (now - lastDot > 60) { spawnDot(tailX, tailY, op); lastDot = now; }
 
       lastX = x; lastY = y;
-      if (t < 1) requestAnimationFrame(tick); else el.remove();
+      if (t < 1) { requestAnimationFrame(tick); }
+      else { el.remove(); active = false; }
     }
     requestAnimationFrame(tick);
   }
 
-  function schedule(glyph, min, max) {
-    function next() {
-      setTimeout(() => { spawnShip(glyph); next(); }, min + Math.random() * (max - min));
-    }
-    setTimeout(next, Math.random() * 3000 + 1500);
+  function scheduleNext() {
+    setTimeout(() => { spawnShip(); scheduleNext(); }, 8000 + Math.random() * 7000);
   }
-
-  schedule('🚀', 8000, 13000);
-  schedule('🛸', 10000, 15000);
+  setTimeout(scheduleNext, Math.random() * 3000 + 1500);
 })();
 
 // ── Scroll animations ─────────────────────────────────────────
