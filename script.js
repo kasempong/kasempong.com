@@ -605,3 +605,27 @@ document.querySelectorAll('.pin, .section-title, .section-subtitle, .section-eye
   el.classList.add('fade-in');
   observer.observe(el);
 });
+
+// ── Changelog panel ───────────────────────────────────────────
+(function () {
+  const btn     = document.getElementById('changelogBtn');
+  const panel   = document.getElementById('changelogPanel');
+  const overlay = document.getElementById('changelogOverlay');
+  const close   = document.getElementById('changelogClose');
+
+  function open() {
+    panel.classList.add('open');
+    overlay.classList.add('open');
+    panel.removeAttribute('aria-hidden');
+  }
+  function shut() {
+    panel.classList.remove('open');
+    overlay.classList.remove('open');
+    panel.setAttribute('aria-hidden', 'true');
+  }
+
+  btn.addEventListener('click', open);
+  close.addEventListener('click', shut);
+  overlay.addEventListener('click', shut);
+  document.addEventListener('keydown', e => { if (e.key === 'Escape') shut(); });
+})();
