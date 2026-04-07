@@ -629,3 +629,25 @@ document.querySelectorAll('.pin, .section-title, .section-subtitle, .section-eye
   overlay.addEventListener('click', shut);
   document.addEventListener('keydown', e => { if (e.key === 'Escape') shut(); });
 })();
+
+// ── Who modal ─────────────────────────────────────────────────
+(function () {
+  const btn     = document.getElementById('whoBtn');
+  const modal   = document.getElementById('whoModal');
+  const overlay = document.getElementById('whoOverlay');
+  const close   = document.getElementById('whoClose');
+
+  function open() {
+    modal.classList.add('open');   modal.removeAttribute('aria-hidden');
+    overlay.classList.add('open'); overlay.removeAttribute('aria-hidden');
+  }
+  function shut() {
+    modal.classList.remove('open');   modal.setAttribute('aria-hidden','true');
+    overlay.classList.remove('open'); overlay.setAttribute('aria-hidden','true');
+  }
+
+  btn.addEventListener('click', open);
+  close.addEventListener('click', shut);
+  overlay.addEventListener('click', shut);
+  document.addEventListener('keydown', e => { if (e.key === 'Escape') shut(); });
+})();
