@@ -255,6 +255,7 @@ applyLang(currentLang);
 
   document.getElementById('settingsClose').addEventListener('click', closeSettings);
   settingsOverlay.addEventListener('click', e => { if (e.target === settingsOverlay) closeSettings(); });
+  document.addEventListener('keydown', e => { if (e.key === 'Escape') { closeSettings(); spOverlay.hidden = true; } });
 
   cfgSave.addEventListener('click', () => {
     const newPw = document.getElementById('cfg-pw').value.trim();
