@@ -509,7 +509,7 @@ applyLang(currentLang);
     dot.className = 'flyship-trail';
     dot.style.left    = x + 'px';
     dot.style.top     = y + 'px';
-    dot.style.opacity = opacity * 0.8;
+    dot.style.opacity = opacity * 0.4;
     document.body.appendChild(dot);
     requestAnimationFrame(() => {
       dot.style.opacity = '0';
@@ -546,16 +546,17 @@ applyLang(currentLang);
 
       const pathAngle = Math.atan2(y - lastY, x - lastX) * (180 / Math.PI);
       const angle     = baseAngle + pathAngle * 0.55;
-      const rad       = (angle + 180) * Math.PI / 180; // tail = back of ship
-      const tailX     = x + Math.cos(rad) * 16;
-      const tailY     = y + Math.sin(rad) * 16;
+      // Trail comes from opposite of travel direction (true exhaust side)
+      const tailRad = (pathAngle + 180) * Math.PI / 180;
+      const tailX   = x + Math.cos(tailRad) * 14;
+      const tailY   = y + Math.sin(tailRad) * 14;
 
       el.style.left      = x + 'px';
       el.style.top       = y + 'px';
       el.style.opacity   = op;
       el.style.transform = `translate(-50%,-50%) rotate(${angle}deg)`;
 
-      if (now - lastDot > 60) { spawnDot(tailX, tailY, op); lastDot = now; }
+      if (now - lastDot > 70) { spawnDot(tailX, tailY, op); lastDot = now; }
 
       lastX = x; lastY = y;
       if (t < 1) { requestAnimationFrame(tick); }
