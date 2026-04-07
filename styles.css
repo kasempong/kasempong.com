@@ -803,7 +803,7 @@ a { color: inherit; text-decoration: none; }
    ============================================================ */
 #island-widget {
   position: fixed;
-  left: -55px;
+  left: -20px;
   top: 50%;
   transform: translateY(-50%);
   z-index: 5000;
