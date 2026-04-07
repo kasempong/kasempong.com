@@ -436,18 +436,29 @@ applyLang(currentLang);
 
   const updateStar = makeCompanion(
     'cstar', '✦', starMsgs,
-    window.innerWidth * 0.25, window.innerHeight * 0.45, 1
+    window.innerWidth * 0.25, window.innerHeight * 0.45, 0.5
   );
   const updateJup = makeCompanion(
     'cjup', '🪐', jupMsgs,
-    window.innerWidth * 0.72, window.innerHeight * 0.55, 0.75
+    window.innerWidth * 0.72, window.innerHeight * 0.55, 0.375
   );
 
-  // "click me ^3^" hint label on the star
-  const label = document.createElement('span');
-  label.className = 'cmp-label';
-  label.textContent = 'click me ^3^';
-  document.getElementById('cstar-wrap').appendChild(label);
+  // "hi" hint label on the star
+  const starLabel = document.createElement('span');
+  starLabel.className = 'cmp-label';
+  starLabel.textContent = 'hi';
+  document.getElementById('cstar-wrap').appendChild(starLabel);
+
+  // "helo" hint label on Jupiter
+  const jupLabel = document.createElement('span');
+  jupLabel.className = 'cmp-label';
+  jupLabel.textContent = 'helo';
+  document.getElementById('cjup-wrap').appendChild(jupLabel);
+
+  // Animated ring around Jupiter
+  const ring = document.createElement('span');
+  ring.className = 'cjup-ring';
+  document.getElementById('cjup-wrap').appendChild(ring);
 
   function loop() { updateStar(); updateJup(); requestAnimationFrame(loop); }
   loop();
