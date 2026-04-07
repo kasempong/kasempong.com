@@ -1,4 +1,39 @@
 /* ============================================================
+   TOP BAR
+   ============================================================ */
+.topbar {
+  position: fixed;
+  top: 0; left: 0; right: 0;
+  z-index: 9999;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.75rem;
+  padding: 0.45rem 1.5rem;
+  background: rgba(0, 0, 0, 0.55);
+  backdrop-filter: blur(10px);
+  -webkit-backdrop-filter: blur(10px);
+  border-bottom: 1px solid rgba(255, 255, 255, 0.07);
+  font-size: 0.78rem;
+  letter-spacing: 0.03em;
+}
+
+.topbar-link {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.35rem;
+  color: rgba(255, 255, 255, 0.65);
+  text-decoration: none;
+  transition: color 0.2s;
+}
+
+.topbar-link:hover { color: #fff; }
+
+.topbar-divider {
+  color: rgba(255, 255, 255, 0.25);
+}
+
+/* ============================================================
    RESET & BASE
    ============================================================ */
 *, *::before, *::after {
@@ -140,7 +175,7 @@ a { color: inherit; text-decoration: none; }
    ============================================================ */
 .navbar {
   position: fixed;
-  top: 0; left: 0; right: 0;
+  top: 30px; left: 0; right: 0;
   z-index: 100;
   display: flex;
   align-items: center;
