@@ -140,7 +140,11 @@ themeToggle.addEventListener('click', () => {
 });
 
 // ── Init ──────────────────────────────────────────────────────
-const savedTheme = localStorage.getItem('theme') || 'light';
+function getAutoTheme() {
+  const h = new Date().getHours();
+  return (h >= 6 && h < 20) ? 'light' : 'dark';
+}
+const savedTheme = localStorage.getItem('theme') || getAutoTheme();
 applyTheme(savedTheme);
 applyLang(currentLang);
 
@@ -344,6 +348,64 @@ applyLang(currentLang);
     requestAnimationFrame(loop);
   }
   loop();
+})();
+
+// ── Floating companion star ────────────────────────────────────
+(function () {
+  const messages = [
+    'You\'re doing great! ✨',
+    'Keep smiling! 😊',
+    'You got this! 💪',
+    'Believe in yourself! 🌟',
+    'Amazing day ahead! 🌸',
+    'Stay curious! 🔍',
+    'You\'re wonderful! 💖',
+    'Keep going! 🚀',
+    'Shine bright! ⭐',
+    'You inspire others! 🌻',
+    'Today is your day! ☀️',
+    'Dream big! 🦋',
+  ];
+
+  const wrap = document.createElement('div');
+  wrap.id = 'cstar-wrap';
+  const star = document.createElement('span');
+  star.id = 'cstar';
+  star.textContent = '✦';
+  wrap.appendChild(star);
+  document.body.appendChild(wrap);
+
+  const bubble = document.createElement('div');
+  bubble.id = 'cstar-bubble';
+  document.body.appendChild(bubble);
+
+  let tx = window.innerWidth / 2, ty = window.innerHeight / 2;
+  let cx = tx, cy = ty;
+  let bubbleTimer = null;
+
+  window.addEventListener('mousemove', e => { tx = e.clientX; ty = e.clientY; }, { passive: true });
+  window.addEventListener('touchmove', e => { tx = e.touches[0].clientX; ty = e.touches[0].clientY; }, { passive: true });
+
+  function showMessage() {
+    bubble.textContent = messages[Math.floor(Math.random() * messages.length)];
+    bubble.classList.add('show');
+    if (bubbleTimer) clearTimeout(bubbleTimer);
+    bubbleTimer = setTimeout(() => bubble.classList.remove('show'), 2500);
+  }
+
+  wrap.addEventListener('click', showMessage);
+  wrap.addEventListener('touchend', e => { e.preventDefault(); showMessage(); }, { passive: false });
+
+  function animate() {
+    cx += (tx - cx) * 0.09;
+    cy += (ty - cy) * 0.09;
+    wrap.style.left = cx + 'px';
+    wrap.style.top  = cy + 'px';
+    bubble.style.left = (cx - 60) + 'px';
+    bubble.style.top  = (cy - 48) + 'px';
+    requestAnimationFrame(animate);
+  }
+  animate();
 })();
 
 // ── Scroll animations ─────────────────────────────────────────
