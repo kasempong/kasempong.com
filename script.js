@@ -673,3 +673,9 @@ document.querySelectorAll('.pin, .section-title, .section-subtitle, .section-eye
   overlay.addEventListener('click', shut);
   document.addEventListener('keydown', e => { if (e.key === 'Escape') shut(); });
 })();
+
+// ── Background parallax ───────────────────────────────────────
+window.addEventListener('scroll', () => {
+  const y = 50 + window.scrollY * 0.12;
+  document.body.style.backgroundPositionY = y + '%';
+}, { passive: true });

@@ -122,7 +122,7 @@ body::before {
 body > * { position: relative; z-index: 1; }
 
 body {
-  background: url('bg1.png') center center / cover no-repeat fixed;
+  background: url('bg1.png') center center / cover no-repeat;
   color: var(--text);
   font-family: var(--font-sans);
   line-height: 1.7;
