@@ -350,9 +350,9 @@ applyLang(currentLang);
   loop();
 })();
 
-// ── Floating companion star ────────────────────────────────────
+// ── Floating companions ────────────────────────────────────────
 (function () {
-  const messages = [
+  const starMsgs = [
     'You\'re doing great! ✨',
     'Keep smiling! 😊',
     'You got this! 💪',
@@ -367,45 +367,90 @@ applyLang(currentLang);
     'Dream big! 🦋',
   ];
 
-  const wrap = document.createElement('div');
-  wrap.id = 'cstar-wrap';
-  const star = document.createElement('span');
-  star.id = 'cstar';
-  star.textContent = '✦';
-  wrap.appendChild(star);
-  document.body.appendChild(wrap);
+  const jupMsgs = [
+    'You\'re made of stardust! 🌌',
+    'Shine like a supernova! ✨',
+    'Every galaxy starts with one star 🌟',
+    'Your gravity pulls good things in 🪐',
+    'Orbit your dreams! 🚀',
+    'The universe cheers for you! 🌠',
+    'Light-years of potential ahead 💫',
+    'Space is vast — so is your heart 💙',
+    'You outshine every constellation ⭐',
+    'Shoot for the stars! ☄️',
+    'Black holes can\'t hold you back! 🌀',
+    'You are your own galaxy 🌌',
+  ];
 
-  const bubble = document.createElement('div');
-  bubble.id = 'cstar-bubble';
-  document.body.appendChild(bubble);
+  function makeCompanion(id, glyph, msgs, sx, sy, speed) {
+    const wrap = document.createElement('div');
+    wrap.className = 'cmp-wrap';
+    wrap.id = id + '-wrap';
 
-  let tx = window.innerWidth / 2, ty = window.innerHeight / 2;
-  let cx = tx, cy = ty;
-  let bubbleTimer = null;
+    const icon = document.createElement('span');
+    icon.className = 'cmp-icon';
+    icon.id = id;
+    icon.textContent = glyph;
+    wrap.appendChild(icon);
 
-  window.addEventListener('mousemove', e => { tx = e.clientX; ty = e.clientY; }, { passive: true });
-  window.addEventListener('touchmove', e => { tx = e.touches[0].clientX; ty = e.touches[0].clientY; }, { passive: true });
+    const bubble = document.createElement('div');
+    bubble.className = 'cmp-bubble';
+    bubble.id = id + '-bubble';
 
-  function showMessage() {
-    bubble.textContent = messages[Math.floor(Math.random() * messages.length)];
-    bubble.classList.add('show');
-    if (bubbleTimer) clearTimeout(bubbleTimer);
-    bubbleTimer = setTimeout(() => bubble.classList.remove('show'), 2500);
+    document.body.appendChild(wrap);
+    document.body.appendChild(bubble);
+
+    let x = sx, y = sy;
+    let vx = (Math.random() < 0.5 ? 1 : -1) * (Math.random() * 0.3 + 0.25) * speed;
+    let vy = (Math.random() < 0.5 ? 1 : -1) * (Math.random() * 0.3 + 0.25) * speed;
+    let phase = Math.random() * Math.PI * 2;
+    let bubbleTimer = null;
+
+    function showMsg() {
+      bubble.textContent = msgs[Math.floor(Math.random() * msgs.length)];
+      bubble.classList.add('show');
+      if (bubbleTimer) clearTimeout(bubbleTimer);
+      bubbleTimer = setTimeout(() => bubble.classList.remove('show'), 2800);
+    }
+
+    wrap.addEventListener('click', showMsg);
+    wrap.addEventListener('touchend', e => { e.preventDefault(); showMsg(); }, { passive: false });
+
+    return function update() {
+      phase += 0.011;
+      x += vx + Math.sin(phase) * 0.22;
+      y += vy + Math.cos(phase * 0.75) * 0.22;
+
+      const m = 55;
+      if (x < m) { vx = Math.abs(vx); }
+      if (x > window.innerWidth  - m) { vx = -Math.abs(vx); }
+      if (y < m) { vy = Math.abs(vy); }
+      if (y > window.innerHeight - m) { vy = -Math.abs(vy); }
+
+      wrap.style.left   = x + 'px';
+      wrap.style.top    = y + 'px';
+      bubble.style.left = (x - 70) + 'px';
+      bubble.style.top  = (y - 54) + 'px';
+    };
   }
 
-  wrap.addEventListener('click', showMessage);
-  wrap.addEventListener('touchend', e => { e.preventDefault(); showMessage(); }, { passive: false });
+  const updateStar = makeCompanion(
+    'cstar', '✦', starMsgs,
+    window.innerWidth * 0.25, window.innerHeight * 0.45, 1
+  );
+  const updateJup = makeCompanion(
+    'cjup', '🪐', jupMsgs,
+    window.innerWidth * 0.72, window.innerHeight * 0.55, 0.75
+  );
 
-  function animate() {
-    cx += (tx - cx) * 0.09;
-    cy += (ty - cy) * 0.09;
-    wrap.style.left = cx + 'px';
-    wrap.style.top  = cy + 'px';
-    bubble.style.left = (cx - 60) + 'px';
-    bubble.style.top  = (cy - 48) + 'px';
-    requestAnimationFrame(animate);
-  }
-  animate();
+  // "click me ^3^" hint label on the star
+  const label = document.createElement('span');
+  label.className = 'cmp-label';
+  label.textContent = 'click me ^3^';
+  document.getElementById('cstar-wrap').appendChild(label);
+
+  function loop() { updateStar(); updateJup(); requestAnimationFrame(loop); }
+  loop();
 })();
 
 // ── Scroll animations ─────────────────────────────────────────

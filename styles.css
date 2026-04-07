@@ -650,36 +650,64 @@ a { color: inherit; text-decoration: none; }
 }
 
 /* ============================================================
-   COMPANION STAR
+   FLOATING COMPANIONS
    ============================================================ */
-#cstar-wrap {
+.cmp-wrap {
   position: fixed;
   top: 0; left: 0;
   width: 0; height: 0;
   pointer-events: auto;
   z-index: 9999;
+  cursor: pointer;
 }
 
-#cstar {
+.cmp-icon {
   position: absolute;
   transform: translate(-50%, -50%);
   font-size: 22px;
   line-height: 1;
-  cursor: pointer;
-  color: var(--accent);
-  text-shadow: 0 0 6px var(--accent), 0 0 14px var(--accent), 0 0 28px var(--accent);
-  animation: cstarGlow 1.8s ease-in-out infinite;
   display: block;
   user-select: none;
 }
 
-@keyframes cstarGlow {
-  0%, 100% { transform: translate(-50%, -50%) scale(1)   rotate(0deg);   opacity: 0.85; }
-  33%       { transform: translate(-50%, -50%) scale(1.35) rotate(72deg);  opacity: 1; }
-  66%       { transform: translate(-50%, -50%) scale(0.9) rotate(144deg); opacity: 0.7; }
+#cstar {
+  color: var(--accent);
+  text-shadow: 0 0 6px var(--accent), 0 0 14px var(--accent), 0 0 28px var(--accent);
+  animation: cstarGlow 1.8s ease-in-out infinite;
 }
 
-#cstar-bubble {
+#cjup {
+  font-size: 28px;
+  animation: cjupSpin 3s ease-in-out infinite;
+  filter: drop-shadow(0 0 8px rgba(184,115,90,0.55));
+}
+
+@keyframes cstarGlow {
+  0%, 100% { transform: translate(-50%, -50%) scale(1)    rotate(0deg);   opacity: 0.85; }
+  33%       { transform: translate(-50%, -50%) scale(1.35) rotate(72deg);  opacity: 1;    }
+  66%       { transform: translate(-50%, -50%) scale(0.9)  rotate(144deg); opacity: 0.7;  }
+}
+
+@keyframes cjupSpin {
+  0%, 100% { transform: translate(-50%, -50%) scale(1)    rotate(-6deg); }
+  50%       { transform: translate(-50%, -50%) scale(1.15) rotate(6deg);  }
+}
+
+.cmp-label {
+  position: absolute;
+  left: 0;
+  top: 18px;
+  transform: translateX(-50%);
+  font-size: 0.6rem;
+  font-family: var(--font-sans);
+  color: var(--text-muted);
+  white-space: nowrap;
+  pointer-events: none;
+  opacity: 0.7;
+  letter-spacing: 0.01em;
+}
+
+.cmp-bubble {
   position: fixed;
   top: 0; left: 0;
   background: var(--bg-2);
@@ -699,7 +727,7 @@ a { color: inherit; text-decoration: none; }
   box-shadow: 0 4px 16px rgba(0,0,0,0.12);
 }
 
-#cstar-bubble.show {
+.cmp-bubble.show {
   opacity: 1;
   transform: translateY(0) scale(1);
 }
