@@ -812,10 +812,11 @@ a { color: inherit; text-decoration: none; }
   cursor: pointer;
   animation: isleFloat 4s ease-in-out infinite;
   transition: filter 0.3s ease;
+  filter: drop-shadow(2px 4px 14px rgba(0,0,0,0.7)) drop-shadow(0 0 8px rgba(255,250,240,0.12));
 }
 
 #island-widget:hover {
-  filter: brightness(1.2) drop-shadow(0 0 22px rgba(196,144,58,0.35));
+  filter: brightness(1.15) drop-shadow(2px 4px 18px rgba(0,0,0,0.7)) drop-shadow(0 0 22px rgba(220,210,190,0.3));
 }
 
 @keyframes isleFloat {
