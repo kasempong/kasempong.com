@@ -1,0 +1,219 @@
+<!DOCTYPE html>
+<html lang="en" data-theme="light">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <meta name="description" content="Personal portfolio — Kasempong, Dentist." />
+  <title>Kasempong &mdash; Portfolio</title>
+
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link
+    href="https://fonts.googleapis.com/css2?family=Playfair+Display:wght@700;900&family=Nunito:wght@400;500;600;700&display=swap"
+    rel="stylesheet" crossorigin="anonymous"
+  />
+
+  <link rel="stylesheet" href="styles.css" />
+</head>
+<body>
+  <canvas id="bg-canvas" aria-hidden="true"></canvas>
+
+  <!-- ===== NAVBAR ===== -->
+  <nav class="navbar" id="navbar">
+    <div class="nav-logo">Kasempong</div>
+
+    <ul class="nav-links">
+      <li><a href="#about" data-i18n="nav_about">About</a></li>
+      <li><a href="#contact" data-i18n="nav_contact">Contact</a></li>
+    </ul>
+
+    <div class="nav-controls">
+      <!-- Language switcher -->
+      <div class="lang-switcher">
+        <button class="lang-btn active" data-lang="en">EN</button>
+        <button class="lang-btn" data-lang="th">TH</button>
+        <button class="lang-btn" data-lang="zh">中文</button>
+      </div>
+      <!-- Dark mode toggle -->
+      <button class="theme-toggle" id="themeToggle" aria-label="Toggle dark mode">
+        <span class="icon-light">☀️</span>
+        <span class="icon-dark">🌙</span>
+      </button>
+      <!-- Mobile hamburger -->
+      <button class="nav-toggle" id="navToggle" aria-label="Toggle menu">
+        <span></span><span></span><span></span>
+      </button>
+    </div>
+  </nav>
+
+  <!-- ===== HERO / ABOUT ===== -->
+  <section class="hero" id="about">
+    <div class="blob blob-1" aria-hidden="true"></div>
+    <div class="blob blob-2" aria-hidden="true"></div>
+    <div class="blob blob-3" aria-hidden="true"></div>
+
+    <!-- Left: text -->
+    <div class="hero-content">
+      <div class="hero-pill" data-i18n="hero_pill">✦ Available for work</div>
+      <h1 class="hero-title">
+        <span data-i18n="hero_greeting">Hi, I'm</span><br>
+        <span class="accent-text">Kasempong</span>
+      </h1>
+      <p class="hero-role" id="typed-role"></p>
+      <p class="hero-bio" data-i18n="hero_bio">
+        I'm a dentist with a curious mind.
+        By day I do dentistry. By night I learn coding.
+      </p>
+      <div class="hero-cta">
+        <a href="#contact" class="btn btn-primary" data-i18n="hero_cta_talk">Let's Talk ✉</a>
+        <a href="mailto:Contact.craffle@gmail.com" class="btn btn-outline" data-i18n="hero_cta_email">Email Me ✉</a>
+      </div>
+    </div>
+
+    <!-- Right: info card (desktop only) -->
+    <div class="hero-card" aria-hidden="true">
+      <div class="hero-card-inner">
+        <div class="hc-avatar">🦷</div>
+        <div class="hc-name">Kasempong</div>
+        <div class="hc-role">Dentist &amp; Coder</div>
+        <div class="hc-divider"></div>
+        <div class="hc-stats">
+          <div class="hc-stat">
+            <span class="hc-stat-val">🦷</span>
+            <span class="hc-stat-label">Dentistry</span>
+          </div>
+          <div class="hc-stat">
+            <span class="hc-stat-val">💻</span>
+            <span class="hc-stat-label">Coding</span>
+          </div>
+          <div class="hc-stat">
+            <span class="hc-stat-val">✨</span>
+            <span class="hc-stat-label">Learning</span>
+          </div>
+        </div>
+        <a href="mailto:Contact.craffle@gmail.com" class="hc-contact">Contact.craffle@gmail.com</a>
+      </div>
+    </div>
+  </section>
+
+  <!-- ===== CONTACT ===== -->
+  <section class="contact" id="contact">
+    <div class="section-inner">
+      <p class="section-eyebrow" data-i18n="contact_eyebrow">reach out</p>
+      <h2 class="section-title" data-i18n="contact_title">Let's Connect 💬</h2>
+      <p class="section-subtitle" data-i18n="contact_subtitle">
+        I'm always open to new opportunities, collaborations, or just a good conversation.
+      </p>
+
+      <div class="pin-grid">
+        <a href="mailto:Contact.craffle@gmail.com" class="pin" data-color="rose" aria-label="Email">
+          <div class="pin-icon">
+            <svg xmlns="http://www.w3.org/2000/svg" width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect width="20" height="16" x="2" y="4" rx="2"/><path d="m22 7-8.97 5.7a1.94 1.94 0 0 1-2.06 0L2 7"/></svg>
+          </div>
+          <div class="pin-body">
+            <span class="pin-tag" data-i18n="contact_email_label">Email</span>
+            <span class="pin-value">Contact.craffle@gmail.com</span>
+          </div>
+          <div class="pin-arrow">↗</div>
+        </a>
+      </div>
+    </div>
+  </section>
+
+  <!-- ===== FOOTER ===== -->
+  <footer class="footer">
+    <p><span data-i18n="footer_made">Made with ♡</span> &mdash; &copy; <span id="year"></span> Kasempong</p>
+    <p class="footer-stack">HTML · CSS · JS · Cloudflare Pages</p>
+  </footer>
+
+  <!-- ===== SECRET PASSWORD MODAL ===== -->
+  <div class="sp-overlay" id="spOverlay" hidden>
+    <div class="sp-modal" id="spModal" role="dialog" aria-modal="true" aria-label="Admin login">
+      <div class="sp-lock">🔒</div>
+      <h2 class="sp-title">Admin Access</h2>
+      <p class="sp-hint">Enter your password to edit the site</p>
+      <input class="sp-input" id="spPassword" type="password" placeholder="Password" autocomplete="off" />
+      <p class="sp-error" id="spError" hidden>Incorrect password</p>
+      <div class="sp-btns">
+        <button class="sp-btn sp-btn-cancel" id="spCancel">Cancel</button>
+        <button class="sp-btn sp-btn-enter" id="spEnter">Enter ↗</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- ===== SETTINGS PANEL ===== -->
+  <div class="settings-overlay" id="settingsOverlay" hidden>
+    <div class="settings-panel" id="settingsPanel">
+      <div class="settings-header">
+        <span>⚙️ Site Settings</span>
+        <button class="settings-close" id="settingsClose">✕</button>
+      </div>
+      <div class="settings-body">
+
+        <div class="settings-section">
+          <label class="sl">Display Name</label>
+          <input class="si" id="cfg-name" type="text" placeholder="Kasempong" />
+        </div>
+
+        <div class="settings-section">
+          <label class="sl">Email Address</label>
+          <input class="si" id="cfg-email" type="email" placeholder="Contact.craffle@gmail.com" />
+        </div>
+
+        <div class="settings-section">
+          <label class="sl">Availability Badge</label>
+          <div class="si-row">
+            <input class="si" id="cfg-pill" type="text" placeholder="✦ Available for work" style="flex:1" />
+            <label class="si-toggle">
+              <input type="checkbox" id="cfg-pill-show" checked />
+              <span>Show</span>
+            </label>
+          </div>
+        </div>
+
+        <div class="settings-section">
+          <label class="sl">Bio (EN)</label>
+          <textarea class="si si-ta" id="cfg-bio-en" rows="3"></textarea>
+        </div>
+
+        <div class="settings-section">
+          <label class="sl">Bio (TH)</label>
+          <textarea class="si si-ta" id="cfg-bio-th" rows="3"></textarea>
+        </div>
+
+        <div class="settings-section">
+          <label class="sl">Bio (中文)</label>
+          <textarea class="si si-ta" id="cfg-bio-zh" rows="3"></textarea>
+        </div>
+
+        <div class="settings-section">
+          <label class="sl">Typing Roles (EN) — comma separated</label>
+          <input class="si" id="cfg-roles-en" type="text" placeholder="Dentist, Smile Designer, ..." />
+        </div>
+
+        <div class="settings-section">
+          <label class="sl">Typing Roles (TH) — comma separated</label>
+          <input class="si" id="cfg-roles-th" type="text" />
+        </div>
+
+        <div class="settings-section">
+          <label class="sl">Typing Roles (中文) — comma separated</label>
+          <input class="si" id="cfg-roles-zh" type="text" />
+        </div>
+
+        <div class="settings-section">
+          <label class="sl">Change Password</label>
+          <input class="si" id="cfg-pw" type="password" placeholder="Leave blank to keep current" autocomplete="new-password" />
+        </div>
+
+      </div>
+      <div class="settings-footer">
+        <button class="sp-btn sp-btn-cancel" id="cfgReset">Reset to Default</button>
+        <button class="sp-btn sp-btn-enter" id="cfgSave">Save Changes ✓</button>
+      </div>
+    </div>
+  </div>
+
+  <script src="script.js"></script>
+</body>
+</html>
