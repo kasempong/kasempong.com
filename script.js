@@ -145,149 +145,6 @@ applyTheme(savedTheme);
 applyLang(currentLang);
 
 
-// ── Secret Admin Panel ───────────────────────────────────────
-(function () {
-  const DEFAULT_PW  = 'kasempong2024';
-  const PW_KEY      = 'site_admin_pw';
-  const CFG_KEY     = 'site_config';
-
-  function getPassword() { return localStorage.getItem(PW_KEY) || DEFAULT_PW; }
-
-  const DEFAULTS = {
-    name:     'Kasempong',
-    email:    'Contact.craffle@gmail.com',
-    pillText: '✦ Available for work',
-    pillShow: true,
-    bioEn:    "I'm a dentist with a curious mind. By day I do dentistry. By night I learn coding.",
-    bioTh:    'ฉันเป็นทันตแพทย์ที่ช่างสงสัย กลางวันทำฟัน กลางคืนเรียนเขียนโค้ด',
-    bioZh:    '我是一名充满好奇心的牙医。白天看诊，晚上学编程。',
-    rolesEn:  'Dentist,Smile Designer,Oral Health Advocate,Your Trusted Dentist',
-    rolesTh:  'ทันตแพทย์,ผู้ออกแบบรอยยิ้ม,ผู้ดูแลสุขภาพช่องปาก,ทันตแพทย์ของคุณ',
-    rolesZh:  '牙医,微笑设计师,口腔健康倡导者,您信赖的牙医',
-  };
-
-  function loadConfig() {
-    try { return Object.assign({}, DEFAULTS, JSON.parse(localStorage.getItem(CFG_KEY) || '{}')); }
-    catch { return Object.assign({}, DEFAULTS); }
-  }
-
-  function applyConfig(cfg) {
-    document.querySelectorAll('.accent-text').forEach(el => el.textContent = cfg.name);
-    document.querySelectorAll('.nav-logo').forEach(el => el.textContent = cfg.name);
-    document.title = cfg.name + ' — Portfolio';
-    document.querySelectorAll('[href^="mailto:"]').forEach(el => el.setAttribute('href', 'mailto:' + cfg.email));
-    document.querySelectorAll('.pin-value').forEach(el => el.textContent = cfg.email);
-
-    const pill = document.querySelector('.hero-pill');
-    if (pill) { pill.textContent = cfg.pillText; pill.style.display = cfg.pillShow ? '' : 'none'; }
-
-    translations.en.hero_bio  = cfg.bioEn;
-    translations.th.hero_bio  = cfg.bioTh;
-    translations.zh.hero_bio  = cfg.bioZh;
-    translations.en.roles = cfg.rolesEn.split(',').map(s => s.trim()).filter(Boolean);
-    translations.th.roles = cfg.rolesTh.split(',').map(s => s.trim()).filter(Boolean);
-    translations.zh.roles = cfg.rolesZh.split(',').map(s => s.trim()).filter(Boolean);
-    translations.en.hero_pill = cfg.pillText;
-    translations.th.hero_pill = cfg.pillText;
-    translations.zh.hero_pill = cfg.pillText;
-
-    applyLang(currentLang);
-  }
-
-  // Apply saved config on load
-  setTimeout(() => applyConfig(loadConfig()), 60);
-
-  // Triple-click on logo to open
-  const logo = document.querySelector('.nav-logo');
-  let clicks = 0, clickTimer = null;
-  logo.addEventListener('click', () => {
-    clicks++;
-    clearTimeout(clickTimer);
-    clickTimer = setTimeout(() => { clicks = 0; }, 600);
-    if (clicks >= 3) { clicks = 0; openPasswordModal(); }
-  });
-
-  // Password modal
-  const spOverlay  = document.getElementById('spOverlay');
-  const spPassword = document.getElementById('spPassword');
-  const spError    = document.getElementById('spError');
-
-  function openPasswordModal() {
-    spPassword.value = ''; spError.hidden = true;
-    spOverlay.hidden = false;
-    setTimeout(() => spPassword.focus(), 50);
-  }
-
-  function checkPassword() {
-    if (spPassword.value === getPassword()) { spOverlay.hidden = true; openSettings(); }
-    else { spError.hidden = false; spPassword.value = ''; spPassword.focus(); }
-  }
-
-  document.getElementById('spEnter').addEventListener('click', checkPassword);
-  spPassword.addEventListener('keydown', e => { if (e.key === 'Enter') checkPassword(); });
-  document.getElementById('spCancel').addEventListener('click', () => { spOverlay.hidden = true; });
-  spOverlay.addEventListener('click', e => { if (e.target === spOverlay) spOverlay.hidden = true; });
-
-  // Settings panel
-  const settingsOverlay = document.getElementById('settingsOverlay');
-  const cfgSave = document.getElementById('cfgSave');
-
-  function openSettings() {
-    settingsOverlay.hidden = false;
-    // Set values after overlay is visible to avoid rendering quirks
-    requestAnimationFrame(() => {
-      const c = loadConfig();
-      document.getElementById('cfg-name').value        = c.name;
-      document.getElementById('cfg-email').value       = c.email;
-      document.getElementById('cfg-pill').value        = c.pillText;
-      document.getElementById('cfg-pill-show').checked = c.pillShow;
-      document.getElementById('cfg-bio-en').value      = c.bioEn;
-      document.getElementById('cfg-bio-th').value      = c.bioTh;
-      document.getElementById('cfg-bio-zh').value      = c.bioZh;
-      document.getElementById('cfg-roles-en').value    = c.rolesEn;
-      document.getElementById('cfg-roles-th').value    = c.rolesTh;
-      document.getElementById('cfg-roles-zh').value    = c.rolesZh;
-      document.getElementById('cfg-pw').value          = '';
-    });
-  }
-
-  function closeSettings() { settingsOverlay.hidden = true; }
-
-  document.getElementById('settingsClose').addEventListener('click', closeSettings);
-  settingsOverlay.addEventListener('click', e => { if (e.target === settingsOverlay) closeSettings(); });
-  document.addEventListener('keydown', e => { if (e.key === 'Escape') { closeSettings(); spOverlay.hidden = true; } });
-
-  cfgSave.addEventListener('click', () => {
-    const newPw = document.getElementById('cfg-pw').value.trim();
-    if (newPw) localStorage.setItem(PW_KEY, newPw);
-
-    const newCfg = {
-      name:     document.getElementById('cfg-name').value.trim()     || DEFAULTS.name,
-      email:    document.getElementById('cfg-email').value.trim()    || DEFAULTS.email,
-      pillText: document.getElementById('cfg-pill').value.trim()     || DEFAULTS.pillText,
-      pillShow: document.getElementById('cfg-pill-show').checked,
-      bioEn:    document.getElementById('cfg-bio-en').value.trim()   || DEFAULTS.bioEn,
-      bioTh:    document.getElementById('cfg-bio-th').value.trim()   || DEFAULTS.bioTh,
-      bioZh:    document.getElementById('cfg-bio-zh').value.trim()   || DEFAULTS.bioZh,
-      rolesEn:  document.getElementById('cfg-roles-en').value.trim() || DEFAULTS.rolesEn,
-      rolesTh:  document.getElementById('cfg-roles-th').value.trim() || DEFAULTS.rolesTh,
-      rolesZh:  document.getElementById('cfg-roles-zh').value.trim() || DEFAULTS.rolesZh,
-    };
-    localStorage.setItem(CFG_KEY, JSON.stringify(newCfg));
-    applyConfig(newCfg);
-    closeSettings();
-    cfgSave.textContent = 'Saved ✓';
-    setTimeout(() => { cfgSave.textContent = 'Save Changes ✓'; }, 1800);
-  });
-
-  document.getElementById('cfgReset').addEventListener('click', () => {
-    if (!confirm('Reset all content to defaults?')) return;
-    localStorage.removeItem(CFG_KEY);
-    localStorage.removeItem(PW_KEY);
-    applyConfig(DEFAULTS);
-    closeSettings();
-  });
-})();
 
 // ── Header stars ──────────────────────────────────────────────
 (function () {
@@ -355,6 +212,9 @@ applyLang(currentLang);
   resize();
   window.addEventListener('resize', resize, { passive: true });
   window.addEventListener('mousemove', e => { mouse.x = e.clientX; mouse.y = e.clientY; }, { passive: true });
+  window.addEventListener('touchmove', e => { mouse.x = e.touches[0].clientX; mouse.y = e.touches[0].clientY; }, { passive: true });
+  window.addEventListener('touchstart', e => { mouse.x = e.touches[0].clientX; mouse.y = e.touches[0].clientY; }, { passive: true });
+  window.addEventListener('touchend', () => { mouse.x = -999; mouse.y = -999; }, { passive: true });
 
   function isDark() { return document.documentElement.getAttribute('data-theme') === 'dark'; }
 
