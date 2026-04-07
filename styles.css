@@ -799,6 +799,60 @@ a { color: inherit; text-decoration: none; }
 }
 
 /* ============================================================
+   FLOATING ISLAND
+   ============================================================ */
+#island-widget {
+  position: fixed;
+  left: 14px;
+  top: 50%;
+  transform: translateY(-50%);
+  z-index: 5000;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  text-decoration: none;
+  cursor: pointer;
+  animation: isleFloat 3.2s ease-in-out infinite;
+  filter: drop-shadow(0 6px 14px rgba(0,0,0,0.35));
+  transition: filter 0.25s ease;
+}
+
+#island-widget:hover {
+  filter: drop-shadow(0 8px 20px rgba(0,0,0,0.5)) brightness(1.12);
+}
+
+.isle-tree {
+  font-size: 44px;
+  line-height: 1;
+  display: block;
+  margin-bottom: -6px;
+}
+
+.isle-flowers {
+  display: flex;
+  gap: 1px;
+  font-size: 13px;
+  position: relative;
+  z-index: 1;
+  margin-bottom: -3px;
+}
+
+.isle-ground {
+  display: block;
+  width: 68px;
+  height: 22px;
+  background: linear-gradient(to bottom, #5a8a28 0%, #4a7020 45%, #7a5520 100%);
+  border-radius: 50%;
+  box-shadow: 0 5px 10px rgba(0,0,0,0.45), inset 0 -3px 6px rgba(0,0,0,0.2);
+}
+
+@keyframes isleFloat {
+  0%, 100% { transform: translateY(-50%) translateY(0px)   rotate(0deg); }
+  40%       { transform: translateY(-50%) translateY(-11px) rotate(-1deg); }
+  60%       { transform: translateY(-50%) translateY(-8px)  rotate(0.5deg); }
+}
+
+/* ============================================================
    RESPONSIVE
    ============================================================ */
 /* ============================================================

@@ -18,6 +18,13 @@
 <body>
   <canvas id="bg-canvas" aria-hidden="true"></canvas>
 
+  <!-- ===== FLOATING ISLAND ===== -->
+  <a href="island.html" id="island-widget" aria-label="Visit the island">
+    <span class="isle-tree">🌳</span>
+    <span class="isle-flowers"><span>🌸</span><span>🌼</span><span>🌺</span></span>
+    <span class="isle-ground"></span>
+  </a>
+
   <!-- ===== NAVBAR ===== -->
   <nav class="navbar" id="navbar">
     <div class="nav-logo">Kasempong</div>
@@ -125,94 +132,6 @@
     <p><span data-i18n="footer_made">Made with ♡</span> &mdash; &copy; <span id="year"></span> Kasempong</p>
     <p class="footer-stack">HTML · CSS · JS · Cloudflare Pages</p>
   </footer>
-
-  <!-- ===== SECRET PASSWORD MODAL ===== -->
-  <div class="sp-overlay" id="spOverlay" hidden>
-    <div class="sp-modal" id="spModal" role="dialog" aria-modal="true" aria-label="Admin login">
-      <div class="sp-lock">🔒</div>
-      <h2 class="sp-title">Admin Access</h2>
-      <p class="sp-hint">Enter your password to edit the site</p>
-      <input class="sp-input" id="spPassword" type="password" placeholder="Password" autocomplete="off" />
-      <p class="sp-error" id="spError" hidden>Incorrect password</p>
-      <div class="sp-btns">
-        <button class="sp-btn sp-btn-cancel" id="spCancel">Cancel</button>
-        <button class="sp-btn sp-btn-enter" id="spEnter">Enter ↗</button>
-      </div>
-    </div>
-  </div>
-
-  <!-- ===== SETTINGS PANEL ===== -->
-  <div class="settings-overlay" id="settingsOverlay" hidden>
-    <div class="settings-panel" id="settingsPanel">
-      <div class="settings-header">
-        <span>⚙️ Site Settings</span>
-        <button class="settings-close" id="settingsClose">✕</button>
-      </div>
-      <div class="settings-body">
-
-        <div class="settings-section">
-          <label class="sl">Display Name</label>
-          <input class="si" id="cfg-name" type="text" placeholder="Kasempong" />
-        </div>
-
-        <div class="settings-section">
-          <label class="sl">Email Address</label>
-          <input class="si" id="cfg-email" type="email" placeholder="Contact.craffle@gmail.com" />
-        </div>
-
-        <div class="settings-section">
-          <label class="sl">Availability Badge</label>
-          <div class="si-row">
-            <input class="si" id="cfg-pill" type="text" placeholder="✦ Available for work" style="flex:1" />
-            <label class="si-toggle">
-              <input type="checkbox" id="cfg-pill-show" checked />
-              <span>Show</span>
-            </label>
-          </div>
-        </div>
-
-        <div class="settings-section">
-          <label class="sl">Bio (EN)</label>
-          <textarea class="si si-ta" id="cfg-bio-en" rows="3"></textarea>
-        </div>
-
-        <div class="settings-section">
-          <label class="sl">Bio (TH)</label>
-          <textarea class="si si-ta" id="cfg-bio-th" rows="3"></textarea>
-        </div>
-
-        <div class="settings-section">
-          <label class="sl">Bio (中文)</label>
-          <textarea class="si si-ta" id="cfg-bio-zh" rows="3"></textarea>
-        </div>
-
-        <div class="settings-section">
-          <label class="sl">Typing Roles (EN) — comma separated</label>
-          <input class="si" id="cfg-roles-en" type="text" placeholder="Dentist, Smile Designer, ..." />
-        </div>
-
-        <div class="settings-section">
-          <label class="sl">Typing Roles (TH) — comma separated</label>
-          <input class="si" id="cfg-roles-th" type="text" />
-        </div>
-
-        <div class="settings-section">
-          <label class="sl">Typing Roles (中文) — comma separated</label>
-          <input class="si" id="cfg-roles-zh" type="text" />
-        </div>
-
-        <div class="settings-section">
-          <label class="sl">Change Password</label>
-          <input class="si" id="cfg-pw" type="password" placeholder="Leave blank to keep current" autocomplete="new-password" />
-        </div>
-
-      </div>
-      <div class="settings-footer">
-        <button class="sp-btn sp-btn-cancel" id="cfgReset">Reset to Default</button>
-        <button class="sp-btn sp-btn-enter" id="cfgSave">Save Changes ✓</button>
-      </div>
-    </div>
-  </div>
 
   <script src="script.js"></script>
 </body>
