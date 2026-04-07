@@ -439,7 +439,7 @@ applyLang(currentLang);
     window.innerWidth * 0.25, window.innerHeight * 0.45, 0.5
   );
   const updateJup = makeCompanion(
-    'cjup', '🪐', jupMsgs,
+    'cjup', '🟠', jupMsgs,
     window.innerWidth * 0.72, window.innerHeight * 0.55, 0.375
   );
 
