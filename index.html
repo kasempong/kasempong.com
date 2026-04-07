@@ -20,94 +20,7 @@
 
   <!-- ===== FLOATING ISLAND ===== -->
   <a href="island.html" id="island-widget" aria-label="Enter the old forest">
-    <svg viewBox="0 0 65 100" width="65" height="100" xmlns="http://www.w3.org/2000/svg">
-      <defs>
-        <radialGradient id="isoil" cx="50%" cy="30%" r="60%">
-          <stop offset="0%" stop-color="#8c6234"/>
-          <stop offset="100%" stop-color="#4e2e10"/>
-        </radialGradient>
-        <radialGradient id="isha" cx="50%" cy="50%" r="50%">
-          <stop offset="0%" stop-color="#000" stop-opacity="0.45"/>
-          <stop offset="100%" stop-color="#000" stop-opacity="0"/>
-        </radialGradient>
-        <filter id="isb"><feGaussianBlur stdDeviation="3"/></filter>
-      </defs>
-
-      <!-- Shadow -->
-      <ellipse cx="38" cy="96" rx="22" ry="4" fill="url(#isha)" filter="url(#isb)" opacity="0.45"/>
-
-      <!-- Soil island body -->
-      <path d="M 14,68 C 10,62 12,56 20,53 C 26,46 38,44 50,46 C 58,47 64,51 64,58 C 64,64 60,70 52,73 C 44,77 24,78 16,76 C 10,74 9,72 14,68 Z" fill="url(#isoil)"/>
-
-      <!-- Grass surface layers -->
-      <path d="M 20,53 C 26,46 38,44 50,46 C 58,47 64,51 64,58 C 56,54 44,51 32,51 C 24,51 20,52 20,53 Z" fill="#4a8c1c"/>
-      <path d="M 22,51 C 28,45 38,43 50,45 C 57,46 62,49 62,54 C 55,51 44,49 32,49 C 24,49 22,50 22,51 Z" fill="#5aa422"/>
-      <path d="M 24,49 C 30,44 40,42 50,44 C 56,45 61,48 60,52 C 54,49 44,47 34,47 C 27,47 24,48 24,49 Z" fill="#6ab82a"/>
-
-      <!-- Small pebbles around edge -->
-      <ellipse cx="13" cy="66" rx="3.5" ry="2.2" fill="#aaa49c" transform="rotate(-15 13 66)"/>
-      <ellipse cx="60" cy="64" rx="3" ry="2" fill="#b8b4ae" transform="rotate(10 60 64)"/>
-      <ellipse cx="19" cy="75" rx="2.8" ry="1.8" fill="#a09890"/>
-      <ellipse cx="48" cy="75" rx="3" ry="1.8" fill="#a89e96"/>
-      <ellipse cx="34" cy="77" rx="3.5" ry="2" fill="#9a9490"/>
-
-      <!-- Tree trunk -->
-      <rect x="34" y="22" width="5" height="32" rx="2" fill="#7c4c1c"/>
-      <path d="M 35.5,22 L 35.5,54" stroke="#a06830" stroke-width="1.5" stroke-linecap="round" opacity="0.55"/>
-
-      <!-- Pine crown: 3 layers -->
-      <path d="M 36,4 L 25,26 L 47,26 Z" fill="#327020"/>
-      <path d="M 36,14 L 23,34 L 49,34 Z" fill="#3c8828"/>
-      <path d="M 36,24 L 21,44 L 51,44 Z" fill="#327020"/>
-
-      <!-- Flower 1 -->
-      <line x1="26" y1="55" x2="26" y2="51" stroke="#3a7018" stroke-width="1.2"/>
-      <circle cx="26" cy="50" r="1.8" fill="#ffe040"/>
-      <circle cx="23.8" cy="48.5" r="1.4" fill="#ff6888"/>
-      <circle cx="26" cy="48" r="1.4" fill="#ff8090"/>
-      <circle cx="28.2" cy="48.5" r="1.4" fill="#ff6888"/>
-      <circle cx="28.2" cy="51" r="1.4" fill="#ff8090"/>
-      <circle cx="23.8" cy="51" r="1.4" fill="#ff6888"/>
-
-      <!-- Flower 2 -->
-      <line x1="47" y1="55" x2="47" y2="51" stroke="#3a7018" stroke-width="1.2"/>
-      <circle cx="47" cy="50" r="1.8" fill="#ffd030"/>
-      <circle cx="44.8" cy="48.5" r="1.4" fill="#ff70c0"/>
-      <circle cx="47" cy="48" r="1.4" fill="#ff88c8"/>
-      <circle cx="49.2" cy="48.5" r="1.4" fill="#ff70c0"/>
-      <circle cx="49.2" cy="51" r="1.4" fill="#ff88c8"/>
-      <circle cx="44.8" cy="51" r="1.4" fill="#ff70c0"/>
-
-      <!-- Butterfly 1: orange, left of flower 1 -->
-      <ellipse cx="16" cy="44" rx="5" ry="3" fill="#ff8820" opacity="0.9">
-        <animate attributeName="ry" values="3;0.4;3" dur="0.55s" repeatCount="indefinite"/>
-      </ellipse>
-      <ellipse cx="16" cy="49" rx="4" ry="2.5" fill="#ffaa40" opacity="0.8">
-        <animate attributeName="ry" values="2.5;0.3;2.5" dur="0.55s" repeatCount="indefinite"/>
-      </ellipse>
-      <ellipse cx="22" cy="44" rx="5" ry="3" fill="#ff8820" opacity="0.9">
-        <animate attributeName="ry" values="3;0.4;3" dur="0.55s" repeatCount="indefinite"/>
-      </ellipse>
-      <ellipse cx="22" cy="49" rx="4" ry="2.5" fill="#ffaa40" opacity="0.8">
-        <animate attributeName="ry" values="2.5;0.3;2.5" dur="0.55s" repeatCount="indefinite"/>
-      </ellipse>
-      <ellipse cx="19" cy="46.5" rx="1.2" ry="2.8" fill="#602008"/>
-
-      <!-- Butterfly 2: purple, right of flower 2 -->
-      <ellipse cx="53" cy="43" rx="5" ry="3" fill="#a040d0" opacity="0.9">
-        <animate attributeName="ry" values="3;0.4;3" dur="0.6s" begin="0.15s" repeatCount="indefinite"/>
-      </ellipse>
-      <ellipse cx="53" cy="48" rx="4" ry="2.5" fill="#c060e8" opacity="0.8">
-        <animate attributeName="ry" values="2.5;0.3;2.5" dur="0.6s" begin="0.15s" repeatCount="indefinite"/>
-      </ellipse>
-      <ellipse cx="59" cy="43" rx="5" ry="3" fill="#a040d0" opacity="0.9">
-        <animate attributeName="ry" values="3;0.4;3" dur="0.6s" begin="0.15s" repeatCount="indefinite"/>
-      </ellipse>
-      <ellipse cx="59" cy="48" rx="4" ry="2.5" fill="#c060e8" opacity="0.8">
-        <animate attributeName="ry" values="2.5;0.3;2.5" dur="0.6s" begin="0.15s" repeatCount="indefinite"/>
-      </ellipse>
-      <ellipse cx="56" cy="45.5" rx="1.2" ry="2.8" fill="#300860"/>
-    </svg>
+    <canvas id="island-canvas"></canvas>
   </a>
 
   <!-- ===== NAVBAR ===== -->
@@ -219,5 +132,6 @@
   </footer>
 
   <script src="script.js"></script>
+  <script src="island3d.bundle.js"></script>
 </body>
 </html>
