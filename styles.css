@@ -671,29 +671,29 @@ a { color: inherit; text-decoration: none; }
 }
 
 #cstar {
-  color: var(--accent);
-  text-shadow: 0 0 8px var(--accent), 0 0 18px var(--accent);
+  color: #fff;
+  text-shadow: 0 0 8px #fff, 0 0 18px #fff;
   animation: cstarGlow 2s ease-in-out infinite;
 }
 
 #cjup {
   font-size: 26px;
   animation: cjupGlow 2.6s ease-in-out infinite;
-  filter: drop-shadow(0 0 6px var(--accent)) drop-shadow(0 0 14px var(--accent));
+  filter: drop-shadow(0 0 6px #f5c518) drop-shadow(0 0 14px #f5c518);
 }
 
 @keyframes cstarGlow {
   0%, 100% { transform: translate(-50%, -50%) scale(1)    rotate(0deg);   opacity: 0.8;
-             text-shadow: 0 0 6px var(--accent), 0 0 14px var(--accent); }
+             text-shadow: 0 0 6px #fff, 0 0 14px #fff; }
   50%       { transform: translate(-50%, -50%) scale(1.3)  rotate(180deg); opacity: 1;
-             text-shadow: 0 0 12px var(--accent), 0 0 26px var(--accent), 0 0 44px var(--accent); }
+             text-shadow: 0 0 12px #fff, 0 0 28px #fff, 0 0 48px #fff; }
 }
 
 @keyframes cjupGlow {
   0%, 100% { transform: translate(-50%, -50%) scale(1);    opacity: 0.85;
-             filter: drop-shadow(0 0 5px var(--accent)) drop-shadow(0 0 12px var(--accent)); }
+             filter: drop-shadow(0 0 5px #f5c518) drop-shadow(0 0 12px #f5c518); }
   50%       { transform: translate(-50%, -50%) scale(1.12); opacity: 1;
-             filter: drop-shadow(0 0 10px var(--accent)) drop-shadow(0 0 24px var(--accent)); }
+             filter: drop-shadow(0 0 10px #f5c518) drop-shadow(0 0 26px #f5c518); }
 }
 
 /* Jupiter orbital ring */
@@ -701,18 +701,56 @@ a { color: inherit; text-decoration: none; }
   position: absolute;
   top: 0; left: 0;
   width: 52px; height: 18px;
-  border: 2px solid var(--accent);
+  border: 2px solid #f5c518;
   border-radius: 50%;
   transform: translate(-50%, -50%) rotateX(62deg) rotateZ(0deg);
   animation: ringOrbit 2.8s linear infinite;
   pointer-events: none;
-  opacity: 0.65;
-  box-shadow: 0 0 0 1px var(--accent), inset 0 0 0 1px var(--accent);
+  opacity: 0.7;
+  box-shadow: 0 0 4px #f5c518, 0 0 10px #f5c518;
 }
 
 @keyframes ringOrbit {
   from { transform: translate(-50%, -50%) rotateX(62deg) rotateZ(0deg); }
   to   { transform: translate(-50%, -50%) rotateX(62deg) rotateZ(360deg); }
+}
+
+/* Flying ships */
+.flyship {
+  position: fixed;
+  font-size: 30px;
+  left: -80px;
+  z-index: 8000;
+  pointer-events: none;
+  filter: drop-shadow(0 0 8px rgba(255,255,255,0.7));
+  animation: shipFlyRight linear forwards;
+  will-change: transform;
+}
+
+.flyship.fly-left {
+  left: auto;
+  right: -80px;
+  animation-name: shipFlyLeft;
+}
+
+@keyframes shipFlyRight {
+  0%   { transform: translateX(0)                    translateY(0);    opacity: 0; }
+  6%   { opacity: 1; }
+  25%  { transform: translateX(25vw)                 translateY(-14px); }
+  50%  { transform: translateX(50vw)                 translateY(10px); }
+  75%  { transform: translateX(75vw)                 translateY(-10px); }
+  94%  { opacity: 1; }
+  100% { transform: translateX(calc(100vw + 160px))  translateY(0);    opacity: 0; }
+}
+
+@keyframes shipFlyLeft {
+  0%   { transform: translateX(0)                     translateY(0)    scaleX(-1); opacity: 0; }
+  6%   { opacity: 1; }
+  25%  { transform: translateX(-25vw)                 translateY(-14px) scaleX(-1); }
+  50%  { transform: translateX(-50vw)                 translateY(10px)  scaleX(-1); }
+  75%  { transform: translateX(-75vw)                 translateY(-10px) scaleX(-1); }
+  94%  { opacity: 1; }
+  100% { transform: translateX(calc(-100vw - 160px))  translateY(0)    scaleX(-1); opacity: 0; }
 }
 
 .cmp-label {

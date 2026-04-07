@@ -439,7 +439,7 @@ applyLang(currentLang);
     window.innerWidth * 0.25, window.innerHeight * 0.45, 0.5
   );
   const updateJup = makeCompanion(
-    'cjup', '🟠', jupMsgs,
+    'cjup', '🟡', jupMsgs,
     window.innerWidth * 0.72, window.innerHeight * 0.55, 0.375
   );
 
@@ -462,6 +462,30 @@ applyLang(currentLang);
 
   function loop() { updateStar(); updateJup(); requestAnimationFrame(loop); }
   loop();
+})();
+
+// ── Flying ships ──────────────────────────────────────────────
+(function () {
+  function spawnShip(glyph) {
+    const el = document.createElement('span');
+    el.className = 'flyship';
+    el.textContent = glyph;
+    el.style.top = (Math.random() * (window.innerHeight * 0.72) + 40) + 'px';
+    el.style.animationDuration = (Math.random() * 3 + 4) + 's';
+    if (Math.random() < 0.5) el.classList.add('fly-left');
+    document.body.appendChild(el);
+    el.addEventListener('animationend', () => el.remove());
+  }
+
+  function schedule(glyph, min, max) {
+    function next() {
+      setTimeout(() => { spawnShip(glyph); next(); }, min + Math.random() * (max - min));
+    }
+    setTimeout(next, Math.random() * 4000 + 2000);
+  }
+
+  schedule('🚀', 8000, 13000);
+  schedule('🛸', 10000, 15000);
 })();
 
 // ── Scroll animations ─────────────────────────────────────────
