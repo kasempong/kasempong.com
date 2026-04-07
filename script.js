@@ -33,7 +33,7 @@ const translations = {
     contact_subtitle: "I'm always open to new opportunities, collaborations, or just a good conversation.",
     contact_email_label: 'Email',
     footer_made:      'Made with ♡',
-    roles: ['Dentist', 'Smile Designer', 'Oral Health Advocate', 'Your Trusted Dentist'],
+    roles: ['General Dentist', 'Experimental Projects', 'Open-minded', 'Music Lover'],
   },
   th: {
     nav_about:        'เกี่ยวกับ',
@@ -48,7 +48,7 @@ const translations = {
     contact_subtitle: 'ยินดีรับโอกาสใหม่ๆ งานร่วมมือ หรือแค่บทสนทนาดีๆ เสมอ',
     contact_email_label: 'อีเมล',
     footer_made:      'สร้างด้วยความรัก ♡',
-    roles: ['ทันตแพทย์', 'ผู้ออกแบบรอยยิ้ม', 'ผู้ดูแลสุขภาพช่องปาก', 'ทันตแพทย์ของคุณ'],
+    roles: ['ทันตแพทย์ทั่วไป', 'โปรเจกต์ทดลอง', 'เปิดกว้าง', 'คนรักดนตรี'],
   },
   zh: {
     nav_about:        '关于',
@@ -63,7 +63,7 @@ const translations = {
     contact_subtitle: '随时欢迎新机会、合作项目，或一次愉快的交流。',
     contact_email_label: '邮箱',
     footer_made:      '用爱制作 ♡',
-    roles: ['牙医', '微笑设计师', '口腔健康倡导者', '您信赖的牙医'],
+    roles: ['全科牙医', '实验项目', '思想开放', '音乐爱好者'],
   },
 };
 
