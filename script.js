@@ -466,22 +466,72 @@ applyLang(currentLang);
 
 // ── Flying ships ──────────────────────────────────────────────
 (function () {
+  function spawnTrail(glyph, x, y, angle, opacity) {
+    const t = document.createElement('span');
+    t.className = 'flyship-trail';
+    t.textContent = glyph;
+    t.style.left      = x + 'px';
+    t.style.top       = y + 'px';
+    t.style.opacity   = opacity * 0.55;
+    t.style.transform = `translate(-50%, -50%) rotate(${angle}deg)`;
+    document.body.appendChild(t);
+    requestAnimationFrame(() => {
+      t.style.opacity = '0';
+      setTimeout(() => t.remove(), 900);
+    });
+  }
+
   function spawnShip(glyph) {
     const el = document.createElement('span');
     el.className = 'flyship';
     el.textContent = glyph;
-    el.style.top = (Math.random() * (window.innerHeight * 0.72) + 40) + 'px';
-    el.style.animationDuration = (Math.random() * 3 + 4) + 's';
-    if (Math.random() < 0.5) el.classList.add('fly-left');
     document.body.appendChild(el);
-    el.addEventListener('animationend', () => el.remove());
+
+    const goRight   = Math.random() < 0.5;
+    const baseY     = Math.random() * (window.innerHeight * 0.72) + 40;
+    const duration  = Math.random() * 3000 + 4000;
+    const startX    = goRight ? -60 : window.innerWidth + 60;
+    const endX      = goRight ? window.innerWidth + 60 : -60;
+    const waveAmp   = 18 + Math.random() * 18;
+    const waveFreq  = 3 + Math.random() * 2;
+    // 🚀 naturally points up-right; offset so it faces travel direction
+    const baseAngle = goRight ? -40 : 140;
+
+    const start = performance.now();
+    let lastX = startX, lastY = baseY, lastTrail = 0;
+
+    function tick(now) {
+      const t = Math.min((now - start) / duration, 1);
+      const x = startX + (endX - startX) * t;
+      const y = baseY + Math.sin(t * Math.PI * waveFreq) * waveAmp;
+      const opacity = t < 0.08 ? t / 0.08 : t > 0.92 ? (1 - t) / 0.08 : 1;
+
+      const dx = x - lastX;
+      const dy = y - lastY;
+      const pathAngle = Math.atan2(dy, dx) * (180 / Math.PI);
+      const angle = baseAngle + pathAngle * 0.55;
+
+      el.style.left      = x + 'px';
+      el.style.top       = y + 'px';
+      el.style.opacity   = opacity;
+      el.style.transform = `translate(-50%, -50%) rotate(${angle}deg)`;
+
+      if (now - lastTrail > 55) {
+        spawnTrail(glyph, lastX, lastY, angle, opacity);
+        lastTrail = now;
+      }
+
+      lastX = x; lastY = y;
+      if (t < 1) requestAnimationFrame(tick); else el.remove();
+    }
+    requestAnimationFrame(tick);
   }
 
   function schedule(glyph, min, max) {
     function next() {
       setTimeout(() => { spawnShip(glyph); next(); }, min + Math.random() * (max - min));
     }
-    setTimeout(next, Math.random() * 4000 + 2000);
+    setTimeout(next, Math.random() * 3000 + 1500);
   }
 
   schedule('🚀', 8000, 13000);

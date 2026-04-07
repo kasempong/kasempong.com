@@ -719,38 +719,20 @@ a { color: inherit; text-decoration: none; }
 .flyship {
   position: fixed;
   font-size: 30px;
-  left: -80px;
   z-index: 8000;
   pointer-events: none;
-  filter: drop-shadow(0 0 8px rgba(255,255,255,0.7));
-  animation: shipFlyRight linear forwards;
-  will-change: transform;
+  filter: drop-shadow(0 0 8px rgba(255,255,255,0.65));
+  will-change: transform, opacity;
 }
 
-.flyship.fly-left {
-  left: auto;
-  right: -80px;
-  animation-name: shipFlyLeft;
-}
-
-@keyframes shipFlyRight {
-  0%   { transform: translateX(0)                    translateY(0);    opacity: 0; }
-  6%   { opacity: 1; }
-  25%  { transform: translateX(25vw)                 translateY(-14px); }
-  50%  { transform: translateX(50vw)                 translateY(10px); }
-  75%  { transform: translateX(75vw)                 translateY(-10px); }
-  94%  { opacity: 1; }
-  100% { transform: translateX(calc(100vw + 160px))  translateY(0);    opacity: 0; }
-}
-
-@keyframes shipFlyLeft {
-  0%   { transform: translateX(0)                     translateY(0)    scaleX(-1); opacity: 0; }
-  6%   { opacity: 1; }
-  25%  { transform: translateX(-25vw)                 translateY(-14px) scaleX(-1); }
-  50%  { transform: translateX(-50vw)                 translateY(10px)  scaleX(-1); }
-  75%  { transform: translateX(-75vw)                 translateY(-10px) scaleX(-1); }
-  94%  { opacity: 1; }
-  100% { transform: translateX(calc(-100vw - 160px))  translateY(0)    scaleX(-1); opacity: 0; }
+.flyship-trail {
+  position: fixed;
+  font-size: 20px;
+  z-index: 7999;
+  pointer-events: none;
+  filter: blur(1.5px) drop-shadow(0 0 4px rgba(255,255,255,0.35));
+  transition: opacity 0.85s ease-out;
+  will-change: opacity;
 }
 
 .cmp-label {
