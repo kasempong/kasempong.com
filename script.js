@@ -470,6 +470,21 @@ applyLang(currentLang);
     };
   }
 
+  const moonMsgs = [
+    'You light up the dark! 🌙',
+    'Even the moon has phases — keep going! 🌒',
+    'You\'re a total lunatic... in the best way! 🌝',
+    'Reach for the moon — land among the stars! ⭐',
+    'Rest when you need to, rise when you\'re ready! 🌕',
+    'Your glow is all your own 🌙',
+    'Like the moon, you\'re always whole 💫',
+    'Tides turn — so will this! 🌊',
+    'You make the night beautiful 🌌',
+    'Full moon energy: unstoppable! 🔮',
+    'Be patient — the moon was once a new moon 🌑',
+    'You\'re a work of cosmic art 🎑',
+  ];
+
   const updateStar = makeCompanion(
     'cstar', '✦', starMsgs,
     window.innerWidth * 0.25, window.innerHeight * 0.45, 0.5
@@ -477,6 +492,10 @@ applyLang(currentLang);
   const updateJup = makeCompanion(
     'cjup', '🟡', jupMsgs,
     window.innerWidth * 0.72, window.innerHeight * 0.55, 0.375
+  );
+  const updateMoon = makeCompanion(
+    'cmoon', '🌙', moonMsgs,
+    window.innerWidth * 0.55, window.innerHeight * 0.25, 0.42
   );
 
   // "hi" hint label on the star
@@ -491,12 +510,18 @@ applyLang(currentLang);
   jupLabel.textContent = 'helo';
   document.getElementById('cjup-wrap').appendChild(jupLabel);
 
+  // "psst" hint label on Moon
+  const moonLabel = document.createElement('span');
+  moonLabel.className = 'cmp-label';
+  moonLabel.textContent = 'psst';
+  document.getElementById('cmoon-wrap').appendChild(moonLabel);
+
   // Animated ring around Jupiter
   const ring = document.createElement('span');
   ring.className = 'cjup-ring';
   document.getElementById('cjup-wrap').appendChild(ring);
 
-  function loop() { updateStar(); updateJup(); requestAnimationFrame(loop); }
+  function loop() { updateStar(); updateJup(); updateMoon(); requestAnimationFrame(loop); }
   loop();
 })();
 
