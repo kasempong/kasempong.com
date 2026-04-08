@@ -144,7 +144,7 @@ function getAutoTheme() {
   const h = new Date().getHours();
   return (h >= 6 && h < 20) ? 'light' : 'dark';
 }
-const savedTheme = localStorage.getItem('theme') || getAutoTheme();
+const savedTheme = localStorage.getItem('theme') || 'dark';
 applyTheme(savedTheme);
 applyLang(currentLang);
 
