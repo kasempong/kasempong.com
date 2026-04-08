@@ -41,7 +41,38 @@
   <aside class="island-panel" id="islandPanel" aria-label="Island" aria-hidden="true">
     <button class="island-panel-close" id="islandPanelClose" aria-label="Close">✕</button>
     <div class="island-panel-body">
-      <!-- content coming soon -->
+      <div class="env-header">
+        <h3 class="env-title">🌿 Bangkok</h3>
+        <div class="env-meta">
+          <span class="env-updated" id="envUpdated">—</span>
+          <button class="env-refresh" id="envRefresh" title="Refresh">↺</button>
+        </div>
+      </div>
+
+      <div class="env-cards" id="envCards">
+        <div class="env-card" id="envCardAqi">
+          <span class="env-label">AQI</span>
+          <span class="env-value" id="envAqiVal">—</span>
+          <span class="env-badge" id="envAqiBadge">—</span>
+        </div>
+        <div class="env-card" id="envCardTemp">
+          <span class="env-label">Temp</span>
+          <span class="env-value" id="envTempVal">—</span>
+          <span class="env-badge env-badge-neutral">°C</span>
+        </div>
+        <div class="env-card" id="envCardHeat">
+          <span class="env-label">Feels like</span>
+          <span class="env-value" id="envHeatVal">—</span>
+          <span class="env-badge" id="envHeatBadge">—</span>
+        </div>
+      </div>
+
+      <div class="env-news-section">
+        <h4 class="env-news-title">📰 Latest News</h4>
+        <ul class="env-news-list" id="envNewsList">
+          <li class="env-news-loading">loading news…</li>
+        </ul>
+      </div>
     </div>
   </aside>
 
@@ -81,7 +112,10 @@
 
     <!-- Left: text -->
     <div class="hero-content">
-      <div class="hero-pill" data-i18n="hero_pill">✦ Available for work</div>
+      <div class="status-bar" id="statusBar">
+        <span class="status-dot"></span>
+        <span class="status-text" id="statusText">working on vibe coding website.</span>
+      </div>
       <h1 class="hero-title">
         <span data-i18n="hero_greeting">Hi, I'm</span><br>
         <span class="accent-text">Kasempong</span>
@@ -93,7 +127,7 @@
       </p>
       <div class="hero-cta">
         <button class="btn btn-outline" id="whoBtn">Kasempong, who?</button>
-        <a href="#contact" class="btn btn-primary" data-i18n="hero_cta_talk">Let's Talk ✉</a>
+        <button class="btn btn-primary" id="projectsBtn">My projects</button>
       </div>
     </div>
 
@@ -128,7 +162,107 @@
   <div class="who-modal" id="whoModal" role="dialog" aria-modal="true" aria-label="About Kasempong" aria-hidden="true">
     <button class="who-close" id="whoClose" aria-label="Close">✕</button>
     <div class="who-body">
-      <!-- content coming soon -->
+      <p>Hi, my name is <strong>Nueng Kasempong</strong>, 27 years old.</p>
+      <p>I am a general dentist learning vibe coding.</p>
+    </div>
+  </div>
+
+  <!-- ===== STATUS EDITOR ===== -->
+  <div class="status-edit-overlay" id="statusEditOverlay">
+    <div class="status-edit-box" id="statusEditBox">
+
+      <!-- Step 1: password -->
+      <div id="statusStepPw">
+        <label>enter password</label>
+        <input type="password" id="statusPwInput" placeholder="••••••••" autocomplete="off">
+      </div>
+
+      <!-- Step 2: edit -->
+      <div id="statusStepEdit" style="display:none">
+        <label>new status</label>
+        <input type="text" id="statusNewText" placeholder="what are you up to?" maxlength="80">
+
+        <label>bar color</label>
+        <div class="status-swatches" id="statusSwatches">
+          <button class="swatch" data-color="#48c78e" style="background:#48c78e" title="green"></button>
+          <button class="swatch" data-color="#00d4ff" style="background:#00d4ff" title="cyan"></button>
+          <button class="swatch" data-color="#b07aff" style="background:#b07aff" title="purple"></button>
+          <button class="swatch" data-color="#ff6eb4" style="background:#ff6eb4" title="pink"></button>
+          <button class="swatch" data-color="#ffaa40" style="background:#ffaa40" title="orange"></button>
+          <button class="swatch" data-color="#ff5c5c" style="background:#ff5c5c" title="red"></button>
+          <button class="swatch" data-color="#c8d6e5" style="background:#c8d6e5" title="silver"></button>
+        </div>
+
+        <!-- Change password toggle -->
+        <button class="status-changepw-toggle" id="statusChangePwToggle">change password</button>
+        <div id="statusChangePwFields" style="display:none">
+          <label>new password</label>
+          <input type="password" id="statusNewPw" placeholder="new password" autocomplete="new-password">
+          <label>confirm</label>
+          <input type="password" id="statusConfirmPw" placeholder="confirm password" autocomplete="new-password">
+        </div>
+      </div>
+
+      <div class="status-edit-actions">
+        <button class="status-cancel-btn" id="statusCancelBtn">cancel</button>
+        <button class="status-save-btn" id="statusSaveBtn">next</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- ===== PROJECTS MODAL ===== -->
+  <div class="who-overlay" id="projectsOverlay" aria-hidden="true"></div>
+  <div class="who-modal" id="projectsModal" role="dialog" aria-modal="true" aria-label="My projects" aria-hidden="true">
+    <button class="who-close" id="projectsClose" aria-label="Close">✕</button>
+    <div class="who-body projects-body">
+      <div class="project-card">
+        <div class="project-icon">🏦</div>
+        <div class="project-info">
+          <h3 class="project-title">MarketPulse</h3>
+          <p class="project-desc">Flask stock dashboard for US &amp; Thai SET indices, Chart.js visualizations, deployed on Render.</p>
+          <div class="project-tags"><span>Flask</span><span>Chart.js</span><span>Render</span></div>
+        </div>
+      </div>
+      <div class="project-card">
+        <div class="project-icon">🛠️</div>
+        <div class="project-info">
+          <h3 class="project-title">Prompt Builder</h3>
+          <p class="project-desc">React/Vite app with 5-part prompting framework, Thai/English toggle, dark/light mode, deployed on Vercel.</p>
+          <div class="project-tags"><span>React</span><span>Vite</span><span>Vercel</span></div>
+        </div>
+      </div>
+      <div class="project-card">
+        <div class="project-icon">📰</div>
+        <div class="project-info">
+          <h3 class="project-title">Thai News Scraper</h3>
+          <p class="project-desc">Flask backend + React dashboard scraping BBC Thai, ThaiPBS, and Reddit Thailand.</p>
+          <div class="project-tags"><span>Flask</span><span>React</span><span>Scraping</span></div>
+        </div>
+      </div>
+      <div class="project-card">
+        <div class="project-icon">🎬</div>
+        <div class="project-info">
+          <h3 class="project-title">Thai Short-Form Video Pipeline</h3>
+          <p class="project-desc">Python/Flask + Claude API + ElevenLabs TTS + FFmpeg pipeline targeting TikTok, YouTube Shorts &amp; Instagram Reels.</p>
+          <div class="project-tags"><span>Python</span><span>Claude API</span><span>FFmpeg</span></div>
+        </div>
+      </div>
+      <div class="project-card">
+        <div class="project-icon">🖥️</div>
+        <div class="project-info">
+          <h3 class="project-title">PC Monitoring Animation App</h3>
+          <p class="project-desc">Python/tkinter app visualizing RDP connection performance with borderless mode and UI refinements.</p>
+          <div class="project-tags"><span>Python</span><span>tkinter</span></div>
+        </div>
+      </div>
+      <div class="project-card">
+        <div class="project-icon">🦷</div>
+        <div class="project-info">
+          <h3 class="project-title">HOSxP Dental Data Tool</h3>
+          <p class="project-desc">Excel-based patient data extraction tool built for a dental clinic.</p>
+          <div class="project-tags"><span>Excel</span><span>HOSxP</span></div>
+        </div>
+      </div>
     </div>
   </div>
 
@@ -170,7 +304,7 @@
   <!-- ===== FOOTER ===== -->
   <footer class="footer">
     <p><span data-i18n="footer_made">Made with ♡</span> &mdash; &copy; <span id="year"></span> Kasempong</p>
-    <p class="footer-stack">HTML · CSS · JS · Cloudflare Pages</p>
+    <p class="footer-stack">Be humble. Be patient. Drink a big water. 💧</p>
     <button class="changelog-btn" id="changelogBtn">what changed? ✦</button>
   </footer>
 
@@ -183,6 +317,11 @@
     </div>
     <p class="changelog-sub">how this place grew, from the start</p>
     <ul class="changelog-list">
+      <li>
+        <span class="cl-dot"></span>
+        <span class="cl-date">Apr 2026</span>
+        <span class="cl-text">Added a live status bar so you know what I'm up to right now 🟢</span>
+      </li>
       <li>
         <span class="cl-dot"></span>
         <span class="cl-date">Apr 2026</span>
