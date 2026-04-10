@@ -1,8 +1,8 @@
 /* ── Custom Font ───────────────────────────────────────────────── */
 @font-face {
-  font-family: 'FHSummer';
-  src: url('fonts/FH Summer Bold.ttf') format('truetype');
-  font-weight: bold;
+  font-family: 'GMCHiSugar';
+  src: url('fonts/GMCHiSugar Demo.ttf') format('truetype');
+  font-weight: normal;
   font-style: normal;
 }
 
@@ -12,7 +12,7 @@
   padding: 0;
   box-sizing: border-box;
   -webkit-tap-highlight-color: transparent;
-  font-family: 'FHSummer', 'Mitr', -apple-system, 'Helvetica Neue', Arial, sans-serif;
+  font-family: 'GMCHiSugar', 'Mitr', -apple-system, 'Helvetica Neue', Arial, sans-serif;
 }
 
 /* ── Root ──────────────────────────────────────────────────────── */

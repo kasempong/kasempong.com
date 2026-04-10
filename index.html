@@ -424,17 +424,21 @@
       cursor: text;
     }
     #bdHeartDisplay {
-      font-size: 24px;
+      font-size: 28px;
       letter-spacing: 4px;
-      min-height: 48px;
+      min-height: 54px;
       color: #ff6fa3;
       background: rgba(255,255,255,0.08);
       border: 1.5px solid rgba(255,180,220,0.35);
       border-radius: 14px;
-      padding: 10px 16px;
+      padding: 10px 12px;
       display: flex;
       align-items: center;
       justify-content: center;
+      flex-wrap: wrap;
+      gap: 2px;
+      transition: font-size 0.1s;
+      word-break: break-all;
     }
     /* real input — invisible but captures keyboard */
     #bdRealInput {
@@ -479,6 +483,9 @@
     function updateDisplay() {
       var len = inputEl.value.length;
       display.textContent = len === 0 ? '💗' : '💓'.repeat(len);
+      // autofit: shrink font as more hearts appear
+      display.style.fontSize = len <= 4 ? '28px' : len <= 6 ? '24px' : '20px';
+      display.style.letterSpacing = len <= 4 ? '4px' : '2px';
     }
 
     function shake() {
