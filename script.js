@@ -647,10 +647,7 @@ document.querySelectorAll('.pin, .section-title, .section-subtitle, .section-eye
     if (clicks >= 3) {
       clicks = 0;
       clearTimeout(timer);
-      const pw = prompt('🔒');
-      if (pw === SECRET_PW) {
-        window.location.href = '/birthday.html';
-      }
+      if (window.openBdGate) window.openBdGate();
     }
   });
 })();

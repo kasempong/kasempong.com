@@ -385,5 +385,127 @@
 
   <script src="script.js"></script>
   <script src="island3d.bundle.js"></script>
+
+  <!-- ── Birthday secret password overlay ── -->
+  <div id="bdGateOverlay" style="
+    display:none; position:fixed; inset:0; z-index:9999;
+    background:rgba(20,0,30,0.7); backdrop-filter:blur(16px);
+    -webkit-backdrop-filter:blur(16px);
+    align-items:center; justify-content:center; flex-direction:column; gap:20px;
+  ">
+    <div style="
+      background:rgba(255,255,255,0.12); border:1.5px solid rgba(255,180,220,0.35);
+      border-radius:28px; padding:36px 32px 30px; max-width:300px; width:90%;
+      text-align:center; box-shadow:0 16px 48px rgba(200,80,180,0.25);
+    ">
+      <div style="font-size:42px; margin-bottom:12px;">🔒</div>
+      <p style="
+        font-family:'Mitr','Helvetica Neue',sans-serif; color:rgba(255,220,240,0.95);
+        font-size:15px; margin-bottom:20px; line-height:1.6;
+      ">TonTon's bd date<br><span style="opacity:0.65; font-size:13px;">(ddmmyyyy)</span></p>
+      <div id="bdHeartDisplay" style="
+        font-size:22px; letter-spacing:6px; min-height:32px;
+        color:#ff80b5; margin-bottom:16px; min-width:220px; word-break:break-all;
+      "></div>
+      <input id="bdPwInput" type="tel" inputmode="numeric" maxlength="8"
+        placeholder="••••••••"
+        style="
+          position:absolute; opacity:0; pointer-events:none; width:1px; height:1px;
+        "
+        autocomplete="off"
+      />
+      <div id="bdNumpad" style="display:grid; grid-template-columns:repeat(3,1fr); gap:10px; margin-bottom:16px;">
+        <!-- digits 1-9 -->
+        <button class="bd-key" data-v="1">1</button>
+        <button class="bd-key" data-v="2">2</button>
+        <button class="bd-key" data-v="3">3</button>
+        <button class="bd-key" data-v="4">4</button>
+        <button class="bd-key" data-v="5">5</button>
+        <button class="bd-key" data-v="6">6</button>
+        <button class="bd-key" data-v="7">7</button>
+        <button class="bd-key" data-v="8">8</button>
+        <button class="bd-key" data-v="9">9</button>
+        <!-- bottom row: clear, 0, del -->
+        <button class="bd-key bd-key-del" data-v="clear">✕</button>
+        <button class="bd-key" data-v="0">0</button>
+        <button class="bd-key bd-key-del" data-v="del">⌫</button>
+      </div>
+      <p id="bdError" style="color:#ff6fa3; font-size:13px; min-height:18px; font-family:'Mitr',sans-serif;"></p>
+    </div>
+  </div>
+
+  <style>
+    .bd-key {
+      background: rgba(255,255,255,0.12);
+      border: 1.5px solid rgba(255,180,220,0.25);
+      border-radius: 14px;
+      color: rgba(255,220,240,0.95);
+      font-size: 20px;
+      font-family: 'Mitr','Helvetica Neue',sans-serif;
+      padding: 14px 0;
+      cursor: pointer;
+      transition: background 0.15s, transform 0.1s;
+    }
+    .bd-key:hover { background: rgba(255,150,200,0.22); }
+    .bd-key:active { transform: scale(0.92); background: rgba(255,100,180,0.3); }
+    .bd-key-del { font-size: 16px; color: rgba(255,180,200,0.7); }
+  </style>
+
+  <script>
+  (function () {
+    var SECRET_PW = '28042001';
+    var overlay   = document.getElementById('bdGateOverlay');
+    var display   = document.getElementById('bdHeartDisplay');
+    var errorEl   = document.getElementById('bdError');
+    var value     = '';
+
+    function updateDisplay() {
+      display.textContent = '🩷'.repeat(value.length);
+    }
+
+    function shake() {
+      display.style.transition = 'transform 0.05s';
+      var steps = [6,-6,5,-5,3,0];
+      steps.forEach(function(x, i) {
+        setTimeout(function() {
+          display.style.transform = 'translateX(' + x + 'px)';
+        }, i * 55);
+      });
+      setTimeout(function() { display.style.transform = ''; }, 350);
+    }
+
+    document.querySelectorAll('.bd-key').forEach(function(btn) {
+      btn.addEventListener('click', function() {
+        var v = this.dataset.v;
+        if (v === 'clear') { value = ''; errorEl.textContent = ''; }
+        else if (v === 'del') { value = value.slice(0, -1); errorEl.textContent = ''; }
+        else if (value.length < 8) { value += v; }
+        updateDisplay();
+
+        if (value.length === 8) {
+          if (value === SECRET_PW) {
+            overlay.style.display = 'none';
+            window.location.href = '/birthday.html';
+          } else {
+            shake();
+            errorEl.textContent = 'ลองใหม่นะ 💔';
+            setTimeout(function() { value = ''; updateDisplay(); errorEl.textContent = ''; }, 800);
+          }
+        }
+      });
+    });
+
+    // Expose open function globally for script.js to call
+    window.openBdGate = function() {
+      value = ''; updateDisplay(); errorEl.textContent = '';
+      overlay.style.display = 'flex';
+    };
+
+    // Close on backdrop click
+    overlay.addEventListener('click', function(e) {
+      if (e.target === overlay) overlay.style.display = 'none';
+    });
+  })();
+  </script>
 </body>
 </html>
