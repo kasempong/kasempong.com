@@ -1,0 +1,135 @@
+<!DOCTYPE html>
+<html lang="th">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+  <title>🎂 Happy Birthday TonTon!</title>
+  <link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>🎂</text></svg>">
+  <link rel="stylesheet" href="birthday.css">
+</head>
+<body>
+
+  <!-- Confetti layer -->
+  <canvas id="confetti-canvas" aria-hidden="true"></canvas>
+
+  <!-- Progress: heart jumping across platforms -->
+  <div class="progress-wrap hidden" id="progressWrap" aria-hidden="true">
+    <div class="prog-track">
+      <div class="prog-start" id="progStart"></div>
+      <div class="prog-conn" id="conn0"></div>
+      <div class="plat" id="plat0"></div>
+      <div class="prog-conn" id="conn1"></div>
+      <div class="plat" id="plat1"></div>
+      <div class="prog-conn" id="conn2"></div>
+      <div class="plat" id="plat2"></div>
+      <div class="prog-conn" id="conn3"></div>
+      <div class="plat" id="plat3"></div>
+      <div class="prog-conn" id="conn4"></div>
+      <div class="prog-goal" id="progGoal">💗</div>
+    </div>
+    <div class="heart-sprite" id="heartSprite">💕</div>
+  </div>
+
+  <!-- Popup message toast -->
+  <div class="popup" id="popup" role="status" aria-live="polite">
+    <p id="popupText"></p>
+    <button class="btn-next" id="nextBtn"></button>
+  </div>
+
+  <!-- All screens -->
+  <div class="screens-container" id="screensContainer">
+
+    <!-- Screen 0: Welcome -->
+    <div class="screen active" id="s0">
+      <div class="cake-anim">🎂</div>
+      <h1>Happy Birthday<br><span class="name-highlight">TonTon</span> 🥹</h1>
+      <p class="welcome-sub">มีอะไรพิเศษรอต้นอยู่นะ~</p>
+      <button class="btn-go" id="startBtn">เริ่มเลย 💕</button>
+    </div>
+
+    <!-- Screen 1: Q1 -->
+    <div class="screen" id="s1">
+      <div class="q-number">1 / 5</div>
+      <div class="q-icon">🐾</div>
+      <h2 class="q-text">ใครตัวเหม็นที่สุด?</h2>
+      <div class="choices" id="choices1">
+        <button class="choice" data-q="1">โมโม่</button>
+        <button class="choice" data-q="1">ดิ๊กกี้</button>
+        <button class="choice" data-q="1">โอล้ง</button>
+        <button class="choice" data-q="1">โชยุ</button>
+      </div>
+    </div>
+
+    <!-- Screen 2: Q2 -->
+    <div class="screen" id="s2">
+      <div class="q-number">2 / 5</div>
+      <div class="q-icon">🌍</div>
+      <h2 class="q-text">ใครกลมที่สุด?</h2>
+      <div class="choices" id="choices2">
+        <button class="choice" data-q="2">มิโซะ</button>
+        <button class="choice" data-q="2">โชยุ</button>
+        <button class="choice" data-q="2">พี่คุโรมิ</button>
+        <button class="choice" data-q="2">น้องสติ๊ช</button>
+      </div>
+    </div>
+
+    <!-- Screen 3: Q3 -->
+    <div class="screen" id="s3">
+      <div class="q-number">3 / 5</div>
+      <div class="q-icon">🏠</div>
+      <h2 class="q-text">ที่ไหนอบอุ่นที่สุด?</h2>
+      <div class="choices" id="choices3">
+        <button class="choice" data-q="3">บ้านขาว</button>
+        <button class="choice" data-q="3">บ้านต้นไม้</button>
+        <button class="choice" data-q="3">ในใจหนึ่ง</button>
+        <button class="choice" data-q="3">ชอบหมดจ้า</button>
+      </div>
+    </div>
+
+    <!-- Screen 4: Q4 -->
+    <div class="screen" id="s4">
+      <div class="q-number">4 / 5</div>
+      <div class="q-icon">💕</div>
+      <h2 class="q-text">Who is the cutest?</h2>
+      <div class="choices choices-col" id="choices4">
+        <button class="choice" data-q="4">หนึ่ง</button>
+        <button class="choice" data-q="4">ต้น</button>
+        <button class="choice" data-q="4">Both 🥰</button>
+      </div>
+    </div>
+
+    <!-- Screen 5: Q5 -->
+    <div class="screen" id="s5">
+      <div class="q-number">5 / 5</div>
+      <div class="q-icon">✨</div>
+      <h2 class="q-text">น่ารักจัง</h2>
+      <div class="choices choices-col" id="choices5">
+        <button class="choice" data-q="5">^3^</button>
+        <button class="choice" data-q="5">T3T</button>
+        <button class="choice" data-q="5">&lt;3&lt;3&lt;3</button>
+      </div>
+    </div>
+
+    <!-- Screen 6: Final -->
+    <div class="screen" id="s6">
+      <div class="final-title">🎂 Happy Birthday<br><span class="name-highlight">TonTon!</span> 💕</div>
+
+      <!-- Scratch card -->
+      <div class="scratch-card" id="scratchCard">
+        <div class="scratch-reveal" id="scratchReveal">
+          <span class="photo-placeholder-icon">📸</span>
+        </div>
+        <canvas class="scratch-canvas" id="scratchCanvas"></canvas>
+      </div>
+
+      <p class="final-msg" id="finalMsg">hbd</p>
+    </div>
+
+  </div><!-- /screens-container -->
+
+  <!-- Home button -->
+  <a class="btn-home" href="/" aria-label="กลับหน้าหลัก">🏠</a>
+
+  <script src="birthday.js"></script>
+</body>
+</html>

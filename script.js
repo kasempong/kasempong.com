@@ -606,28 +606,53 @@ document.querySelectorAll('.pin, .section-title, .section-subtitle, .section-eye
   observer.observe(el);
 });
 
-// ── Changelog panel ───────────────────────────────────────────
+// ── Changelog panel ───────────────────────────────────────────────
 (function () {
   const btn     = document.getElementById('changelogBtn');
   const panel   = document.getElementById('changelogPanel');
   const overlay = document.getElementById('changelogOverlay');
   const close   = document.getElementById('changelogClose');
 
-  function open() {
+  function openPanel() {
     panel.classList.add('open');
     overlay.classList.add('open');
     panel.removeAttribute('aria-hidden');
   }
-  function shut() {
+  function shutPanel() {
     panel.classList.remove('open');
     overlay.classList.remove('open');
     panel.setAttribute('aria-hidden', 'true');
   }
 
-  btn.addEventListener('click', open);
-  close.addEventListener('click', shut);
-  overlay.addEventListener('click', shut);
-  document.addEventListener('keydown', e => { if (e.key === 'Escape') shut(); });
+  btn.addEventListener('click', openPanel);
+  close.addEventListener('click', shutPanel);
+  overlay.addEventListener('click', shutPanel);
+  document.addEventListener('keydown', e => { if (e.key === 'Escape') shutPanel(); });
+})();
+
+// ── Secret triple-click "Made with ♡" → birthday page ─────────────
+(function () {
+  const SECRET_PW = '28042001';
+  const target    = document.querySelector('[data-i18n="footer_made"]');
+  if (!target) return;
+
+  let clicks = 0;
+  let timer  = null;
+
+  target.addEventListener('click', function () {
+    clicks++;
+    clearTimeout(timer);
+    timer = setTimeout(function () { clicks = 0; }, 500);
+
+    if (clicks >= 3) {
+      clicks = 0;
+      clearTimeout(timer);
+      const pw = prompt('🔒');
+      if (pw === SECRET_PW) {
+        window.location.href = '/birthday.html';
+      }
+    }
+  });
 })();
 
 // ── Who modal ─────────────────────────────────────────────────
