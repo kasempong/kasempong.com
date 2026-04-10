@@ -477,3 +477,153 @@ function initScratch() {
   sc.addEventListener('pointerup',     onUp);
   sc.addEventListener('pointercancel', onUp);
 }
+
+// ── Background Music (Web Audio API ambient pad + melody) ─────────
+(function () {
+  var audioCtx   = null;
+  var masterGain = null;
+  var reverbIn   = null;   // input node for the reverb/delay network
+  var musicReady = false;
+  var musicMuted = false;
+  var musicBtn   = document.getElementById('musicBtn');
+
+  // C major pentatonic, two octaves
+  var PENTA = [261.63, 293.66, 329.63, 392.00, 440.00,
+               523.25, 587.33, 659.25, 783.99, 880.00];
+  // Walking pattern — indices into PENTA
+  var PATTERN = [0, 2, 4, 2, 5, 3, 7, 4, 6, 3, 5, 2, 4, 1, 3, 0];
+  var patStep = 0;
+
+  // ── Build the audio graph ──────────────────────────────────────
+  function buildAudio() {
+    if (musicReady) return;
+    musicReady = true;
+
+    audioCtx   = new (window.AudioContext || window.webkitAudioContext)();
+    masterGain = audioCtx.createGain();
+    masterGain.gain.setValueAtTime(0, audioCtx.currentTime);
+    // Slow 3-second fade-in so it doesn't startle
+    masterGain.gain.linearRampToValueAtTime(0.22, audioCtx.currentTime + 3.0);
+    masterGain.connect(audioCtx.destination);
+
+    // Simple dual-delay reverb network
+    var d1  = audioCtx.createDelay(4); d1.delayTime.value  = 0.38;
+    var d2  = audioCtx.createDelay(4); d2.delayTime.value  = 0.57;
+    var fb  = audioCtx.createGain();   fb.gain.value        = 0.30;
+    var wet = audioCtx.createGain();   wet.gain.value       = 0.35;
+    d1.connect(d2); d2.connect(fb);
+    fb.connect(d1); fb.connect(wet);
+    wet.connect(masterGain);
+    reverbIn = d1;
+
+    // Pad — 5 low-register sine oscillators forming a C-G-C-E-G chord
+    var padFreqs  = [65.41, 98.00, 130.81, 164.81, 196.00];
+    var padLevels = [0.55,  0.35,  0.30,   0.20,   0.18];
+
+    padFreqs.forEach(function (freq, i) {
+      // Tiny LFO for subtle warmth / movement
+      var lfo     = audioCtx.createOscillator();
+      var lfoGain = audioCtx.createGain();
+      lfo.frequency.value = 0.07 + i * 0.015;
+      lfoGain.gain.value  = 0.35;
+      lfo.connect(lfoGain);
+      lfo.start();
+
+      var osc    = audioCtx.createOscillator();
+      var filt   = audioCtx.createBiquadFilter();
+      var gain   = audioCtx.createGain();
+
+      osc.type = 'sine';
+      osc.frequency.value = freq + (i % 2 === 0 ? 0.25 : -0.25);
+      lfoGain.connect(osc.frequency);
+
+      filt.type = 'lowpass';
+      filt.frequency.value = 380 + i * 110;
+      filt.Q.value = 0.35;
+
+      gain.gain.value = padLevels[i] * 0.17;
+
+      osc.connect(filt);
+      filt.connect(gain);
+      gain.connect(masterGain);
+      gain.connect(reverbIn);
+      osc.start();
+    });
+
+    // Kick off the gentle melody
+    scheduleNote();
+  }
+
+  // ── Pentatonic melody — one note at a time, long decay ────────
+  function scheduleNote() {
+    if (!audioCtx) return;
+
+    var freq = PENTA[PATTERN[patStep % PATTERN.length]];
+    patStep++;
+
+    var osc  = audioCtx.createOscillator();
+    var env  = audioCtx.createGain();
+    var filt = audioCtx.createBiquadFilter();
+
+    osc.type = 'sine';
+    osc.frequency.value = freq;
+
+    filt.type = 'lowpass';
+    filt.frequency.value = freq * 2.8;
+    filt.Q.value = 1.2;
+
+    var now = audioCtx.currentTime;
+    env.gain.setValueAtTime(0, now);
+    env.gain.linearRampToValueAtTime(0.13, now + 0.07);    // fast attack
+    env.gain.exponentialRampToValueAtTime(0.0001, now + 3.6); // long decay
+
+    osc.connect(filt);
+    filt.connect(env);
+    env.connect(masterGain);
+    env.connect(reverbIn);
+    osc.start(now);
+    osc.stop(now + 4.0);
+
+    // Next note in 1.8 – 4 s (varied for natural feel)
+    setTimeout(scheduleNote, 1800 + Math.random() * 2200);
+  }
+
+  // ── Trigger on first user interaction anywhere ─────────────────
+  function onFirstInteraction() {
+    buildAudio();
+    if (audioCtx && audioCtx.state === 'suspended') audioCtx.resume();
+    document.removeEventListener('click',      onFirstInteraction);
+    document.removeEventListener('touchstart', onFirstInteraction);
+  }
+
+  document.addEventListener('click',      onFirstInteraction);
+  document.addEventListener('touchstart', onFirstInteraction, { passive: true });
+
+  // ── Mute / unmute toggle ───────────────────────────────────────
+  musicBtn.addEventListener('click', function (e) {
+    e.stopPropagation(); // don't double-trigger first-interaction
+
+    // If user taps the button before anything else, start music
+    if (!musicReady) {
+      buildAudio();
+      document.removeEventListener('click',      onFirstInteraction);
+      document.removeEventListener('touchstart', onFirstInteraction);
+    }
+    if (audioCtx && audioCtx.state === 'suspended') audioCtx.resume();
+
+    musicMuted = !musicMuted;
+
+    if (masterGain) {
+      masterGain.gain.cancelScheduledValues(audioCtx.currentTime);
+      if (musicMuted) {
+        masterGain.gain.linearRampToValueAtTime(0, audioCtx.currentTime + 0.45);
+        musicBtn.textContent = '🔇';
+        musicBtn.setAttribute('aria-label', 'เปิดเสียงดนตรี');
+      } else {
+        masterGain.gain.linearRampToValueAtTime(0.22, audioCtx.currentTime + 0.6);
+        musicBtn.textContent = '🔊';
+        musicBtn.setAttribute('aria-label', 'ปิดเสียงดนตรี');
+      }
+    }
+  });
+}());
