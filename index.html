@@ -404,31 +404,25 @@
         font-size:15px; margin-bottom:20px; line-height:1.6;
       ">TonTon's bd date<br><span style="opacity:0.65; font-size:13px;">(ddmmyyyy)</span></p>
       <div id="bdHeartDisplay" style="
-        font-size:22px; letter-spacing:6px; min-height:32px;
-        color:#ff80b5; margin-bottom:16px; min-width:220px; word-break:break-all;
-      "></div>
-      <input id="bdPwInput" type="tel" inputmode="numeric" maxlength="8"
-        placeholder="••••••••"
-        style="
-          position:absolute; opacity:0; pointer-events:none; width:1px; height:1px;
-        "
-        autocomplete="off"
-      />
+        font-size:26px; letter-spacing:8px; min-height:36px;
+        color:#ff6fa3; margin-bottom:20px; min-width:220px;
+        display:flex; align-items:center; justify-content:center;
+      ">💗</div>
       <div id="bdNumpad" style="display:grid; grid-template-columns:repeat(3,1fr); gap:10px; margin-bottom:16px;">
         <!-- digits 1-9 -->
-        <button class="bd-key" data-v="1">1</button>
-        <button class="bd-key" data-v="2">2</button>
-        <button class="bd-key" data-v="3">3</button>
-        <button class="bd-key" data-v="4">4</button>
-        <button class="bd-key" data-v="5">5</button>
-        <button class="bd-key" data-v="6">6</button>
-        <button class="bd-key" data-v="7">7</button>
-        <button class="bd-key" data-v="8">8</button>
-        <button class="bd-key" data-v="9">9</button>
+        <button type="button" tabindex="-1" class="bd-key" data-v="1">1</button>
+        <button type="button" tabindex="-1" class="bd-key" data-v="2">2</button>
+        <button type="button" tabindex="-1" class="bd-key" data-v="3">3</button>
+        <button type="button" tabindex="-1" class="bd-key" data-v="4">4</button>
+        <button type="button" tabindex="-1" class="bd-key" data-v="5">5</button>
+        <button type="button" tabindex="-1" class="bd-key" data-v="6">6</button>
+        <button type="button" tabindex="-1" class="bd-key" data-v="7">7</button>
+        <button type="button" tabindex="-1" class="bd-key" data-v="8">8</button>
+        <button type="button" tabindex="-1" class="bd-key" data-v="9">9</button>
         <!-- bottom row: clear, 0, del -->
-        <button class="bd-key bd-key-del" data-v="clear">✕</button>
-        <button class="bd-key" data-v="0">0</button>
-        <button class="bd-key bd-key-del" data-v="del">⌫</button>
+        <button type="button" tabindex="-1" class="bd-key bd-key-del" data-v="clear">✕</button>
+        <button type="button" tabindex="-1" class="bd-key" data-v="0">0</button>
+        <button type="button" tabindex="-1" class="bd-key bd-key-del" data-v="del">⌫</button>
       </div>
       <p id="bdError" style="color:#ff6fa3; font-size:13px; min-height:18px; font-family:'Mitr',sans-serif;"></p>
     </div>
@@ -460,7 +454,7 @@
     var value     = '';
 
     function updateDisplay() {
-      display.textContent = '🩷'.repeat(value.length);
+      display.textContent = value.length === 0 ? '💗' : '🩷'.repeat(value.length);
     }
 
     function shake() {
