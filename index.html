@@ -440,21 +440,21 @@
       transition: font-size 0.1s;
       word-break: break-all;
     }
-    /* real input — visually hidden but still focusable for keyboard */
+    /* real input — off-screen so browser can never render it visibly */
     #bdRealInput {
-      position: absolute;
-      top: 50%; left: 50%;
-      width: 1px; height: 1px;
-      padding: 0; margin: 0; border: 0;
-      overflow: hidden;
-      clip: rect(0,0,0,0);
-      white-space: nowrap;
+      position: fixed;
+      left: -9999px;
+      top: 50%;
+      width: 1px;
+      height: 1px;
       font-size: 16px; /* prevents iOS auto-zoom */
-      background: transparent;
+      padding: 0; margin: 0;
+      border: 0; outline: 0;
+      background: transparent !important;
       color: transparent;
       -webkit-appearance: none;
       appearance: none;
-      outline: none;
+      pointer-events: none;
     }
     #bdError {
       color: #ff6fa3;
