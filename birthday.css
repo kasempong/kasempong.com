@@ -22,7 +22,9 @@ body::before {
   position: fixed;
   inset: 0;
   background: url('bg-hbd2.jpeg') center center / cover no-repeat;
-  opacity: 0.2;
+  opacity: 1;
+  filter: blur(20px);
+  transform: scale(1.05);
   z-index: 0;
   pointer-events: none;
 }
