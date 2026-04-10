@@ -399,9 +399,7 @@
       align-items: center;
       justify-content: center;
     }
-    #bdGateOverlay.open {
-      display: flex;
-    }
+    #bdGateOverlay.open { display: flex; }
     #bdGateBox {
       background: rgba(255,255,255,0.1);
       border: 1.5px solid rgba(255,180,220,0.3);
@@ -412,44 +410,44 @@
       text-align: center;
       box-shadow: 0 16px 48px rgba(200,80,180,0.3);
     }
-    #bdGateBox .bd-lock { font-size: 40px; margin-bottom: 10px; }
-    #bdGateBox .bd-hint {
+    .bd-lock { font-size: 40px; margin-bottom: 10px; }
+    .bd-hint {
       color: rgba(255,220,240,0.9);
       font-size: 15px;
       margin-bottom: 18px;
       line-height: 1.7;
     }
-    #bdGateBox .bd-hint span { opacity: 0.6; font-size: 12px; }
+    .bd-hint span { opacity: 0.6; font-size: 12px; }
+    #bdInputWrap {
+      position: relative;
+      margin-bottom: 14px;
+      cursor: text;
+    }
     #bdHeartDisplay {
-      font-size: 26px;
-      letter-spacing: 8px;
-      min-height: 36px;
+      font-size: 24px;
+      letter-spacing: 4px;
+      min-height: 48px;
       color: #ff6fa3;
-      margin-bottom: 18px;
+      background: rgba(255,255,255,0.08);
+      border: 1.5px solid rgba(255,180,220,0.35);
+      border-radius: 14px;
+      padding: 10px 16px;
       display: flex;
       align-items: center;
       justify-content: center;
     }
-    #bdNumpad {
-      display: grid;
-      grid-template-columns: repeat(3, 1fr);
-      gap: 10px;
-      margin-bottom: 14px;
+    /* real input — invisible but captures keyboard */
+    #bdRealInput {
+      position: absolute;
+      inset: 0;
+      width: 100%;
+      height: 100%;
+      opacity: 0;
+      font-size: 16px; /* prevents iOS auto-zoom */
+      border: none;
+      background: transparent;
+      cursor: text;
     }
-    .bd-key {
-      background: rgba(255,255,255,0.1);
-      border: 1.5px solid rgba(255,180,220,0.2);
-      border-radius: 14px;
-      color: rgba(255,220,240,0.95);
-      font-size: 20px;
-      padding: 14px 0;
-      cursor: pointer;
-      transition: background 0.15s, transform 0.1s;
-      -webkit-tap-highlight-color: transparent;
-    }
-    .bd-key:hover  { background: rgba(255,150,200,0.2); }
-    .bd-key:active { transform: scale(0.92); background: rgba(255,100,180,0.28); }
-    .bd-key-del    { font-size: 15px; color: rgba(255,180,200,0.65); }
     #bdError {
       color: #ff6fa3;
       font-size: 13px;
@@ -461,20 +459,10 @@
     <div id="bdGateBox">
       <div class="bd-lock">🔒</div>
       <p class="bd-hint">TonTon's bd date<br><span>(ddmmyyyy)</span></p>
-      <div id="bdHeartDisplay">💗</div>
-      <div id="bdNumpad">
-        <button type="button" class="bd-key" data-v="1">1</button>
-        <button type="button" class="bd-key" data-v="2">2</button>
-        <button type="button" class="bd-key" data-v="3">3</button>
-        <button type="button" class="bd-key" data-v="4">4</button>
-        <button type="button" class="bd-key" data-v="5">5</button>
-        <button type="button" class="bd-key" data-v="6">6</button>
-        <button type="button" class="bd-key" data-v="7">7</button>
-        <button type="button" class="bd-key" data-v="8">8</button>
-        <button type="button" class="bd-key" data-v="9">9</button>
-        <button type="button" class="bd-key bd-key-del" data-v="clear">✕</button>
-        <button type="button" class="bd-key" data-v="0">0</button>
-        <button type="button" class="bd-key bd-key-del" data-v="del">⌫</button>
+      <div id="bdInputWrap">
+        <div id="bdHeartDisplay">💗</div>
+        <input id="bdRealInput" type="tel" inputmode="numeric" maxlength="8"
+               autocomplete="off" autocorrect="off" autocapitalize="off" spellcheck="false" />
       </div>
       <p id="bdError"></p>
     </div>
@@ -483,54 +471,57 @@
   <script>
   (function () {
     var SECRET_PW = '28042001';
-    var overlay   = document.getElementById('bdGateOverlay');
-    var display   = document.getElementById('bdHeartDisplay');
-    var errorEl   = document.getElementById('bdError');
-    var value     = '';
+    var overlay  = document.getElementById('bdGateOverlay');
+    var display  = document.getElementById('bdHeartDisplay');
+    var inputEl  = document.getElementById('bdRealInput');
+    var errorEl  = document.getElementById('bdError');
 
     function updateDisplay() {
-      display.textContent = value.length === 0 ? '💗' : '🩷'.repeat(value.length);
+      var len = inputEl.value.length;
+      display.textContent = len === 0 ? '💗' : '💓'.repeat(len);
     }
 
     function shake() {
       display.style.transition = 'transform 0.05s';
-      var steps = [6,-6,5,-5,3,0];
-      steps.forEach(function(x, i) {
-        setTimeout(function() {
-          display.style.transform = 'translateX(' + x + 'px)';
-        }, i * 55);
+      [6,-6,5,-5,3,0].forEach(function(x, i) {
+        setTimeout(function() { display.style.transform = 'translateX(' + x + 'px)'; }, i * 55);
       });
       setTimeout(function() { display.style.transform = ''; }, 350);
     }
 
-    document.querySelectorAll('.bd-key').forEach(function(btn) {
-      btn.addEventListener('click', function() {
-        var v = this.dataset.v;
-        if (v === 'clear') { value = ''; errorEl.textContent = ''; }
-        else if (v === 'del') { value = value.slice(0, -1); errorEl.textContent = ''; }
-        else if (value.length < 8) { value += v; }
-        updateDisplay();
+    inputEl.addEventListener('input', function() {
+      // strip non-digits, cap at 8
+      inputEl.value = inputEl.value.replace(/\D/g, '').slice(0, 8);
+      updateDisplay();
+      errorEl.textContent = '';
 
-        if (value.length === 8) {
-          if (value === SECRET_PW) {
-            overlay.classList.remove('open');
-            window.location.href = '/birthday.html';
-          } else {
-            shake();
-            errorEl.textContent = 'ลองใหม่นะ 💔';
-            setTimeout(function() { value = ''; updateDisplay(); errorEl.textContent = ''; }, 800);
-          }
+      if (inputEl.value.length === 8) {
+        if (inputEl.value === SECRET_PW) {
+          overlay.classList.remove('open');
+          window.location.href = '/birthday.html';
+        } else {
+          shake();
+          errorEl.textContent = 'ลองใหม่นะ 💔';
+          setTimeout(function() { inputEl.value = ''; updateDisplay(); errorEl.textContent = ''; }, 900);
         }
-      });
+      }
     });
 
-    // Expose open function globally for script.js to call
+    // tap the heart box → focus input (opens phone keyboard)
+    document.getElementById('bdInputWrap').addEventListener('click', function() {
+      inputEl.focus();
+    });
+
+    // expose for script.js triple-tap trigger
     window.openBdGate = function() {
-      value = ''; updateDisplay(); errorEl.textContent = '';
+      inputEl.value = '';
+      updateDisplay();
+      errorEl.textContent = '';
       overlay.classList.add('open');
+      setTimeout(function() { inputEl.focus(); }, 120);
     };
 
-    // Close on backdrop click
+    // close on backdrop tap
     overlay.addEventListener('click', function(e) {
       if (e.target === overlay) overlay.classList.remove('open');
     });
