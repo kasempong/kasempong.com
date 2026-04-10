@@ -478,21 +478,108 @@ function initScratch() {
   sc.addEventListener('pointercancel', onUp);
 }
 
-// ── Background Music (Web Audio API ambient pad + melody) ─────────
+// ── 8-bit Chiptune Romantic BGM ───────────────────────────────────
 (function () {
   var audioCtx   = null;
   var masterGain = null;
-  var reverbIn   = null;   // input node for the reverb/delay network
+  var echoDelay  = null;   // musical echo bus
   var musicReady = false;
   var musicMuted = false;
   var musicBtn   = document.getElementById('musicBtn');
 
-  // C major pentatonic, two octaves
-  var PENTA = [261.63, 293.66, 329.63, 392.00, 440.00,
-               523.25, 587.33, 659.25, 783.99, 880.00];
-  // Walking pattern — indices into PENTA
-  var PATTERN = [0, 2, 4, 2, 5, 3, 7, 4, 6, 3, 5, 2, 4, 1, 3, 0];
-  var patStep = 0;
+  // Tempo: 92 BPM — calm, not dragging
+  var BPM = 92;
+  var S8  = 60 / BPM / 2;   // 8th-note duration in seconds (~0.326s)
+
+  // ── Frequencies ────────────────────────────────────────────────
+  var R  = 0;   // rest
+  // Oct 2
+  var E2=82.41, F2=87.31, G2=98.00, A2=110.00;
+  // Oct 3
+  var C3=130.81, D3=146.83, E3=164.81, F3=174.61,
+      G3=196.00,  A3=220.00,  B3=246.94;
+  // Oct 4
+  var C4=261.63, D4=293.66, E4=329.63, F4=349.23,
+      G4=392.00,  A4=440.00,  B4=493.88;
+  // Oct 5
+  var C5=523.25, D5=587.33, E5=659.25, G5=783.99, A5=880.00;
+
+  // ── 4-bar loop (32 × 8th notes) ───────────────────────────────
+  // Chord progression: I(C) – vi(Am) – IV(F) – V(G)
+
+  // Melody: square wave, upper register — cute RPG love theme
+  var MELODY = [
+    E5, D5, C5,  R, E5, G5, A5, G5,   // bar 1 — C
+    A4, C5, B4, A4,  R, E5, D5,  R,   // bar 2 — Am
+    F4, A4, G4, F4,  R, C5, D5, C5,   // bar 3 — F
+    G4, B4, D5,  R, G4, E5, D5,  R,   // bar 4 — G
+  ];
+
+  // Bass: triangle wave, root + fifth on beat 1 and 3
+  var BASS = [
+    C3,  R,  R,  R, G2,  R,  R,  R,   // C
+    A2,  R,  R,  R, E2,  R,  R,  R,   // Am
+    F2,  R,  R,  R, C3,  R,  R,  R,   // F
+    G2,  R,  R,  R, D3,  R,  R,  R,   // G
+  ];
+
+  // Arpeggio: sawtooth + lowpass — broken chord, guitar-strum feel
+  var ARP = [
+    C4, E4, G4, E4, C4, E4, G4, E4,   // C
+    A3, C4, E4, C4, A3, C4, E4, C4,   // Am
+    F3, A3, C4, A3, F3, A3, C4, A3,   // F
+    G3, B3, D4, B3, G3, B3, D4, B3,   // G
+  ];
+
+  var STEPS       = MELODY.length;   // 32
+  var currentStep = 0;
+  var nextNoteTime = 0;
+  var schedTimer   = null;
+
+  // ── Play a single scheduled note ──────────────────────────────
+  function note(freq, t, dur, type, vol, cutoff) {
+    if (!freq) return;
+
+    var osc  = audioCtx.createOscillator();
+    var env  = audioCtx.createGain();
+    var filt = audioCtx.createBiquadFilter();
+
+    osc.type = type;
+    osc.frequency.value = freq;
+
+    filt.type = 'lowpass';
+    filt.frequency.value = cutoff;
+    filt.Q.value = 0.7;
+
+    // 8-bit envelope: near-instant attack, slight initial drop, crisp release
+    env.gain.setValueAtTime(0,          t);
+    env.gain.linearRampToValueAtTime(vol,        t + 0.004);
+    env.gain.setValueAtTime(vol * 0.65, t + 0.03);
+    env.gain.setValueAtTime(vol * 0.65, t + dur * 0.78);
+    env.gain.linearRampToValueAtTime(0, t + dur);
+
+    osc.connect(filt);
+    filt.connect(env);
+    env.connect(masterGain);      // dry signal
+    env.connect(echoDelay);       // feed echo bus
+    osc.start(t);
+    osc.stop(t + dur + 0.02);
+  }
+
+  // ── Look-ahead scheduler (Web Audio best practice) ─────────────
+  function scheduler() {
+    while (nextNoteTime < audioCtx.currentTime + 0.12) {
+      var s = currentStep % STEPS;
+
+      note(MELODY[s], nextNoteTime, S8 * 0.82, 'square',   0.14, 2600);
+      note(BASS[s],   nextNoteTime, S8 * 0.90, 'triangle', 0.26,  480);
+      note(ARP[s],    nextNoteTime, S8 * 0.42, 'sawtooth', 0.06, 1100);
+
+      currentStep++;
+      nextNoteTime += S8;
+    }
+    schedTimer = setTimeout(scheduler, 20);
+  }
 
   // ── Build the audio graph ──────────────────────────────────────
   function buildAudio() {
@@ -502,93 +589,22 @@ function initScratch() {
     audioCtx   = new (window.AudioContext || window.webkitAudioContext)();
     masterGain = audioCtx.createGain();
     masterGain.gain.setValueAtTime(0, audioCtx.currentTime);
-    // Slow 3-second fade-in so it doesn't startle
-    masterGain.gain.linearRampToValueAtTime(0.22, audioCtx.currentTime + 3.0);
+    masterGain.gain.linearRampToValueAtTime(0.7, audioCtx.currentTime + 2.5);
     masterGain.connect(audioCtx.destination);
 
-    // Simple dual-delay reverb network
-    var d1  = audioCtx.createDelay(4); d1.delayTime.value  = 0.38;
-    var d2  = audioCtx.createDelay(4); d2.delayTime.value  = 0.57;
-    var fb  = audioCtx.createGain();   fb.gain.value        = 0.30;
-    var wet = audioCtx.createGain();   wet.gain.value       = 0.35;
-    d1.connect(d2); d2.connect(fb);
-    fb.connect(d1); fb.connect(wet);
-    wet.connect(masterGain);
-    reverbIn = d1;
+    // Single dotted-quarter echo (musical, no feedback loop)
+    echoDelay = audioCtx.createDelay(1.0);
+    var echoGain = audioCtx.createGain();
+    echoDelay.delayTime.value = S8 * 1.5;   // dotted 8th — locks to tempo
+    echoGain.gain.value       = 0.18;
+    echoDelay.connect(echoGain);
+    echoGain.connect(masterGain);
 
-    // Pad — 5 low-register sine oscillators forming a C-G-C-E-G chord
-    var padFreqs  = [65.41, 98.00, 130.81, 164.81, 196.00];
-    var padLevels = [0.55,  0.35,  0.30,   0.20,   0.18];
-
-    padFreqs.forEach(function (freq, i) {
-      // Tiny LFO for subtle warmth / movement
-      var lfo     = audioCtx.createOscillator();
-      var lfoGain = audioCtx.createGain();
-      lfo.frequency.value = 0.07 + i * 0.015;
-      lfoGain.gain.value  = 0.35;
-      lfo.connect(lfoGain);
-      lfo.start();
-
-      var osc    = audioCtx.createOscillator();
-      var filt   = audioCtx.createBiquadFilter();
-      var gain   = audioCtx.createGain();
-
-      osc.type = 'sine';
-      osc.frequency.value = freq + (i % 2 === 0 ? 0.25 : -0.25);
-      lfoGain.connect(osc.frequency);
-
-      filt.type = 'lowpass';
-      filt.frequency.value = 380 + i * 110;
-      filt.Q.value = 0.35;
-
-      gain.gain.value = padLevels[i] * 0.17;
-
-      osc.connect(filt);
-      filt.connect(gain);
-      gain.connect(masterGain);
-      gain.connect(reverbIn);
-      osc.start();
-    });
-
-    // Kick off the gentle melody
-    scheduleNote();
+    nextNoteTime = audioCtx.currentTime + 0.05;
+    scheduler();
   }
 
-  // ── Pentatonic melody — one note at a time, long decay ────────
-  function scheduleNote() {
-    if (!audioCtx) return;
-
-    var freq = PENTA[PATTERN[patStep % PATTERN.length]];
-    patStep++;
-
-    var osc  = audioCtx.createOscillator();
-    var env  = audioCtx.createGain();
-    var filt = audioCtx.createBiquadFilter();
-
-    osc.type = 'sine';
-    osc.frequency.value = freq;
-
-    filt.type = 'lowpass';
-    filt.frequency.value = freq * 2.8;
-    filt.Q.value = 1.2;
-
-    var now = audioCtx.currentTime;
-    env.gain.setValueAtTime(0, now);
-    env.gain.linearRampToValueAtTime(0.13, now + 0.07);    // fast attack
-    env.gain.exponentialRampToValueAtTime(0.0001, now + 3.6); // long decay
-
-    osc.connect(filt);
-    filt.connect(env);
-    env.connect(masterGain);
-    env.connect(reverbIn);
-    osc.start(now);
-    osc.stop(now + 4.0);
-
-    // Next note in 1.8 – 4 s (varied for natural feel)
-    setTimeout(scheduleNote, 1800 + Math.random() * 2200);
-  }
-
-  // ── Trigger on first user interaction anywhere ─────────────────
+  // ── First user interaction triggers audio ─────────────────────
   function onFirstInteraction() {
     buildAudio();
     if (audioCtx && audioCtx.state === 'suspended') audioCtx.resume();
@@ -601,9 +617,8 @@ function initScratch() {
 
   // ── Mute / unmute toggle ───────────────────────────────────────
   musicBtn.addEventListener('click', function (e) {
-    e.stopPropagation(); // don't double-trigger first-interaction
+    e.stopPropagation();
 
-    // If user taps the button before anything else, start music
     if (!musicReady) {
       buildAudio();
       document.removeEventListener('click',      onFirstInteraction);
@@ -612,15 +627,15 @@ function initScratch() {
     if (audioCtx && audioCtx.state === 'suspended') audioCtx.resume();
 
     musicMuted = !musicMuted;
-
     if (masterGain) {
       masterGain.gain.cancelScheduledValues(audioCtx.currentTime);
+      masterGain.gain.setValueAtTime(masterGain.gain.value, audioCtx.currentTime);
       if (musicMuted) {
         masterGain.gain.linearRampToValueAtTime(0, audioCtx.currentTime + 0.45);
         musicBtn.textContent = '🔇';
         musicBtn.setAttribute('aria-label', 'เปิดเสียงดนตรี');
       } else {
-        masterGain.gain.linearRampToValueAtTime(0.22, audioCtx.currentTime + 0.6);
+        masterGain.gain.linearRampToValueAtTime(0.7, audioCtx.currentTime + 0.6);
         musicBtn.textContent = '🔊';
         musicBtn.setAttribute('aria-label', 'ปิดเสียงดนตรี');
       }
