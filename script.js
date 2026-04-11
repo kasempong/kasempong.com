@@ -1011,3 +1011,61 @@ window.addEventListener('scroll', () => {
   const y = 50 + window.scrollY * 0.12;
   document.body.style.backgroundPositionY = y + '%';
 }, { passive: true });
+
+// ── Birthday gate overlay ─────────────────────────────────────────
+(function () {
+  var SECRET_PW = '28042001';
+  var overlay  = document.getElementById('bdGateOverlay');
+  var display  = document.getElementById('bdHeartDisplay');
+  var inputEl  = document.getElementById('bdRealInput');
+  var errorEl  = document.getElementById('bdError');
+  if (!overlay) return;
+
+  function updateDisplay() {
+    var len = inputEl.value.length;
+    display.textContent = len === 0 ? '\u{1F497}' : '\u{1F493}'.repeat(len);
+    display.style.fontSize   = len <= 4 ? '28px' : len <= 6 ? '24px' : '20px';
+    display.style.letterSpacing = len <= 4 ? '4px' : '2px';
+  }
+
+  function shake() {
+    display.style.transition = 'transform 0.05s';
+    [6,-6,5,-5,3,0].forEach(function(x, i) {
+      setTimeout(function() { display.style.transform = 'translateX(' + x + 'px)'; }, i * 55);
+    });
+    setTimeout(function() { display.style.transform = ''; }, 350);
+  }
+
+  inputEl.addEventListener('input', function() {
+    inputEl.value = inputEl.value.replace(/\D/g, '').slice(0, 8);
+    updateDisplay();
+    errorEl.textContent = '';
+    if (inputEl.value.length === 8) {
+      if (inputEl.value === SECRET_PW) {
+        overlay.classList.remove('open');
+        window.location.href = '/birthday.html';
+      } else {
+        shake();
+        errorEl.textContent = '\u0E25\u0E2D\u0E07\u0E43\u0E2B\u0E21\u0E48\u0E19\u0E30 \u{1F494}';
+        setTimeout(function() { inputEl.value = ''; updateDisplay(); errorEl.textContent = ''; }, 900);
+      }
+    }
+  });
+
+  document.getElementById('bdInputWrap').addEventListener('click', function() {
+    inputEl.focus();
+  });
+
+  window.openBdGate = function() {
+    inputEl.value = '';
+    updateDisplay();
+    errorEl.textContent = '';
+    overlay.classList.add('open');
+    inputEl.focus();
+    setTimeout(function() { inputEl.focus(); }, 80);
+  };
+
+  overlay.addEventListener('click', function(e) {
+    if (e.target === overlay) overlay.classList.remove('open');
+  });
+})();

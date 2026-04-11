@@ -1631,3 +1631,78 @@ a { color: inherit; text-decoration: none; }
   /* Safe area for notched phones */
   .footer { padding-bottom: max(1.5rem, env(safe-area-inset-bottom)); }
 }
+
+/* ── Birthday gate overlay ─────────────────────────────────────── */
+#bdGateOverlay {
+  display: none;
+  position: fixed;
+  top: 0; left: 0; right: 0; bottom: 0;
+  z-index: 9999;
+  background: rgba(20,0,30,0.75);
+  backdrop-filter: blur(18px);
+  -webkit-backdrop-filter: blur(18px);
+}
+#bdGateOverlay.open {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+#bdGateBox {
+  background: rgba(255,255,255,0.1);
+  border: 1.5px solid rgba(255,180,220,0.3);
+  border-radius: 28px;
+  padding: 36px 28px 28px;
+  max-width: 300px;
+  width: 88%;
+  text-align: center;
+  box-shadow: 0 16px 48px rgba(200,80,180,0.3);
+}
+.bd-lock { font-size: 40px; margin-bottom: 10px; }
+.bd-hint {
+  color: rgba(255,220,240,0.9);
+  font-size: 15px;
+  margin-bottom: 18px;
+  line-height: 1.7;
+}
+.bd-hint span { opacity: 0.6; font-size: 12px; }
+#bdInputWrap {
+  position: relative;
+  margin-bottom: 14px;
+  cursor: text;
+}
+#bdHeartDisplay {
+  font-size: 28px;
+  letter-spacing: 4px;
+  min-height: 54px;
+  color: #ff6fa3;
+  background: rgba(255,255,255,0.08);
+  border: 1.5px solid rgba(255,180,220,0.35);
+  border-radius: 14px;
+  padding: 10px 12px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-wrap: wrap;
+  gap: 2px;
+  transition: font-size 0.1s;
+  word-break: break-all;
+}
+#bdRealInput {
+  position: fixed;
+  left: -9999px;
+  top: 50%;
+  width: 1px;
+  height: 1px;
+  font-size: 16px;
+  padding: 0; margin: 0;
+  border: 0; outline: 0;
+  background: transparent;
+  color: transparent;
+  -webkit-appearance: none;
+  appearance: none;
+}
+#bdError {
+  color: #ff6fa3;
+  font-size: 13px;
+  min-height: 18px;
+}
