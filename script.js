@@ -477,8 +477,8 @@ applyLang(currentLang);
       const bw = bubble.offsetWidth  || 160;
       const bh = bubble.offsetHeight || 32;
       let bx = x - bw / 2;                  // center-align bubble under cursor
-      let by = y - bh - 18;                  // default: above companion
-      if (by < 8)           by = y + 28;     // flip below if too close to top
+      let by = y - bh - 38;                  // default: above companion (clears 52px Kuromi)
+      if (by < 8)           by = y + 38;     // flip below if too close to top
       if (bx < 8)           bx = 8;
       if (bx + bw > window.innerWidth - 8)  bx = window.innerWidth - bw - 8;
       bubble.style.left = bx + 'px';

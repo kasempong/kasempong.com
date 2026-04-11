@@ -1000,7 +1000,7 @@ a { color: inherit; text-decoration: none; }
   color: var(--text);
   white-space: nowrap;
   pointer-events: none;
-  z-index: 9998;
+  z-index: 10001;
   opacity: 0;
   transform: translateY(4px) scale(0.95);
   transition: opacity 0.2s ease, transform 0.2s ease;
