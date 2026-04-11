@@ -391,15 +391,17 @@
     #bdGateOverlay {
       display: none;
       position: fixed;
-      inset: 0;
+      top: 0; left: 0; right: 0; bottom: 0;
       z-index: 9999;
       background: rgba(20,0,30,0.75);
       backdrop-filter: blur(18px);
       -webkit-backdrop-filter: blur(18px);
+    }
+    #bdGateOverlay.open {
+      display: flex;
       align-items: center;
       justify-content: center;
     }
-    #bdGateOverlay.open { display: flex; }
     #bdGateBox {
       background: rgba(255,255,255,0.1);
       border: 1.5px solid rgba(255,180,220,0.3);
