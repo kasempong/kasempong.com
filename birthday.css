@@ -525,7 +525,7 @@ h1 {
   flex-shrink: 0;
 }
 
-/* What's hidden underneath */
+/* What's hidden underneath — starts invisible until canvas is drawn */
 .scratch-reveal {
   position: absolute;
   inset: 0;
@@ -534,6 +534,10 @@ h1 {
   align-items: center;
   justify-content: center;
   overflow: hidden;
+  opacity: 0;
+}
+.scratch-reveal.ready {
+  opacity: 1;
 }
 
 .scratch-reveal img {

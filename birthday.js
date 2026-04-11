@@ -400,6 +400,10 @@ function initScratch() {
   sctx.font = Math.round(size * 0.12) + 'px sans-serif';
   sctx.fillText('✨', size / 2, size / 2 + size * 0.1);
 
+  // Canvas is fully painted — now safe to show the photo beneath
+  var reveal = card.querySelector('.scratch-reveal');
+  if (reveal) reveal.classList.add('ready');
+
   // ── Scratch erase helpers ────────────────────────────────────────
   function scratchAt(x, y) {
     sctx.globalCompositeOperation = 'destination-out';
