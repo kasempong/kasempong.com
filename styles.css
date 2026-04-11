@@ -860,7 +860,7 @@ a { color: inherit; text-decoration: none; }
 .cmp-icon {
   position: absolute;
   transform: translate(-50%, -50%);
-  font-size: 22px;
+  font-size: 28px;
   line-height: 1;
   display: block;
   user-select: none;
@@ -873,7 +873,7 @@ a { color: inherit; text-decoration: none; }
 }
 
 #cjup {
-  font-size: 26px;
+  font-size: 28px;
   animation: cjupGlow 2.6s ease-in-out infinite;
   filter: drop-shadow(0 0 6px #f5c518) drop-shadow(0 0 14px #f5c518);
 }
@@ -912,7 +912,7 @@ a { color: inherit; text-decoration: none; }
 }
 
 #cmoon {
-  font-size: 24px;
+  font-size: 28px;
   animation: cmoonGlow 3s ease-in-out infinite;
   filter: drop-shadow(0 0 6px #c8d8ff) drop-shadow(0 0 14px #8899dd);
 }
@@ -922,6 +922,31 @@ a { color: inherit; text-decoration: none; }
              filter: drop-shadow(0 0 5px #c8d8ff) drop-shadow(0 0 12px #8899dd); }
   50%       { transform: translate(-50%, -50%) scale(1.14); opacity: 1;
              filter: drop-shadow(0 0 10px #ddeeff) drop-shadow(0 0 22px #aabbff); }
+}
+
+/* Kuromi companion */
+#ckuromi {
+  animation: none; /* glow lives on the img */
+}
+#ckuromi img {
+  height: 52px;
+  width: auto;
+  display: block;
+  animation: ckuromiGlow 3.2s ease-in-out infinite;
+  transform-origin: center bottom;
+}
+
+@keyframes ckuromiGlow {
+  0%, 100% {
+    transform: translate(-50%, -50%) scale(1);
+    filter: drop-shadow(0 0 5px #ff88cc) drop-shadow(0 0 12px #cc44bb) drop-shadow(0 0 22px #8800cc55);
+    opacity: 0.92;
+  }
+  50% {
+    transform: translate(-50%, -50%) scale(1.07);
+    filter: drop-shadow(0 0 9px #ffaadd) drop-shadow(0 0 20px #ee55cc) drop-shadow(0 0 36px #aa00ee66);
+    opacity: 1;
+  }
 }
 
 /* Flying ships */

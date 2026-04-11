@@ -382,7 +382,7 @@ applyLang(currentLang);
     'You are your own galaxy 🌌',
   ];
 
-  function makeCompanion(id, glyph, msgs, sx, sy, speed) {
+  function makeCompanion(id, glyph, msgs, sx, sy, speed, imgSrc) {
     const wrap = document.createElement('div');
     wrap.className = 'cmp-wrap';
     wrap.id = id + '-wrap';
@@ -390,7 +390,15 @@ applyLang(currentLang);
     const icon = document.createElement('span');
     icon.className = 'cmp-icon';
     icon.id = id;
-    icon.textContent = glyph;
+    if (imgSrc) {
+      const img = document.createElement('img');
+      img.src = imgSrc;
+      img.alt = id;
+      img.draggable = false;
+      icon.appendChild(img);
+    } else {
+      icon.textContent = glyph;
+    }
     wrap.appendChild(icon);
 
     const bubble = document.createElement('div');
@@ -498,6 +506,26 @@ applyLang(currentLang);
     window.innerWidth * 0.55, window.innerHeight * 0.25, 0.42
   );
 
+  const kuromiMsgs = [
+    'Darkness is just sparkle in disguise 🖤',
+    'You\'re my favourite human 💗',
+    'Stay spooky, stay sweet 🎀',
+    'Plot twist: you\'re amazing 🖤',
+    'Your vibe is immaculate ✨',
+    'Keep being delightfully you! 🌙',
+    'Even skulls can be adorable 💀💖',
+    'Mischief managed... cutely 🎀',
+    'You make the dark side cuter 💜',
+    'boo! ꒰˶• ༝ •˶꒱ (just kidding, hi!)',
+    'Best human I\'ve ever floated past 🖤',
+    'Gothic & gorgeous, just like today 🌸',
+  ];
+  const updateKuromi = makeCompanion(
+    'ckuromi', null, kuromiMsgs,
+    window.innerWidth * 0.82, window.innerHeight * 0.38, 0.35,
+    'kuromi.png'
+  );
+
   // "hi" hint label on the star
   const starLabel = document.createElement('span');
   starLabel.className = 'cmp-label';
@@ -516,12 +544,18 @@ applyLang(currentLang);
   moonLabel.textContent = 'psst';
   document.getElementById('cmoon-wrap').appendChild(moonLabel);
 
+  // "kuri" hint label on Kuromi
+  const kuromiLabel = document.createElement('span');
+  kuromiLabel.className = 'cmp-label';
+  kuromiLabel.textContent = 'kuri';
+  document.getElementById('ckuromi-wrap').appendChild(kuromiLabel);
+
   // Animated ring around Jupiter
   const ring = document.createElement('span');
   ring.className = 'cjup-ring';
   document.getElementById('cjup-wrap').appendChild(ring);
 
-  function loop() { updateStar(); updateJup(); updateMoon(); requestAnimationFrame(loop); }
+  function loop() { updateStar(); updateJup(); updateMoon(); updateKuromi(); requestAnimationFrame(loop); }
   loop();
 })();
 
