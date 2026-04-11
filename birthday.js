@@ -578,6 +578,18 @@ function initScratch() {
     masterGain.gain.linearRampToValueAtTime(0.62, audioCtx.currentTime + 3.0);
     masterGain.connect(audioCtx.destination);
 
+    // Route through MediaStreamDestination → hidden <audio> element so the
+    // browser shows the speaker icon in the tab (Web Audio API alone won't do it)
+    try {
+      var streamDest = audioCtx.createMediaStreamDestination();
+      masterGain.connect(streamDest);
+      var audioEl = document.createElement('audio');
+      audioEl.srcObject = streamDest.stream;
+      audioEl.volume = 1;
+      document.body.appendChild(audioEl);
+      audioEl.play().catch(function () {}); // safe — we're already inside a user gesture
+    } catch (e) { /* Safari older fallback — speaker icon won't show but audio still plays */ }
+
     // Two-tap room reverb for warmth (no feedback runaway)
     var tap1 = audioCtx.createDelay(0.5); tap1.delayTime.value = 0.09;
     var tap2 = audioCtx.createDelay(0.5); tap2.delayTime.value = 0.17;
