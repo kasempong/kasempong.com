@@ -531,7 +531,8 @@
       updateDisplay();
       errorEl.textContent = '';
       overlay.classList.add('open');
-      setTimeout(function() { inputEl.focus(); }, 120);
+      inputEl.focus();                          // immediate — inside user gesture
+      setTimeout(function() { inputEl.focus(); }, 80); // retry for slow renderers
     };
 
     // close on backdrop tap
