@@ -482,57 +482,43 @@ function initScratch() {
   sc.addEventListener('pointercancel', onUp);
 }
 
-// ── 8-bit Chiptune Romantic BGM ───────────────────────────────────
+// ── Chill Romantic Piano BGM + Button Click Sounds ───────────────
 (function () {
-  var audioCtx   = null;
-  var masterGain = null;
-  var echoDelay  = null;   // musical echo bus
-  var musicReady = false;
-  var musicMuted = false;
-  var musicBtn   = document.getElementById('musicBtn');
+  var audioCtx    = null;
+  var masterGain  = null;
+  var reverbInput = null;
+  var musicReady  = false;
+  var musicMuted  = false;
+  var musicBtn    = document.getElementById('musicBtn');
 
-  // Tempo: 92 BPM — calm, not dragging
-  var BPM = 92;
-  var S8  = 60 / BPM / 2;   // 8th-note duration in seconds (~0.326s)
+  // 76 BPM — slow, flowing, romantic
+  var BPM = 76;
+  var EN  = 60 / BPM / 2;   // 8th-note ~0.395 s
 
-  // ── Frequencies ────────────────────────────────────────────────
-  var R  = 0;   // rest
-  // Oct 2
-  var E2=82.41, F2=87.31, G2=98.00, A2=110.00;
-  // Oct 3
-  var C3=130.81, D3=146.83, E3=164.81, F3=174.61,
-      G3=196.00,  A3=220.00,  B3=246.94;
-  // Oct 4
-  var C4=261.63, D4=293.66, E4=329.63, F4=349.23,
-      G4=392.00,  A4=440.00,  B4=493.88;
-  // Oct 5
-  var C5=523.25, D5=587.33, E5=659.25, G5=783.99, A5=880.00;
+  // ── Note frequencies ──────────────────────────────────────────
+  var R  = 0;
+  var A2=110.00, B2=123.47;
+  var C3=130.81, D3=146.83, E3=164.81, F3=174.61, G3=196.00, A3=220.00, B3=246.94;
+  var C4=261.63, D4=293.66, E4=329.63, F4=349.23, G4=392.00, A4=440.00, B4=493.88;
+  var C5=523.25, D5=587.33, E5=659.25, F5=698.46, G5=783.99;
 
-  // ── 4-bar loop (32 × 8th notes) ───────────────────────────────
-  // Chord progression: I(C) – vi(Am) – IV(F) – V(G)
+  // ── 4-bar loop, 8th-note grid (32 steps) ─────────────────────
+  // Chord progression  I(C) – vi(Am) – IV(F) – V(G)
 
-  // Melody: square wave, upper register — cute RPG love theme
+  // Right hand — lyrical romantic melody
   var MELODY = [
-    E5, D5, C5,  R, E5, G5, A5, G5,   // bar 1 — C
-    A4, C5, B4, A4,  R, E5, D5,  R,   // bar 2 — Am
-    F4, A4, G4, F4,  R, C5, D5, C5,   // bar 3 — F
-    G4, B4, D5,  R, G4, E5, D5,  R,   // bar 4 — G
+    E5, G5,  R, G5, E5, C5,  R, E5,   // bar 1 — C
+    A4, C5, E5,  R, C5, A4,  R, A4,   // bar 2 — Am
+    F4, A4, C5, A4,  R, C5, D5, C5,   // bar 3 — F
+    G4, B4, D5,  R, B4, G4,  R, B4,   // bar 4 — G
   ];
 
-  // Bass: triangle wave, root + fifth on beat 1 and 3
+  // Left hand — rolling arpeggios (root–5th–3rd–5th per beat)
   var BASS = [
-    C3,  R,  R,  R, G2,  R,  R,  R,   // C
-    A2,  R,  R,  R, E2,  R,  R,  R,   // Am
-    F2,  R,  R,  R, C3,  R,  R,  R,   // F
-    G2,  R,  R,  R, D3,  R,  R,  R,   // G
-  ];
-
-  // Arpeggio: sawtooth + lowpass — broken chord, guitar-strum feel
-  var ARP = [
-    C4, E4, G4, E4, C4, E4, G4, E4,   // C
-    A3, C4, E4, C4, A3, C4, E4, C4,   // Am
-    F3, A3, C4, A3, F3, A3, C4, A3,   // F
-    G3, B3, D4, B3, G3, B3, D4, B3,   // G
+    C3, G3, E3, G3, C3, G3, E3, G3,   // C
+    A2, E3, C3, E3, A2, E3, C3, E3,   // Am
+    F3, C4, A3, C4, F3, C4, A3, C4,   // F
+    G3, D4, B3, D4, G3, D4, B3, D4,   // G
   ];
 
   var STEPS       = MELODY.length;   // 32
@@ -540,52 +526,48 @@ function initScratch() {
   var nextNoteTime = 0;
   var schedTimer   = null;
 
-  // ── Play a single scheduled note ──────────────────────────────
-  function note(freq, t, dur, type, vol, cutoff) {
-    if (!freq) return;
+  // ── Piano tone: triangle fundamental + sine harmonics + ADSR ──
+  function piano(freq, t, dur, vol, dest) {
+    if (!freq || !dest) return;
 
-    var osc  = audioCtx.createOscillator();
-    var env  = audioCtx.createGain();
-    var filt = audioCtx.createBiquadFilter();
+    var env = audioCtx.createGain();
+    env.gain.setValueAtTime(0, t);
+    env.gain.linearRampToValueAtTime(vol, t + 0.005);          // snappy attack
+    env.gain.exponentialRampToValueAtTime(vol * 0.45, t + 0.09); // quick decay
+    env.gain.exponentialRampToValueAtTime(vol * 0.18, t + dur);  // sustain tail
+    env.gain.exponentialRampToValueAtTime(0.0001, t + dur + 0.35); // release
+    env.connect(dest);
 
-    osc.type = type;
-    osc.frequency.value = freq;
-
-    filt.type = 'lowpass';
-    filt.frequency.value = cutoff;
-    filt.Q.value = 0.7;
-
-    // 8-bit envelope: near-instant attack, slight initial drop, crisp release
-    env.gain.setValueAtTime(0,          t);
-    env.gain.linearRampToValueAtTime(vol,        t + 0.004);
-    env.gain.setValueAtTime(vol * 0.65, t + 0.03);
-    env.gain.setValueAtTime(vol * 0.65, t + dur * 0.78);
-    env.gain.linearRampToValueAtTime(0, t + dur);
-
-    osc.connect(filt);
-    filt.connect(env);
-    env.connect(masterGain);      // dry signal
-    env.connect(echoDelay);       // feed echo bus
-    osc.start(t);
-    osc.stop(t + dur + 0.02);
+    // Fundamental + 2 soft harmonics = warm piano-like timbre
+    var partials = [[1, 'triangle', 0.65], [2, 'sine', 0.25], [3, 'sine', 0.10]];
+    partials.forEach(function (p) {
+      var osc = audioCtx.createOscillator();
+      var hg  = audioCtx.createGain();
+      osc.type = p[1];
+      osc.frequency.value = freq * p[0];
+      hg.gain.value = p[2];
+      osc.connect(hg);
+      hg.connect(env);
+      osc.start(t);
+      osc.stop(t + dur + 0.6);
+    });
   }
 
-  // ── Look-ahead scheduler (Web Audio best practice) ─────────────
+  // ── Scheduler (look-ahead, Web Audio best practice) ──────────
   function scheduler() {
-    while (nextNoteTime < audioCtx.currentTime + 0.12) {
+    while (nextNoteTime < audioCtx.currentTime + 0.15) {
       var s = currentStep % STEPS;
-
-      note(MELODY[s], nextNoteTime, S8 * 0.82, 'square',   0.14, 2600);
-      note(BASS[s],   nextNoteTime, S8 * 0.90, 'triangle', 0.26,  480);
-      note(ARP[s],    nextNoteTime, S8 * 0.42, 'sawtooth', 0.06, 1100);
-
+      piano(MELODY[s], nextNoteTime, EN * 1.4, 0.13, masterGain);
+      piano(MELODY[s], nextNoteTime, EN * 1.4, 0.04, reverbInput); // wet send
+      piano(BASS[s],   nextNoteTime, EN * 0.85, 0.09, masterGain);
+      piano(BASS[s],   nextNoteTime, EN * 0.85, 0.03, reverbInput);
       currentStep++;
-      nextNoteTime += S8;
+      nextNoteTime += EN;
     }
-    schedTimer = setTimeout(scheduler, 20);
+    schedTimer = setTimeout(scheduler, 25);
   }
 
-  // ── Build the audio graph ──────────────────────────────────────
+  // ── Build audio graph ─────────────────────────────────────────
   function buildAudio() {
     if (musicReady) return;
     musicReady = true;
@@ -593,22 +575,48 @@ function initScratch() {
     audioCtx   = new (window.AudioContext || window.webkitAudioContext)();
     masterGain = audioCtx.createGain();
     masterGain.gain.setValueAtTime(0, audioCtx.currentTime);
-    masterGain.gain.linearRampToValueAtTime(0.7, audioCtx.currentTime + 2.5);
+    masterGain.gain.linearRampToValueAtTime(0.62, audioCtx.currentTime + 3.0);
     masterGain.connect(audioCtx.destination);
 
-    // Single dotted-quarter echo (musical, no feedback loop)
-    echoDelay = audioCtx.createDelay(1.0);
-    var echoGain = audioCtx.createGain();
-    echoDelay.delayTime.value = S8 * 1.5;   // dotted 8th — locks to tempo
-    echoGain.gain.value       = 0.18;
-    echoDelay.connect(echoGain);
-    echoGain.connect(masterGain);
+    // Two-tap room reverb for warmth (no feedback runaway)
+    var tap1 = audioCtx.createDelay(0.5); tap1.delayTime.value = 0.09;
+    var tap2 = audioCtx.createDelay(0.5); tap2.delayTime.value = 0.17;
+    var rg1  = audioCtx.createGain();     rg1.gain.value  = 0.22;
+    var rg2  = audioCtx.createGain();     rg2.gain.value  = 0.13;
+    reverbInput = audioCtx.createGain();
+    reverbInput.connect(tap1); reverbInput.connect(tap2);
+    tap1.connect(rg1); tap2.connect(rg2);
+    rg1.connect(masterGain); rg2.connect(masterGain);
 
     nextNoteTime = audioCtx.currentTime + 0.05;
     scheduler();
   }
 
-  // ── First user interaction triggers audio ─────────────────────
+  // ── Cute button click sound ───────────────────────────────────
+  window.playBtnClick = function () {
+    if (!audioCtx || musicMuted) return;
+    var now = audioCtx.currentTime;
+    var osc = audioCtx.createOscillator();
+    var env = audioCtx.createGain();
+    osc.type = 'sine';
+    osc.frequency.setValueAtTime(1318, now);              // E6
+    osc.frequency.exponentialRampToValueAtTime(880, now + 0.06); // down to A5
+    env.gain.setValueAtTime(0.18, now);
+    env.gain.exponentialRampToValueAtTime(0.0001, now + 0.18);
+    osc.connect(env);
+    env.connect(audioCtx.destination);
+    osc.start(now);
+    osc.stop(now + 0.22);
+  };
+
+  // Attach click sound to all interactive buttons
+  document.querySelectorAll('.choice, .btn-go, .btn-next').forEach(function (btn) {
+    btn.addEventListener('click', function () {
+      if (window.playBtnClick) window.playBtnClick();
+    });
+  });
+
+  // ── First interaction → start music ──────────────────────────
   function onFirstInteraction() {
     buildAudio();
     if (audioCtx && audioCtx.state === 'suspended') audioCtx.resume();
@@ -619,27 +627,25 @@ function initScratch() {
   document.addEventListener('click',      onFirstInteraction);
   document.addEventListener('touchstart', onFirstInteraction, { passive: true });
 
-  // ── Mute / unmute toggle ───────────────────────────────────────
+  // ── Music toggle button ───────────────────────────────────────
   musicBtn.addEventListener('click', function (e) {
     e.stopPropagation();
-
     if (!musicReady) {
       buildAudio();
       document.removeEventListener('click',      onFirstInteraction);
       document.removeEventListener('touchstart', onFirstInteraction);
     }
     if (audioCtx && audioCtx.state === 'suspended') audioCtx.resume();
-
     musicMuted = !musicMuted;
     if (masterGain) {
       masterGain.gain.cancelScheduledValues(audioCtx.currentTime);
       masterGain.gain.setValueAtTime(masterGain.gain.value, audioCtx.currentTime);
       if (musicMuted) {
-        masterGain.gain.linearRampToValueAtTime(0, audioCtx.currentTime + 0.45);
+        masterGain.gain.linearRampToValueAtTime(0,    audioCtx.currentTime + 0.4);
         musicBtn.textContent = '🔇';
         musicBtn.setAttribute('aria-label', 'เปิดเสียงดนตรี');
       } else {
-        masterGain.gain.linearRampToValueAtTime(0.7, audioCtx.currentTime + 0.6);
+        masterGain.gain.linearRampToValueAtTime(0.62, audioCtx.currentTime + 0.5);
         musicBtn.textContent = '🔊';
         musicBtn.setAttribute('aria-label', 'ปิดเสียงดนตรี');
       }
