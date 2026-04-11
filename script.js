@@ -473,8 +473,16 @@ applyLang(currentLang);
       }
       wrap.style.left   = x + 'px';
       wrap.style.top    = y + 'px';
-      bubble.style.left = (x - 70) + 'px';
-      bubble.style.top  = (y - 54) + 'px';
+      // Keep bubble fully inside viewport — flip left/right and up/down as needed
+      const bw = bubble.offsetWidth  || 160;
+      const bh = bubble.offsetHeight || 32;
+      let bx = x - bw / 2;                  // center-align bubble under cursor
+      let by = y - bh - 18;                  // default: above companion
+      if (by < 8)           by = y + 28;     // flip below if too close to top
+      if (bx < 8)           bx = 8;
+      if (bx + bw > window.innerWidth - 8)  bx = window.innerWidth - bw - 8;
+      bubble.style.left = bx + 'px';
+      bubble.style.top  = by + 'px';
     };
   }
 
@@ -547,7 +555,7 @@ applyLang(currentLang);
   // "kuri" hint label on Kuromi
   const kuromiLabel = document.createElement('span');
   kuromiLabel.className = 'cmp-label';
-  kuromiLabel.textContent = 'kuri';
+  kuromiLabel.textContent = 'kuromi';
   document.getElementById('ckuromi-wrap').appendChild(kuromiLabel);
 
   // Animated ring around Jupiter
