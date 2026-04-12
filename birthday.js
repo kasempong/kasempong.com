@@ -316,16 +316,16 @@ function tickConfetti() {
 }
 
 function launchConfetti() {
-  // Spawn 240 particles
-  for (var i = 0; i < 240; i++) {
+  // Spawn 100 particles (capped for performance on older/low-end devices)
+  for (var i = 0; i < 100; i++) {
     particles.push(createParticle());
   }
   if (rafId) cancelAnimationFrame(rafId);
   tickConfetti();
 
-  // Second wave for extra joy
+  // Second wave
   setTimeout(function () {
-    for (var i = 0; i < 120; i++) {
+    for (var i = 0; i < 50; i++) {
       var p = createParticle();
       p.y = -(Math.random() * 80);
       particles.push(p);
@@ -366,7 +366,22 @@ function initScratch() {
   grad.addColorStop(1,   '#b060ff');
   sctx.fillStyle = grad;
   sctx.beginPath();
-  sctx.roundRect(0, 0, size, size, 28);
+  // roundRect polyfill for Safari <16
+  if (sctx.roundRect) {
+    sctx.roundRect(0, 0, size, size, 28);
+  } else {
+    var r = 28;
+    sctx.moveTo(r, 0);
+    sctx.lineTo(size - r, 0);
+    sctx.quadraticCurveTo(size, 0, size, r);
+    sctx.lineTo(size, size - r);
+    sctx.quadraticCurveTo(size, size, size - r, size);
+    sctx.lineTo(r, size);
+    sctx.quadraticCurveTo(0, size, 0, size - r);
+    sctx.lineTo(0, r);
+    sctx.quadraticCurveTo(0, 0, r, 0);
+    sctx.closePath();
+  }
   sctx.fill();
 
   // Sparkle dots pattern

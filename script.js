@@ -1,5 +1,10 @@
 'use strict';
 
+// ── Site config ───────────────────────────────────────────────
+var SITE_CONFIG = {
+  BD_PASSWORD: '28042001', // birthday gate password — change here only
+};
+
 // ── Year ─────────────────────────────────────────────────────
 document.getElementById('year').textContent = new Date().getFullYear();
 
@@ -132,6 +137,12 @@ const root = document.documentElement;
 function applyTheme(theme) {
   root.setAttribute('data-theme', theme);
   localStorage.setItem('theme', theme);
+  // Keep Spotify embed in sync with site theme
+  var sf = document.getElementById('spotifyEmbed');
+  if (sf) {
+    var base = 'https://open.spotify.com/embed/playlist/6hkjQl9fSd55QTU9S7KCBa?utm_source=generator&theme=';
+    sf.src = base + (theme === 'dark' ? '0' : '1');
+  }
 }
 
 themeToggle.addEventListener('click', () => {
@@ -465,11 +476,14 @@ applyLang(currentLang);
         x += vx + Math.sin(phase) * 0.22;
         y += vy + Math.cos(phase * 0.75) * 0.22;
         vx *= 0.98; vy *= 0.98;
-        const m = 55;
-        if (x < m) { vx = Math.abs(vx); }
-        if (x > window.innerWidth  - m) { vx = -Math.abs(vx); }
-        if (y < m) { vy = Math.abs(vy); }
-        if (y > window.innerHeight - m) { vy = -Math.abs(vy); }
+        // Extra margin on top/bottom for mobile status bar + nav
+        const mx = 60;
+        const mt = 72;  // top: clears status bar
+        const mb = 80;  // bottom: clears iOS home bar
+        if (x < mx) { vx = Math.abs(vx); }
+        if (x > window.innerWidth  - mx) { vx = -Math.abs(vx); }
+        if (y < mt) { vy = Math.abs(vy); }
+        if (y > window.innerHeight - mb) { vy = -Math.abs(vy); }
       }
       wrap.style.left   = x + 'px';
       wrap.style.top    = y + 'px';
@@ -477,8 +491,8 @@ applyLang(currentLang);
       const bw = bubble.offsetWidth  || 160;
       const bh = bubble.offsetHeight || 32;
       let bx = x - bw / 2;                  // center-align bubble under cursor
-      let by = y - bh - 38;                  // default: above companion (clears 52px Kuromi)
-      if (by < 8)           by = y + 38;     // flip below if too close to top
+      let by = y - bh - 62;                  // default: above companion (36px clear of 52px Kuromi top)
+      if (by < 8)           by = y + 52;     // flip below if too close to top
       if (bx < 8)           bx = 8;
       if (bx + bw > window.innerWidth - 8)  bx = window.innerWidth - bw - 8;
       bubble.style.left = bx + 'px';
@@ -674,7 +688,7 @@ document.querySelectorAll('.pin, .section-title, .section-subtitle, .section-eye
 
 // ── Secret triple-click "Made with ♡" → birthday page ─────────────
 (function () {
-  const SECRET_PW = '28042001';
+  const SECRET_PW = SITE_CONFIG.BD_PASSWORD;
   const target    = document.querySelector('[data-i18n="footer_made"]');
   if (!target) return;
 
@@ -972,6 +986,13 @@ document.querySelectorAll('.pin, .section-title, .section-subtitle, .section-eye
   }
 
   // ── Fetch ───────────────────────────────────────────────────
+  // Fetch with 8-second timeout
+  function fetchWithTimeout(url, ms) {
+    const ctrl = new AbortController();
+    const tid   = setTimeout(function () { ctrl.abort(); }, ms);
+    return fetch(url, { signal: ctrl.signal }).finally(function () { clearTimeout(tid); });
+  }
+
   async function fetchAll() {
     refreshBtn.classList.add('spinning');
     newsList.innerHTML = '<li class="env-news-loading">loading news…</li>';
@@ -980,11 +1001,12 @@ document.querySelectorAll('.pin, .section-title, .section-subtitle, .section-eye
 
     // 1. Open-Meteo (no key, direct)
     try {
-      const wRes = await fetch(
+      const wRes = await fetchWithTimeout(
         'https://api.open-meteo.com/v1/forecast' +
         '?latitude=13.75&longitude=100.52' +
         '&current=temperature_2m,apparent_temperature,relative_humidity_2m' +
-        '&temperature_unit=celsius&timezone=Asia%2FBangkok'
+        '&temperature_unit=celsius&timezone=Asia%2FBangkok',
+        8000
       );
       const wData = await wRes.json();
       result.temp = Math.round(wData.current.temperature_2m);
@@ -993,19 +1015,19 @@ document.querySelectorAll('.pin, .section-title, .section-subtitle, .section-eye
 
     // 2. AQI — AQICN demo token (no key needed)
     try {
-      const aRes = await fetch('https://api.waqi.info/feed/bangkok/?token=demo');
+      const aRes = await fetchWithTimeout('https://api.waqi.info/feed/bangkok/?token=demo', 8000);
       const aData = await aRes.json();
       if (aData.status === 'ok' && aData.data && aData.data.aqi) {
         result.aqi = aData.data.aqi;
       }
     } catch (_) { /* show — */ }
 
-    // 3. News — Google News RSS via rss2json (no key needed)
+    // 3. News — Google News RSS via rss2json
     try {
       const rssUrl = encodeURIComponent(
         'https://news.google.com/rss/search?q=thailand+PM2.5+OR+flood+OR+pollution+OR+plastic+sea+OR+trash+ocean+OR+air+quality+OR+haze&hl=en-US&gl=US&ceid=US:en'
       );
-      const nRes = await fetch('https://api.rss2json.com/v1/api.json?rss_url=' + rssUrl + '&count=3');
+      const nRes = await fetchWithTimeout('https://api.rss2json.com/v1/api.json?rss_url=' + rssUrl + '&count=3', 8000);
       const nData = await nRes.json();
       if (nData.status === 'ok' && Array.isArray(nData.items)) {
         result.news = nData.items.map(function (item) {
@@ -1018,7 +1040,9 @@ document.querySelectorAll('.pin, .section-title, .section-subtitle, .section-eye
           };
         });
       }
-    } catch (_) { /* empty list */ }
+    } catch (_) {
+      newsList.innerHTML = '<li class="env-news-loading">couldn\'t load news — try refreshing 🔄</li>';
+    }
 
     localStorage.setItem(CACHE_KEY, JSON.stringify({ ts: Date.now(), data: result }));
     render(result);
@@ -1056,7 +1080,7 @@ window.addEventListener('scroll', () => {
 
 // ── Birthday gate overlay ─────────────────────────────────────────
 (function () {
-  var SECRET_PW = '28042001';
+  var SECRET_PW = SITE_CONFIG.BD_PASSWORD;
   var overlay  = document.getElementById('bdGateOverlay');
   var display  = document.getElementById('bdHeartDisplay');
   var inputEl  = document.getElementById('bdRealInput');
