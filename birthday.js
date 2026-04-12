@@ -531,108 +531,226 @@ function _roundRectPath(c, x, y, w, h, r) {
 }
 
 function generateShareCard() {
-  var W = 1080, H = 1920;            // 9:16 IG story
+  var finalMsgText = (document.getElementById('finalMsg') || {}).textContent || '';
+  var revealImg    = document.querySelector('.scratch-reveal img');
+
+  // Load the actual page background image so the card looks identical
+  var bgImg = new Image();
+  function proceed() { _drawShareCard(bgImg.complete && bgImg.naturalWidth ? bgImg : null, revealImg, finalMsgText); }
+  bgImg.onload  = proceed;
+  bgImg.onerror = proceed;
+  bgImg.src = 'bg-hbd2.jpeg';
+  // Safety timeout — draw anyway after 2 s if image stalls
+  setTimeout(function () { if (!bgImg.complete) proceed(); }, 2000);
+}
+
+function _drawShareCard(bgImg, revealImg, finalMsgText) {
+  var W = 1080, H = 1920;
   var canvas = document.createElement('canvas');
   canvas.width  = W;
   canvas.height = H;
   var c = canvas.getContext('2d');
+  var MX = W / 2;   // horizontal center
 
-  // ── Background gradient ──
-  var grad = c.createLinearGradient(0, 0, W, H);
-  grad.addColorStop(0,    '#1a0030');
-  grad.addColorStop(0.35, '#6a1faa');
-  grad.addColorStop(0.70, '#cc1a88');
-  grad.addColorStop(1,    '#ff6fa3');
-  c.fillStyle = grad;
+  // ── 1. Background: actual blurred JPEG (same as the page) ──────
+  if (bgImg) {
+    c.save();
+    c.filter = 'blur(28px)';
+    var scale = Math.max(W / bgImg.width, H / bgImg.height);
+    var bw = bgImg.width * scale, bh = bgImg.height * scale;
+    c.drawImage(bgImg, (W - bw) / 2, (H - bh) / 2, bw, bh);
+    c.restore();
+  } else {
+    var fbGrad = c.createLinearGradient(0, 0, W, H);
+    fbGrad.addColorStop(0,   '#ffc8e0');
+    fbGrad.addColorStop(0.4, '#e0a0f0');
+    fbGrad.addColorStop(0.7, '#f0c090');
+    fbGrad.addColorStop(1,   '#f0a8c8');
+    c.fillStyle = fbGrad;
+    c.fillRect(0, 0, W, H);
+  }
+
+  // ── 2. Page screen overlay (rgba(255,240,250,0.60)) ─────────────
+  c.fillStyle = 'rgba(255, 240, 250, 0.60)';
   c.fillRect(0, 0, W, H);
 
-  // ── Sparkle dots ──
-  for (var i = 0; i < 130; i++) {
-    var alpha = Math.random() * 0.18 + 0.04;
-    c.fillStyle = 'rgba(255,255,255,' + alpha + ')';
+  // ── 3. Cute decorative border ───────────────────────────────────
+  var BW = 38;
+  // Outer gradient border
+  var bGrad = c.createLinearGradient(0, 0, W, H);
+  bGrad.addColorStop(0,    '#ff6fa3');
+  bGrad.addColorStop(0.33, '#c77dff');
+  bGrad.addColorStop(0.66, '#ffb347');
+  bGrad.addColorStop(1,    '#ff6fa3');
+  c.strokeStyle = bGrad;
+  c.lineWidth = BW;
+  c.strokeRect(BW / 2, BW / 2, W - BW, H - BW);
+  // Inner white hairline
+  c.strokeStyle = 'rgba(255,255,255,0.60)';
+  c.lineWidth = 5;
+  c.strokeRect(BW + 8, BW + 8, W - (BW + 8) * 2, H - (BW + 8) * 2);
+  // Corner flowers
+  c.font = '72px sans-serif';
+  c.textAlign = 'center';
+  c.textBaseline = 'middle';
+  [['🌸', 56, 56], ['🌸', W - 56, 56], ['🌸', 56, H - 56], ['🌸', W - 56, H - 56]].forEach(function (p) {
+    c.fillText(p[0], p[1], p[2]);
+  });
+  // Edge sparkles
+  for (var si = 0; si < 24; si++) {
+    var t = si / 24;
+    var ex, ey;
+    if (t < 0.25)      { ex = BW + 14;          ey = t / 0.25 * H; }
+    else if (t < 0.5)  { ex = W - BW - 14;      ey = (t - 0.25) / 0.25 * H; }
+    else if (t < 0.75) { ex = (t - 0.5) / 0.25 * W; ey = BW + 14; }
+    else               { ex = (t - 0.75) / 0.25 * W; ey = H - BW - 14; }
+    c.fillStyle = 'rgba(255,255,255,' + (Math.random() * 0.5 + 0.25) + ')';
     c.beginPath();
-    c.arc(Math.random() * W, Math.random() * H, Math.random() * 5 + 1, 0, Math.PI * 2);
+    c.arc(ex, ey, Math.random() * 5 + 2, 0, Math.PI * 2);
     c.fill();
   }
 
-  c.textAlign = 'center';
-
-  // ── Big cake ──
-  c.font = '200px sans-serif';
-  c.fillText('🎂', W / 2, 320);
-
-  // ── "Happy Birthday" ──
-  c.fillStyle = 'rgba(255,255,255,0.92)';
-  c.font = 'bold 88px sans-serif';
-  c.fillText('Happy Birthday', W / 2, 490);
-
-  // ── Name in gold ──
-  c.fillStyle = '#ffd700';
-  c.font = 'bold 128px sans-serif';
-  c.fillText('TonTon! 💕', W / 2, 660);
-
-  // ── Deco emoji row ──
-  c.font = '74px sans-serif';
-  c.fillText('🌸 ✨ 🎀 ✨ 🌸', W / 2, 800);
-
-  // ── Divider ──
-  c.strokeStyle = 'rgba(255,255,255,0.30)';
-  c.lineWidth = 4;
+  // ── 4. Progress bar (all completed) ─────────────────────────────
+  var barY  = BW + 80;
+  var barX0 = 160, barX1 = W - 160;
+  var barGrad = c.createLinearGradient(barX0, 0, barX1, 0);
+  barGrad.addColorStop(0, '#ff6fa3');
+  barGrad.addColorStop(1, '#c77dff');
+  c.strokeStyle = barGrad;
+  c.lineWidth = 12;
   c.beginPath();
-  c.moveTo(160, 856);
-  c.lineTo(W - 160, 856);
+  c.moveTo(barX0, barY);
+  c.lineTo(barX1, barY);
   c.stroke();
-
-  // ── Message ──
-  c.fillStyle = 'rgba(255,255,255,0.95)';
-  c.font = '60px sans-serif';
-  c.fillText('สุขสันต์วันเกิดนะ 🥹', W / 2, 960);
-  c.font = '50px sans-serif';
-  c.fillText('ขอให้ปีนี้เต็มไปด้วยความสุข', W / 2, 1045);
-  c.fillText('และทุกอย่างที่ต้นปรารถนา 💗', W / 2, 1118);
-
-  // ── Scattered emoji grid ──
-  var scatter = ['💗','✨','🎀','💕','🌸','⭐','🦋','💜'];
-  c.font = '68px sans-serif';
-  scatter.forEach(function (em, idx) {
-    var ex = 120 + (idx % 4) * 230;
-    var ey = 1250 + Math.floor(idx / 4) * 140;
-    c.fillText(em, ex, ey);
+  // Platform dots + goal heart
+  var platT = [0, 0.2, 0.4, 0.6, 0.8];
+  platT.forEach(function (t) {
+    var dx = barX0 + t * (barX1 - barX0);
+    var dg = c.createRadialGradient(dx, barY, 0, dx, barY, 22);
+    dg.addColorStop(0, '#ff9fc0');
+    dg.addColorStop(1, '#c77dff');
+    c.fillStyle = dg;
+    c.beginPath();
+    c.arc(dx, barY, 22, 0, Math.PI * 2);
+    c.fill();
   });
+  c.font = '48px sans-serif';
+  c.textAlign = 'center';
+  c.textBaseline = 'middle';
+  c.fillText('💗', barX1, barY);
 
-  // ── Website badge pill ──
-  c.fillStyle = 'rgba(255,255,255,0.18)';
+  // ── 5. Title ─────────────────────────────────────────────────────
+  var yPos = barY + 110;
+  c.textAlign = 'center';
+  c.textBaseline = 'alphabetic';
+  c.shadowColor = 'rgba(40,0,80,0.45)';
+  c.shadowBlur   = 14;
+  c.fillStyle = '#4a2060';
+  c.font = 'bold italic 90px Sriracha, sans-serif';
+  c.fillText('🎂 Happy Birthday', MX, yPos);
+  yPos += 128;
+  c.fillStyle = '#cc0066';
+  c.font = 'bold italic 108px Sriracha, sans-serif';
+  c.fillText('TonTon!', MX, yPos);
+  c.shadowBlur = 0;
+  c.font = '74px sans-serif';
+  c.fillText('💕', MX + 200, yPos - 16);
+  yPos += 80;
+
+  // ── 6. Scratch card (white rounded square) ───────────────────────
+  var cardSize = 620;
+  var cardX    = MX - cardSize / 2;
+  var cardY    = yPos;
+  var cardR    = 52;
+  c.fillStyle   = 'rgba(255,255,255,0.75)';
+  c.shadowColor = 'rgba(180,80,160,0.25)';
+  c.shadowBlur  = 30;
   c.beginPath();
-  if (c.roundRect) {
-    c.roundRect(W / 2 - 290, 1530, 580, 86, 43);
-  } else {
-    _roundRectPath(c, W / 2 - 290, 1530, 580, 86, 43);
-  }
+  if (c.roundRect) { c.roundRect(cardX, cardY, cardSize, cardSize, cardR); }
+  else             { _roundRectPath(c, cardX, cardY, cardSize, cardSize, cardR); }
   c.fill();
-  c.fillStyle = '#fff';
-  c.font = 'bold 46px sans-serif';
-  c.fillText('kasempong.com', W / 2, 1585);
+  c.shadowBlur = 0;
+  // Photo or placeholder inside
+  if (revealImg && revealImg.complete && revealImg.naturalWidth > 0) {
+    c.save();
+    c.beginPath();
+    if (c.roundRect) { c.roundRect(cardX, cardY, cardSize, cardSize, cardR); }
+    else             { _roundRectPath(c, cardX, cardY, cardSize, cardSize, cardR); }
+    c.clip();
+    c.drawImage(revealImg, cardX, cardY, cardSize, cardSize);
+    c.restore();
+  } else {
+    c.font = '140px sans-serif';
+    c.textAlign    = 'center';
+    c.textBaseline = 'middle';
+    c.globalAlpha  = 0.55;
+    c.fillText('📸', MX, cardY + cardSize / 2);
+    c.globalAlpha  = 1;
+  }
+  yPos = cardY + cardSize + 50;
 
-  // ── Credit ──
-  c.fillStyle = 'rgba(255,255,255,0.72)';
-  c.font = '44px sans-serif';
-  c.fillText('สร้างโดยหนึ่ง เพื่ออวยพรต้นในวันพิเศษ', W / 2, 1700);
+  // ── 7. Final message text (read from DOM) ────────────────────────
+  if (finalMsgText.trim()) {
+    c.textAlign    = 'center';
+    c.textBaseline = 'alphabetic';
+    c.fillStyle    = '#7a40a0';
+    c.font         = 'italic 50px Sriracha, sans-serif';
+    finalMsgText.split('\n').forEach(function (line, li) {
+      c.fillText(line.trim(), MX, yPos + li * 66);
+    });
+    yPos += Math.max(finalMsgText.split('\n').length, 1) * 66 + 30;
+  }
 
-  // ── Bottom emoji row ──
-  c.font = '64px sans-serif';
-  c.fillText('💕 🎂 💕', W / 2, 1858);
+  // ── 8. Website pill (replacing the share button) ─────────────────
+  var pillW = 520, pillH = 100, pillR = 50;
+  var pillX = MX - pillW / 2;
+  var pillY = yPos + 10;
+  var pillG = c.createLinearGradient(pillX, 0, pillX + pillW, 0);
+  pillG.addColorStop(0, '#e91e8c');
+  pillG.addColorStop(1, '#7b1fa2');
+  c.fillStyle   = pillG;
+  c.shadowColor = 'rgba(233,30,140,0.40)';
+  c.shadowBlur  = 24;
+  c.beginPath();
+  if (c.roundRect) { c.roundRect(pillX, pillY, pillW, pillH, pillR); }
+  else             { _roundRectPath(c, pillX, pillY, pillW, pillH, pillR); }
+  c.fill();
+  c.shadowBlur = 0;
+  c.fillStyle    = '#fff';
+  c.font         = 'bold 50px sans-serif';
+  c.textAlign    = 'center';
+  c.textBaseline = 'middle';
+  c.fillText('🌐 kasempong.com', MX, pillY + pillH / 2);
+  yPos = pillY + pillH + 60;
 
-  // ── Share or download ──
+  // ── 9. Deco emoji row ────────────────────────────────────────────
+  var decoEmojis = ['💕','✨','🌸','💜','🎀','⭐'];
+  c.font = '62px sans-serif';
+  c.textBaseline = 'middle';
+  decoEmojis.forEach(function (em, i) {
+    var dex = 140 + (i % 3) * ((W - 280) / 2);
+    var dey = yPos + Math.floor(i / 3) * 110;
+    c.fillText(em, dex, dey);
+  });
+  yPos += 250;
+
+  // ── 10. Credit ───────────────────────────────────────────────────
+  c.fillStyle    = 'rgba(74, 32, 96, 0.72)';
+  c.font         = '46px Sriracha, sans-serif';
+  c.textAlign    = 'center';
+  c.textBaseline = 'alphabetic';
+  c.fillText('สร้างโดยหนึ่ง เพื่ออวยพรต้นในวันพิเศษ', MX, Math.min(yPos, H - 60));
+
+  // ── Share or download ────────────────────────────────────────────
   canvas.toBlob(function (blob) {
     var file = new File([blob], 'happy-birthday-tonton.png', { type: 'image/png' });
     if (navigator.share && navigator.canShare && navigator.canShare({ files: [file] })) {
       navigator.share({
-        files:  [file],
-        title:  'Happy Birthday TonTon! 💕',
-        text:   'สร้างโดยหนึ่ง เพื่ออวยพรต้นในวันพิเศษ 🎂',
+        files: [file],
+        title: 'Happy Birthday TonTon! 💕',
+        text:  'สร้างโดยหนึ่ง เพื่ออวยพรต้นในวันพิเศษ 🎂',
       }).catch(function () {});
     } else {
-      // Desktop fallback: auto-download
       var url = URL.createObjectURL(blob);
       var a   = document.createElement('a');
       a.href     = url;
