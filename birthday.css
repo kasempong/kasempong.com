@@ -584,3 +584,23 @@ h1 {
 .final-msg.visible {
   opacity: 1;
 }
+
+/* ── Share button ──────────────────────────────────────────────── */
+.btn-share {
+  display: block;
+  margin: 18px auto 0;
+  padding: 13px 38px;
+  border: none;
+  border-radius: 50px;
+  background: linear-gradient(135deg, #e91e8c 0%, #7b1fa2 100%);
+  color: #fff;
+  font-size: 18px;
+  font-weight: 700;
+  letter-spacing: 0.04em;
+  cursor: pointer;
+  box-shadow: 0 4px 22px rgba(233, 30, 140, 0.45);
+  transition: transform 0.15s ease, box-shadow 0.15s ease;
+  animation: fadeIn 0.5s 0.3s ease both;
+}
+.btn-share:hover  { box-shadow: 0 6px 28px rgba(233, 30, 140, 0.6); }
+.btn-share:active { transform: scale(0.95); }

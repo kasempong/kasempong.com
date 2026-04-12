@@ -476,9 +476,13 @@ function initScratch() {
     sc.removeEventListener('pointerup',    onUp);
     sc.removeEventListener('pointercancel',onUp);
 
-    // Show final message after canvas fades
+    // Magical reveal chime
+    if (window.playRevealSound) window.playRevealSound();
+
+    // Show final message + share button after canvas fades
     setTimeout(function () {
       if (finalMsg) finalMsg.classList.add('visible');
+      showShareBtn();
     }, 650);
   }
 
@@ -503,6 +507,140 @@ function initScratch() {
   sc.addEventListener('pointermove',   onMove,  { passive: false });
   sc.addEventListener('pointerup',     onUp);
   sc.addEventListener('pointercancel', onUp);
+}
+
+// ── Share card helpers ─────────────────────────────────────────────
+function showShareBtn() {
+  var btn = document.getElementById('shareBtn');
+  if (!btn) return;
+  btn.style.display = '';
+  btn.addEventListener('click', generateShareCard, { once: true });
+}
+
+function _roundRectPath(c, x, y, w, h, r) {
+  c.moveTo(x + r, y);
+  c.lineTo(x + w - r, y);
+  c.quadraticCurveTo(x + w, y, x + w, y + r);
+  c.lineTo(x + w, y + h - r);
+  c.quadraticCurveTo(x + w, y + h, x + w - r, y + h);
+  c.lineTo(x + r, y + h);
+  c.quadraticCurveTo(x, y + h, x, y + h - r);
+  c.lineTo(x, y + r);
+  c.quadraticCurveTo(x, y, x + r, y);
+  c.closePath();
+}
+
+function generateShareCard() {
+  var W = 1080, H = 1920;            // 9:16 IG story
+  var canvas = document.createElement('canvas');
+  canvas.width  = W;
+  canvas.height = H;
+  var c = canvas.getContext('2d');
+
+  // ── Background gradient ──
+  var grad = c.createLinearGradient(0, 0, W, H);
+  grad.addColorStop(0,    '#1a0030');
+  grad.addColorStop(0.35, '#6a1faa');
+  grad.addColorStop(0.70, '#cc1a88');
+  grad.addColorStop(1,    '#ff6fa3');
+  c.fillStyle = grad;
+  c.fillRect(0, 0, W, H);
+
+  // ── Sparkle dots ──
+  for (var i = 0; i < 130; i++) {
+    var alpha = Math.random() * 0.18 + 0.04;
+    c.fillStyle = 'rgba(255,255,255,' + alpha + ')';
+    c.beginPath();
+    c.arc(Math.random() * W, Math.random() * H, Math.random() * 5 + 1, 0, Math.PI * 2);
+    c.fill();
+  }
+
+  c.textAlign = 'center';
+
+  // ── Big cake ──
+  c.font = '200px sans-serif';
+  c.fillText('🎂', W / 2, 320);
+
+  // ── "Happy Birthday" ──
+  c.fillStyle = 'rgba(255,255,255,0.92)';
+  c.font = 'bold 88px sans-serif';
+  c.fillText('Happy Birthday', W / 2, 490);
+
+  // ── Name in gold ──
+  c.fillStyle = '#ffd700';
+  c.font = 'bold 128px sans-serif';
+  c.fillText('TonTon! 💕', W / 2, 660);
+
+  // ── Deco emoji row ──
+  c.font = '74px sans-serif';
+  c.fillText('🌸 ✨ 🎀 ✨ 🌸', W / 2, 800);
+
+  // ── Divider ──
+  c.strokeStyle = 'rgba(255,255,255,0.30)';
+  c.lineWidth = 4;
+  c.beginPath();
+  c.moveTo(160, 856);
+  c.lineTo(W - 160, 856);
+  c.stroke();
+
+  // ── Message ──
+  c.fillStyle = 'rgba(255,255,255,0.95)';
+  c.font = '60px sans-serif';
+  c.fillText('สุขสันต์วันเกิดนะ 🥹', W / 2, 960);
+  c.font = '50px sans-serif';
+  c.fillText('ขอให้ปีนี้เต็มไปด้วยความสุข', W / 2, 1045);
+  c.fillText('และทุกอย่างที่ต้นปรารถนา 💗', W / 2, 1118);
+
+  // ── Scattered emoji grid ──
+  var scatter = ['💗','✨','🎀','💕','🌸','⭐','🦋','💜'];
+  c.font = '68px sans-serif';
+  scatter.forEach(function (em, idx) {
+    var ex = 120 + (idx % 4) * 230;
+    var ey = 1250 + Math.floor(idx / 4) * 140;
+    c.fillText(em, ex, ey);
+  });
+
+  // ── Website badge pill ──
+  c.fillStyle = 'rgba(255,255,255,0.18)';
+  c.beginPath();
+  if (c.roundRect) {
+    c.roundRect(W / 2 - 290, 1530, 580, 86, 43);
+  } else {
+    _roundRectPath(c, W / 2 - 290, 1530, 580, 86, 43);
+  }
+  c.fill();
+  c.fillStyle = '#fff';
+  c.font = 'bold 46px sans-serif';
+  c.fillText('kasempong.com', W / 2, 1585);
+
+  // ── Credit ──
+  c.fillStyle = 'rgba(255,255,255,0.72)';
+  c.font = '44px sans-serif';
+  c.fillText('สร้างโดยหนึ่ง เพื่ออวยพรต้นในวันพิเศษ', W / 2, 1700);
+
+  // ── Bottom emoji row ──
+  c.font = '64px sans-serif';
+  c.fillText('💕 🎂 💕', W / 2, 1858);
+
+  // ── Share or download ──
+  canvas.toBlob(function (blob) {
+    var file = new File([blob], 'happy-birthday-tonton.png', { type: 'image/png' });
+    if (navigator.share && navigator.canShare && navigator.canShare({ files: [file] })) {
+      navigator.share({
+        files:  [file],
+        title:  'Happy Birthday TonTon! 💕',
+        text:   'สร้างโดยหนึ่ง เพื่ออวยพรต้นในวันพิเศษ 🎂',
+      }).catch(function () {});
+    } else {
+      // Desktop fallback: auto-download
+      var url = URL.createObjectURL(blob);
+      var a   = document.createElement('a');
+      a.href     = url;
+      a.download = 'happy-birthday-tonton.png';
+      a.click();
+      setTimeout(function () { URL.revokeObjectURL(url); }, 1500);
+    }
+  });
 }
 
 // ── Chill Romantic Piano BGM + Button Click Sounds ───────────────
@@ -642,6 +780,28 @@ function initScratch() {
     env.connect(audioCtx.destination);
     osc.start(now);
     osc.stop(now + 0.22);
+  };
+
+  // ── Magical reveal chime (rising arpeggio played on scratch-card reveal) ──
+  window.playRevealSound = function () {
+    if (!audioCtx || musicMuted) return;
+    var now   = audioCtx.currentTime;
+    // C5 → E5 → G5 → C6: sparkly rising arpeggio
+    var notes = [523.25, 659.25, 783.99, 1046.50];
+    notes.forEach(function (freq, i) {
+      var t   = now + i * 0.14;
+      var osc = audioCtx.createOscillator();
+      var env = audioCtx.createGain();
+      osc.type = 'sine';
+      osc.frequency.value = freq;
+      env.gain.setValueAtTime(0.0001, t);
+      env.gain.linearRampToValueAtTime(0.28, t + 0.01);
+      env.gain.exponentialRampToValueAtTime(0.0001, t + 0.55);
+      osc.connect(env);
+      env.connect(audioCtx.destination);
+      osc.start(t);
+      osc.stop(t + 0.7);
+    });
   };
 
   // Attach click sound to all interactive buttons

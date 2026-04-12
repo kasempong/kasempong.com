@@ -768,17 +768,7 @@ document.querySelectorAll('.pin, .section-title, .section-subtitle, .section-eye
     overlay.classList.remove('open'); overlay.setAttribute('aria-hidden','true');
   }
 
-  // Lazy-load island3d only when the panel is first opened
-  let island3dLoaded = false;
-  function loadIsland3d() {
-    if (island3dLoaded) return;
-    island3dLoaded = true;
-    var s = document.createElement('script');
-    s.src = 'island3d.bundle.js';
-    document.body.appendChild(s);
-  }
-
-  btn.addEventListener('click', function () { loadIsland3d(); open(); });
+  btn.addEventListener('click', open);
   close.addEventListener('click', shut);
   overlay.addEventListener('click', shut);
   document.addEventListener('keydown', e => { if (e.key === 'Escape') shut(); });
