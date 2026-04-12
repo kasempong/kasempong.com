@@ -924,6 +924,11 @@ a { color: inherit; text-decoration: none; }
              filter: drop-shadow(0 0 10px #ddeeff) drop-shadow(0 0 22px #aabbff); }
 }
 
+/* Kuromi label offset */
+#ckuromi-wrap .cmp-label {
+  left: 10px;
+}
+
 /* Kuromi companion */
 #ckuromi {
   animation: none; /* glow lives on the img */
