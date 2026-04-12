@@ -752,6 +752,43 @@ document.querySelectorAll('.pin, .section-title, .section-subtitle, .section-eye
   document.addEventListener('keydown', e => { if (e.key === 'Escape') shut(); });
 })();
 
+// ── Vinyl "available soon" toast ──────────────────────────────
+(function () {
+  const vinyl = document.getElementById('vinyl-widget');
+  if (!vinyl) return;
+
+  let toastEl = null;
+  let hideTimer = null;
+
+  vinyl.addEventListener('click', function (e) {
+    e.stopPropagation();
+    if (toastEl) return;                       // already showing
+
+    toastEl = document.createElement('div');
+    toastEl.className = 'vinyl-toast';
+    toastEl.textContent = '🎵 available soon';
+    document.body.appendChild(toastEl);
+
+    // Position above the vinyl
+    const rect = vinyl.getBoundingClientRect();
+    toastEl.style.left = (rect.left + rect.width / 2) + 'px';
+    toastEl.style.top  = (rect.top + window.scrollY - 12) + 'px';
+
+    // Trigger fade-in
+    requestAnimationFrame(() => toastEl.classList.add('show'));
+
+    hideTimer = setTimeout(function () {
+      if (toastEl) {
+        toastEl.classList.remove('show');
+        toastEl.addEventListener('transitionend', function () {
+          toastEl && toastEl.remove();
+          toastEl = null;
+        }, { once: true });
+      }
+    }, 2200);
+  });
+})();
+
 // ── Island panel ──────────────────────────────────────────────
 (function () {
   const btn     = document.getElementById('island-widget');
