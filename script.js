@@ -1110,6 +1110,7 @@ window.addEventListener('scroll', () => {
     if (inputEl.value.length === 8) {
       if (inputEl.value === SECRET_PW) {
         overlay.classList.remove('open');
+        sessionStorage.setItem('bd_access', '1'); // grant access token before redirect
         window.location.href = '/birthday.html';
       } else {
         shake();

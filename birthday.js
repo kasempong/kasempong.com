@@ -1,5 +1,12 @@
 'use strict';
 
+// ── Access guard — redirect to home if arrived without the password gate ──
+(function () {
+  if (!sessionStorage.getItem('bd_access')) {
+    window.location.replace('/');
+  }
+})();
+
 // ── Answer messages ───────────────────────────────────────────────
 const MESSAGES = {
   1: 'ไม่ว่าจะเหม็นแค่ไหน ก็ยังน่ารักในใจเราเสมอเลยนะ 🐾',
@@ -442,6 +449,7 @@ function initScratch() {
 
   function getPos(e) {
     var rect = sc.getBoundingClientRect();
+    if (!rect.width || !rect.height) return null; // guard: canvas not yet rendered
     var src  = e.touches ? e.touches[0] : e;
     return {
       x: (src.clientX - rect.left) * (size / rect.width),
@@ -478,13 +486,13 @@ function initScratch() {
   function onDown(e) {
     isDown = true;
     var pos = getPos(e);
-    scratchAt(pos.x, pos.y);
+    if (pos) scratchAt(pos.x, pos.y);
     e.preventDefault();
   }
   function onMove(e) {
     if (!isDown) return;
     var pos = getPos(e);
-    scratchAt(pos.x, pos.y);
+    if (pos) scratchAt(pos.x, pos.y);
     e.preventDefault();
   }
   function onUp() {
