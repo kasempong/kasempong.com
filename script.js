@@ -1046,6 +1046,7 @@ document.querySelectorAll('.pin, .section-title, .section-subtitle, .section-eye
 
     localStorage.setItem(CACHE_KEY, JSON.stringify({ ts: Date.now(), data: result }));
     render(result);
+    window.dispatchEvent(new Event('envDataUpdated'));
     refreshBtn.classList.remove('spinning');
   }
 
@@ -1134,4 +1135,141 @@ window.addEventListener('scroll', () => {
   overlay.addEventListener('click', function(e) {
     if (e.target === overlay) overlay.classList.remove('open');
   });
+})();
+
+// ── Cursor sparkle trail ──────────────────────────────────────
+(function () {
+  var COLORS = ['#ff88cc','#ffcc55','#99eeff','#cc99ff','#ffffff','#ffaa88'];
+  var sparks = [];
+  var mx = -999, my = -999, active = false;
+
+  var canvas = document.createElement('canvas');
+  canvas.style.cssText = 'position:fixed;top:0;left:0;pointer-events:none;z-index:8888;';
+  canvas.width  = window.innerWidth;
+  canvas.height = window.innerHeight;
+  document.body.appendChild(canvas);
+  var ctx2 = canvas.getContext('2d');
+
+  window.addEventListener('resize', function () {
+    canvas.width  = window.innerWidth;
+    canvas.height = window.innerHeight;
+  });
+
+  window.addEventListener('mousemove', function (e) { mx = e.clientX; my = e.clientY; active = true; });
+  window.addEventListener('touchmove', function (e) {
+    mx = e.touches[0].clientX; my = e.touches[0].clientY; active = true;
+  }, { passive: true });
+  window.addEventListener('mouseleave', function () { active = false; });
+
+  var spawnTick = 0;
+  function tick() {
+    ctx2.clearRect(0, 0, canvas.width, canvas.height);
+
+    if (active && ++spawnTick % 3 === 0) {
+      sparks.push({
+        x: mx + (Math.random() - 0.5) * 10,
+        y: my + (Math.random() - 0.5) * 10,
+        vx: (Math.random() - 0.5) * 1.2,
+        vy: (Math.random() - 0.5) * 1.2 - 0.6,
+        r: Math.random() * 3 + 1.5,
+        alpha: 1,
+        color: COLORS[Math.floor(Math.random() * COLORS.length)],
+      });
+    }
+
+    sparks = sparks.filter(function (s) { return s.alpha > 0.02; });
+    sparks.forEach(function (s) {
+      s.x += s.vx; s.y += s.vy;
+      s.vy += 0.04; // gentle gravity
+      s.r  *= 0.96;
+      s.alpha *= 0.91;
+      ctx2.globalAlpha = s.alpha;
+      ctx2.fillStyle   = s.color;
+      ctx2.shadowColor = s.color;
+      ctx2.shadowBlur  = 6;
+      ctx2.beginPath();
+      ctx2.arc(s.x, s.y, s.r, 0, Math.PI * 2);
+      ctx2.fill();
+    });
+    ctx2.globalAlpha = 1;
+    ctx2.shadowBlur  = 0;
+    requestAnimationFrame(tick);
+  }
+  tick();
+})();
+
+// ── Click-anywhere burst ──────────────────────────────────────
+(function () {
+  var GLYPHS = ['💗','✦','⭐','💜','✨','🌸','💫'];
+  document.addEventListener('click', function (e) {
+    // Skip if clicking interactive elements
+    if (e.target.closest('a,button,input,select,textarea,.cmp-wrap,#bdGateOverlay')) return;
+    for (var i = 0; i < 6; i++) {
+      (function (i) {
+        var el = document.createElement('span');
+        el.textContent = GLYPHS[Math.floor(Math.random() * GLYPHS.length)];
+        el.style.cssText = [
+          'position:fixed',
+          'left:' + e.clientX + 'px',
+          'top:'  + e.clientY + 'px',
+          'font-size:' + (Math.random() * 10 + 12) + 'px',
+          'pointer-events:none',
+          'z-index:9990',
+          'user-select:none',
+          'transform:translate(-50%,-50%)',
+          'transition:transform 0.7s ease-out, opacity 0.7s ease-out',
+        ].join(';');
+        document.body.appendChild(el);
+        requestAnimationFrame(function () {
+          var angle = (i / 6) * Math.PI * 2 + (Math.random() - 0.5);
+          var dist  = 40 + Math.random() * 40;
+          el.style.transform = 'translate(calc(-50% + ' + (Math.cos(angle) * dist) + 'px), calc(-50% + ' + (Math.sin(angle) * dist) + 'px))';
+          el.style.opacity   = '0';
+        });
+        setTimeout(function () { el.remove(); }, 750);
+      })(i);
+    }
+  });
+})();
+
+// ── Weather-themed background hue shift ──────────────────────
+(function () {
+  // Waits for env panel's fetchAll to store data, then applies hue
+  function applyWeatherHue() {
+    try {
+      var raw = localStorage.getItem('kasempong_env_cache');
+      if (!raw) return;
+      var cache = JSON.parse(raw);
+      var aqi  = cache.data && cache.data.aqi;
+      var temp = cache.data && cache.data.temp;
+      var hue = 0, sat = 0, brightness = 1;
+
+      if (aqi !== null) {
+        if      (aqi <= 50)  { hue = 0;    sat = 0;   }  // clean — no shift
+        else if (aqi <= 100) { hue = 30;   sat = 0.08; } // moderate — faint warm
+        else if (aqi <= 150) { hue = 25;   sat = 0.18; } // unhealthy — amber tint
+        else                 { hue = 20;   sat = 0.28; } // hazey — strong amber
+      }
+      if (temp !== null && temp >= 35) { brightness = 1.06; } // scorching — slightly brighter
+
+      var filter = hue
+        ? 'hue-rotate(' + hue + 'deg) saturate(' + (1 + sat) + ') brightness(' + brightness + ')'
+        : 'brightness(' + brightness + ')';
+
+      document.body.style.transition = 'filter 3s ease';
+      document.body.style.filter = filter;
+
+      // Subtle status hint if air quality is bad
+      var bar = document.getElementById('envAqi');
+      if (bar && aqi > 100) {
+        bar.style.color = aqi > 150 ? '#ff8844' : '#ffcc44';
+      }
+    } catch (_) {}
+  }
+
+  // Try on load (cached data) and again after 6s (fresh fetch may have landed)
+  applyWeatherHue();
+  setTimeout(applyWeatherHue, 6000);
+  // Re-apply whenever env panel refreshes
+  window.addEventListener('envDataUpdated', applyWeatherHue);
 })();
