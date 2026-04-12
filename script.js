@@ -545,7 +545,7 @@ applyLang(currentLang);
   const updateKuromi = makeCompanion(
     'ckuromi', null, kuromiMsgs,
     window.innerWidth * 0.82, window.innerHeight * 0.38, 0.35,
-    'kuromi.png'
+    'kuromi.webp'
   );
 
   // "hi" hint label on the star
@@ -768,7 +768,17 @@ document.querySelectorAll('.pin, .section-title, .section-subtitle, .section-eye
     overlay.classList.remove('open'); overlay.setAttribute('aria-hidden','true');
   }
 
-  btn.addEventListener('click', open);
+  // Lazy-load island3d only when the panel is first opened
+  let island3dLoaded = false;
+  function loadIsland3d() {
+    if (island3dLoaded) return;
+    island3dLoaded = true;
+    var s = document.createElement('script');
+    s.src = 'island3d.bundle.js';
+    document.body.appendChild(s);
+  }
+
+  btn.addEventListener('click', function () { loadIsland3d(); open(); });
   close.addEventListener('click', shut);
   overlay.addEventListener('click', shut);
   document.addEventListener('keydown', e => { if (e.key === 'Escape') shut(); });
