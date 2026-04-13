@@ -767,11 +767,14 @@ document.querySelectorAll('.pin, .section-title, .section-subtitle, .section-eye
     toastEl = document.createElement('div');
     toastEl.className = 'vinyl-toast';
     toastEl.textContent = '🎵 available soon';
-    document.body.appendChild(toastEl);
 
-    // Position above the vinyl
+    // Position above the vinyl — clamp so it never escapes the screen
     const rect = vinyl.getBoundingClientRect();
-    toastEl.style.left = (rect.left + rect.width / 2) + 'px';
+    document.body.appendChild(toastEl);   // append first so offsetWidth is measurable
+    const tw  = toastEl.offsetWidth || 140;
+    const raw = rect.left + rect.width / 2;
+    const clamped = Math.min(Math.max(raw, tw / 2 + 12), window.innerWidth - tw / 2 - 12);
+    toastEl.style.left = clamped + 'px';
     toastEl.style.top  = (rect.top + window.scrollY - 12) + 'px';
 
     // Trigger fade-in
@@ -789,6 +792,59 @@ document.querySelectorAll('.pin, .section-title, .section-subtitle, .section-eye
   });
 })();
 
+// ── Tree random messages ───────────────────────────────────────
+(function () {
+  const TREE_MSGS = [
+    '🌳 i make your air, you\'re welcome',
+    '🍃 CO₂ in, O₂ out. that\'s me.',
+    '🌱 please plant more trees',
+    '💚 hug a tree today. seriously.',
+    '🌍 i\'ve been here longer than wifi',
+    '🍂 yes i drop leaves. it\'s called autumn.',
+    '☀️ sun + water = me thriving rn',
+    '🐦 12 birds live in me currently',
+    '🌧️ i literally make it rain',
+    '♻️ i\'m already recycling',
+    '🌿 deforestation is not it',
+    '🍃 trees per person: 422. protect them.',
+  ];
+
+  function showTreeMsg() {
+    const island = document.getElementById('island-widget');
+    if (!island) return;
+
+    const msg  = TREE_MSGS[Math.floor(Math.random() * TREE_MSGS.length)];
+    const rect = island.getBoundingClientRect();
+
+    const el = document.createElement('div');
+    el.className   = 'vinyl-toast tree-toast';
+    el.textContent = msg;
+    document.body.appendChild(el);
+
+    // Position to the right of the tree, vertically centred on it
+    const tw = el.offsetWidth || 180;
+    const rawLeft = rect.right + 14;
+    const left = Math.min(rawLeft, window.innerWidth - tw - 12);
+    const top  = rect.top + window.scrollY + rect.height / 2;
+    el.style.left      = left + 'px';
+    el.style.top       = top + 'px';
+    el.style.transform = 'translateY(-50%)';  // vertically centre on tree
+
+    requestAnimationFrame(() => el.classList.add('show'));
+
+    setTimeout(function () {
+      el.classList.remove('show');
+      el.addEventListener('transitionend', () => el.remove(), { once: true });
+    }, 2000);
+  }
+
+  // First message after 3s, then every 10s
+  setTimeout(function tick() {
+    showTreeMsg();
+    setTimeout(tick, 10000);
+  }, 3000);
+})();
+
 // ── Sukiyaki "available soon" toast ───────────────────────────
 (function () {
   const suki = document.getElementById('sukiyaki-widget');
@@ -803,10 +859,13 @@ document.querySelectorAll('.pin, .section-title, .section-subtitle, .section-eye
     toastEl = document.createElement('div');
     toastEl.className   = 'vinyl-toast';
     toastEl.textContent = '🍲 available soon';
-    document.body.appendChild(toastEl);
 
     const rect = suki.getBoundingClientRect();
-    toastEl.style.left = (rect.left + rect.width / 2) + 'px';
+    document.body.appendChild(toastEl);
+    const tw2 = toastEl.offsetWidth || 140;
+    const raw2 = rect.left + rect.width / 2;
+    const clamped2 = Math.min(Math.max(raw2, tw2 / 2 + 12), window.innerWidth - tw2 / 2 - 12);
+    toastEl.style.left = clamped2 + 'px';
     toastEl.style.top  = (rect.top + window.scrollY - 12) + 'px';
 
     requestAnimationFrame(() => toastEl.classList.add('show'));
