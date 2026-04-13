@@ -789,6 +789,40 @@ document.querySelectorAll('.pin, .section-title, .section-subtitle, .section-eye
   });
 })();
 
+// ── Sukiyaki "available soon" toast ───────────────────────────
+(function () {
+  const suki = document.getElementById('sukiyaki-widget');
+  if (!suki) return;
+
+  let toastEl  = null;
+
+  suki.addEventListener('click', function (e) {
+    e.stopPropagation();
+    if (toastEl) return;
+
+    toastEl = document.createElement('div');
+    toastEl.className   = 'vinyl-toast';
+    toastEl.textContent = '🍲 available soon';
+    document.body.appendChild(toastEl);
+
+    const rect = suki.getBoundingClientRect();
+    toastEl.style.left = (rect.left + rect.width / 2) + 'px';
+    toastEl.style.top  = (rect.top + window.scrollY - 12) + 'px';
+
+    requestAnimationFrame(() => toastEl.classList.add('show'));
+
+    setTimeout(function () {
+      if (toastEl) {
+        toastEl.classList.remove('show');
+        toastEl.addEventListener('transitionend', function () {
+          toastEl && toastEl.remove();
+          toastEl = null;
+        }, { once: true });
+      }
+    }, 2200);
+  });
+})();
+
 // ── Island panel ──────────────────────────────────────────────
 (function () {
   const btn     = document.getElementById('island-widget');
