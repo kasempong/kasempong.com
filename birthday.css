@@ -608,3 +608,65 @@ h1 {
 }
 .btn-share:hover  { box-shadow: 0 6px 28px rgba(233, 30, 140, 0.6); }
 .btn-share:active { transform: scale(0.95); }
+
+/* ── Password Gate ──────────────────────────────────────────────── */
+.bd-gate {
+  position: fixed; inset: 0;
+  z-index: 9999;
+  display: flex; align-items: center; justify-content: center;
+  background: rgba(20, 0, 30, 0.78);
+  backdrop-filter: blur(18px);
+  -webkit-backdrop-filter: blur(18px);
+}
+.bd-gate.hidden { display: none; }
+.bd-gate-box {
+  background: rgba(255, 255, 255, 0.08);
+  border: 1.5px solid rgba(255, 180, 220, 0.3);
+  border-radius: 28px;
+  padding: 36px 28px 28px;
+  max-width: 300px;
+  width: 88%;
+  text-align: center;
+  box-shadow: 0 16px 48px rgba(200, 80, 180, 0.3);
+}
+.bd-gate-lock { font-size: 40px; margin-bottom: 10px; }
+.bd-gate-hint {
+  color: rgba(255, 220, 240, 0.9);
+  font-size: 15px;
+  margin-bottom: 18px;
+  line-height: 1.7;
+}
+.bd-gate-hint span { opacity: 0.6; font-size: 12px; }
+.bd-gate-display {
+  font-size: 28px;
+  letter-spacing: 4px;
+  min-height: 54px;
+  color: #ff6fa3;
+  background: rgba(255, 255, 255, 0.08);
+  border: 1.5px solid rgba(255, 180, 220, 0.35);
+  border-radius: 14px;
+  padding: 10px 12px;
+  display: flex; align-items: center; justify-content: center;
+  flex-wrap: wrap; gap: 2px;
+  transition: font-size 0.1s;
+  word-break: break-all;
+  cursor: text;
+  margin-bottom: 14px;
+}
+#bdGateInput {
+  position: fixed;
+  left: -9999px; top: 50%;
+  width: 1px; height: 1px;
+  font-size: 16px;
+  padding: 0; margin: 0;
+  border: 0; outline: 0;
+  background: transparent;
+  color: transparent;
+  -webkit-appearance: none;
+  appearance: none;
+}
+.bd-gate-error {
+  color: #ff6fa3;
+  font-size: 13px;
+  min-height: 18px;
+}

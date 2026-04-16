@@ -11,6 +11,18 @@
 </head>
 <body>
 
+  <!-- Password gate overlay -->
+  <div id="bdGate" class="bd-gate">
+    <div class="bd-gate-box">
+      <div class="bd-gate-lock">🔒</div>
+      <p class="bd-gate-hint">TonTon's birthday<br><span>(ddmmyyyy)</span></p>
+      <div class="bd-gate-display" id="bdGateDisplay">💗</div>
+      <input id="bdGateInput" type="tel" inputmode="numeric" maxlength="8"
+             autocomplete="off" autocorrect="off" autocapitalize="off" spellcheck="false" />
+      <p class="bd-gate-error" id="bdGateError"></p>
+    </div>
+  </div>
+
   <!-- Confetti layer -->
   <canvas id="confetti-canvas" aria-hidden="true"></canvas>
 
@@ -44,7 +56,7 @@
     <!-- Screen 0: Welcome -->
     <div class="screen active" id="s0">
       <div class="cake-anim">🎂</div>
-      <h1>Happy Birthday<br><span class="name-highlight">TonTon</span> 🥹</h1>
+      <h1>🎂 Happy Birthday 🎂<br><span class="name-highlight">TonTon</span> 🥹</h1>
       <p class="welcome-sub">มีอะไรพิเศษรอต้นอยู่นะ~</p>
       <button class="btn-go" id="startBtn">เริ่มเลย 💕</button>
     </div>

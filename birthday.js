@@ -1,10 +1,45 @@
 'use strict';
 
-// ── Access guard — redirect to home if arrived without the password gate ──
+// ── Password gate — self-contained overlay on this page ──────────
 (function () {
-  if (!sessionStorage.getItem('bd_access')) {
-    window.location.replace('/');
+  var SECRET  = '28042001';
+  var gate    = document.getElementById('bdGate');
+  var display = document.getElementById('bdGateDisplay');
+  var input   = document.getElementById('bdGateInput');
+  var error   = document.getElementById('bdGateError');
+
+  function updateDisplay() {
+    var len = input.value.length;
+    display.textContent = len === 0 ? '\u{1F497}' : '\u{1F493}'.repeat(len);
+    display.style.fontSize    = len <= 4 ? '28px' : len <= 6 ? '24px' : '20px';
+    display.style.letterSpacing = len <= 4 ? '4px' : '2px';
   }
+
+  function shake() {
+    [6, -6, 5, -5, 3, 0].forEach(function (x, i) {
+      setTimeout(function () { display.style.transform = 'translateX(' + x + 'px)'; }, i * 55);
+    });
+    setTimeout(function () { display.style.transform = ''; }, 350);
+  }
+
+  gate.addEventListener('click', function () { input.focus(); });
+
+  input.addEventListener('input', function () {
+    input.value = input.value.replace(/\D/g, '').slice(0, 8);
+    updateDisplay();
+    error.textContent = '';
+    if (input.value.length === 8) {
+      if (input.value === SECRET) {
+        gate.classList.add('hidden');
+      } else {
+        shake();
+        error.textContent = '\u0E25\u0E2D\u0E07\u0E43\u0E2B\u0E21\u0E48\u0E19\u0E30 \u{1F494}';
+        setTimeout(function () { input.value = ''; updateDisplay(); error.textContent = ''; }, 900);
+      }
+    }
+  });
+
+  setTimeout(function () { input.focus(); }, 120);
 })();
 
 // ── Answer messages ───────────────────────────────────────────────
@@ -698,7 +733,7 @@ function _drawShareCard(bgImg, revealImg, finalMsgText) {
   c.shadowBlur   = 14;
   c.fillStyle = '#4a2060';
   c.font = 'bold italic 90px Sriracha, sans-serif';
-  c.fillText('🎂 Happy Birthday', MX, yPos);
+  c.fillText('🎂 Happy Birthday 🎂', MX, yPos);
   yPos += 128;
   c.fillStyle = '#cc0066';
   c.font = 'bold italic 108px Sriracha, sans-serif';
@@ -758,46 +793,13 @@ function _drawShareCard(bgImg, revealImg, finalMsgText) {
     c.fillText(em, dex, dey);
   });
 
-  // ── 9. Footer search-bar (fixed to bottom of canvas) ────────────
-  var sbH   = 110;                         // bar height
-  var sbW   = W - 160;                     // bar width (margin from border)
-  var sbX   = MX - sbW / 2;
-  var sbY   = H - BW - 30 - sbH;          // sits just above lower border
-  var sbR   = sbH / 2;                     // fully rounded ends (pill)
-
-  // Frosted glass backing
-  c.fillStyle   = 'rgba(255, 255, 255, 0.82)';
-  c.shadowColor = 'rgba(200, 100, 220, 0.30)';
-  c.shadowBlur  = 22;
-  c.beginPath();
-  if (c.roundRect) { c.roundRect(sbX, sbY, sbW, sbH, sbR); }
-  else             { _roundRectPath(c, sbX, sbY, sbW, sbH, sbR); }
-  c.fill();
-  c.shadowBlur = 0;
-
-  // Thin gradient stroke (like a cute search box border)
-  var sbBorder = c.createLinearGradient(sbX, 0, sbX + sbW, 0);
-  sbBorder.addColorStop(0,   '#ff6fa3');
-  sbBorder.addColorStop(0.5, '#c77dff');
-  sbBorder.addColorStop(1,   '#ffb347');
-  c.strokeStyle = sbBorder;
-  c.lineWidth   = 4;
-  c.beginPath();
-  if (c.roundRect) { c.roundRect(sbX, sbY, sbW, sbH, sbR); }
-  else             { _roundRectPath(c, sbX, sbY, sbW, sbH, sbR); }
-  c.stroke();
-
-  // Globe icon on left
-  c.font         = '52px sans-serif';
-  c.textAlign    = 'left';
+  // ── 9. Footer — plain text ───────────────────────────────────────
+  c.font         = '30px sans-serif';
+  c.textAlign    = 'center';
   c.textBaseline = 'middle';
-  c.fillText('🌐', sbX + 36, sbY + sbH / 2);
-
-  // Footer text — minimal
-  c.font         = '28px sans-serif';
-  c.textAlign    = 'left';
-  c.fillStyle    = 'rgba(120, 80, 160, 0.55)';
-  c.fillText('kasempong.com', sbX + 108, sbY + sbH / 2);
+  c.fillStyle    = 'rgba(120, 80, 160, 0.42)';
+  c.shadowBlur   = 0;
+  c.fillText('from kasempong.com \u2726', MX, H - BW - 55);
 
   // ── Share or download ────────────────────────────────────────────
   canvas.toBlob(function (blob) {
