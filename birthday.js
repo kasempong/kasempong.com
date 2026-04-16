@@ -708,10 +708,12 @@ function _drawShareCard(bgImg, revealImg, finalMsgText) {
   c.fillText('💕', MX + 200, yPos - 16);
   yPos += 80;
 
-  // ── 6. Scratch card — image drawn directly, no box ──────────────
-  // Match the image's natural 1.46:1 landscape ratio (2333 × 1919 content)
+  // ── 6. Scratch card — image drawn at natural aspect ratio ─────────
+  var imgRatio = (revealImg && revealImg.naturalWidth && revealImg.naturalHeight)
+    ? revealImg.naturalWidth / revealImg.naturalHeight
+    : 1.215;                                  // fallback (2333÷1919)
   var cardW = 940;
-  var cardH = Math.round(cardW / 1.463);   // ≈ 642
+  var cardH = Math.round(cardW / imgRatio);   // preserves true ratio (≈774)
   var cardX = MX - cardW / 2;
   var cardY = yPos;
   if (revealImg && revealImg.complete && revealImg.naturalWidth > 0) {
@@ -724,28 +726,35 @@ function _drawShareCard(bgImg, revealImg, finalMsgText) {
     c.fillText('📸', MX, cardY + cardH / 2);
     c.globalAlpha  = 1;
   }
-  yPos = cardY + cardH + 50;
+  yPos = cardY + cardH + 60;
 
   // ── 7. Final message text (read from DOM) ────────────────────────
-  if (finalMsgText.trim()) {
+  var msgLines = finalMsgText.trim() ? finalMsgText.trim().split('\n') : [];
+  if (msgLines.length) {
     c.textAlign    = 'center';
     c.textBaseline = 'alphabetic';
     c.fillStyle    = '#7a40a0';
-    c.font         = 'italic 50px Sriracha, sans-serif';
-    finalMsgText.split('\n').forEach(function (line, li) {
-      c.fillText(line.trim(), MX, yPos + li * 66);
+    c.font         = 'italic 54px Sriracha, sans-serif';
+    msgLines.forEach(function (line, li) {
+      c.fillText(line.trim(), MX, yPos + li * 72);
     });
-    yPos += Math.max(finalMsgText.split('\n').length, 1) * 66 + 30;
+    yPos += msgLines.length * 72 + 40;
   }
 
-  // ── 8. Deco emoji scatter (fills space after message) ────────────
+  // ── 8. Deco emoji — evenly distributed in remaining space ────────
+  var sbY_est  = H - BW - 30 - 110;          // estimated footer top
   var decoEmojis = ['💕','✨','🌸','💜','🎀','⭐'];
-  c.font = '62px sans-serif';
+  var decoRows   = 2, decoCols = 3;
+  var decoSpace  = sbY_est - yPos;            // available vertical gap
+  var rowStep    = Math.max(100, Math.floor(decoSpace / (decoRows + 1)));
+  c.font = '66px sans-serif';
   c.textAlign    = 'center';
   c.textBaseline = 'middle';
   decoEmojis.forEach(function (em, i) {
-    var dex = 140 + (i % 3) * ((W - 280) / 2);
-    var dey = yPos + Math.floor(i / 3) * 110;
+    var col = i % decoCols;
+    var row = Math.floor(i / decoCols);
+    var dex = 160 + col * Math.round((W - 320) / (decoCols - 1));
+    var dey = yPos + (row + 1) * rowStep - rowStep / 2;
     c.fillText(em, dex, dey);
   });
 
