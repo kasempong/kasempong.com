@@ -517,8 +517,8 @@ h1 {
 /* ── Scratch card ──────────────────────────────────────────────── */
 .scratch-card {
   position: relative;
-  width: min(88vw, 380px);
-  height: min(56vw, 245px);
+  width: min(96vw, 440px);
+  height: min(62vw, 270px);
   border-radius: 50% / 42%;
   overflow: hidden;
   box-shadow: 0 14px 44px rgba(180, 100, 230, 0.28), 0 0 0 3px rgba(200,120,255,0.35);
