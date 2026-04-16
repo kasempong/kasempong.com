@@ -39,25 +39,6 @@
       pointer-events: none;
     }
 
-    /* ── Music button ──────────────────────────────────────── */
-    #music-btn {
-      position: fixed;
-      top: 18px; right: 18px;
-      z-index: 20;
-      background: rgba(255,255,255,0.07);
-      border: 1px solid rgba(255,255,255,0.15);
-      border-radius: 50%;
-      width: 44px; height: 44px;
-      font-size: 18px;
-      cursor: pointer;
-      display: flex; align-items: center; justify-content: center;
-      transition: background 0.2s, transform 0.15s;
-      backdrop-filter: blur(10px);
-      -webkit-backdrop-filter: blur(10px);
-      -webkit-tap-highlight-color: transparent;
-    }
-    #music-btn:hover { background: rgba(255,255,255,0.14); transform: scale(1.06); }
-    #music-btn:active { transform: scale(0.94); }
 
     /* ── Center stage ──────────────────────────────────────── */
     #center-stage {
@@ -224,7 +205,6 @@
 
 <canvas id="bg-canvas"></canvas>
 
-<button id="music-btn" aria-label="Toggle ambient music">🔈</button>
 
 <div id="center-stage">
   <div id="name-wrap"></div>
@@ -502,57 +482,6 @@ enterBtn.addEventListener('touchend', function(e) {
   triggerBlackHole();
 });
 
-// ── Ambient music ─────────────────────────────────────────────────
-var audioCtx  = null;
-var masterGain = null;
-var musicOn   = false;
-var musicBtn  = document.getElementById('music-btn');
-
-function startMusic() {
-  if (musicOn) return;
-  musicOn   = true;
-  audioCtx  = new (window.AudioContext || window.webkitAudioContext)();
-  masterGain = audioCtx.createGain();
-  masterGain.gain.setValueAtTime(0, audioCtx.currentTime);
-  masterGain.gain.linearRampToValueAtTime(0.11, audioCtx.currentTime + 3);
-  masterGain.connect(audioCtx.destination);
-
-  // Slow LFO breathing
-  var lfo = audioCtx.createOscillator();
-  lfo.type = 'sine';
-  lfo.frequency.value = 0.06;
-  var lfoGain = audioCtx.createGain();
-  lfoGain.gain.value = 0.026;
-  lfo.connect(lfoGain);
-  lfoGain.connect(masterGain.gain);
-  lfo.start();
-
-  // A minor pad — A2 C#3 E3 A3
-  [110, 138.6, 164.8, 220].forEach(function(freq) {
-    var osc = audioCtx.createOscillator();
-    osc.type = 'sine';
-    osc.frequency.value = freq + (Math.random() - 0.5) * 1.8;
-    var g = audioCtx.createGain();
-    g.gain.value = 0.26;
-    osc.connect(g);
-    g.connect(masterGain);
-    osc.start();
-  });
-
-  musicBtn.textContent = '🔊';
-}
-
-function stopMusic() {
-  if (!musicOn || !masterGain) return;
-  masterGain.gain.linearRampToValueAtTime(0, audioCtx.currentTime + 0.7);
-  setTimeout(function() {
-    try { audioCtx.close(); } catch(e) {}
-    audioCtx = null; masterGain = null; musicOn = false;
-  }, 800);
-  musicBtn.textContent = '🔈';
-}
-
-musicBtn.addEventListener('click', function() { musicOn ? stopMusic() : startMusic(); });
 
 // ── Boot sequence ─────────────────────────────────────────────────
 resizeCanvas();
