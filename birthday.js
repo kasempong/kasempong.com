@@ -412,33 +412,51 @@ function initScratch() {
   }
 
   function applyImageMask(imgEl) {
-    // ── Build a BINARY alpha mask from the image ─────────────────────
-    // Anti-aliased soft edges cause semi-transparent canvas pixels that
-    // let the image show through ("ghosting"). Thresholding to 0/255
-    // gives a hard clean edge with zero leakage.
+    // ── Compute object-fit:contain render bounds ─────────────────────
+    // The <img> uses object-fit:contain, so if image ratio ≠ card ratio
+    // it renders with letterbox gaps. We must draw the mask at the exact
+    // same position/size, otherwise the mask won't align with the image.
+    var imgRatio  = imgEl.naturalWidth / imgEl.naturalHeight;
+    var cardRatio = w / h;
+    var drawW, drawH, drawX, drawY;
+    if (imgRatio > cardRatio) {
+      // Image wider → fit to card width, letterbox top/bottom
+      drawW = w;
+      drawH = w / imgRatio;
+      drawX = 0;
+      drawY = (h - drawH) / 2;
+    } else {
+      // Image taller → fit to card height, letterbox left/right
+      drawH = h;
+      drawW = h * imgRatio;
+      drawX = (w - drawW) / 2;
+      drawY = 0;
+    }
+
+    // ── Build binary alpha mask at the correct position ──────────────
     var maskC = document.createElement('canvas');
     maskC.width = w; maskC.height = h;
     var mc = maskC.getContext('2d');
-    mc.drawImage(imgEl, 0, 0, w, h);
+    mc.drawImage(imgEl, drawX, drawY, drawW, drawH);
     var md = mc.getImageData(0, 0, w, h);
     for (var k = 3; k < md.data.length; k += 4) {
       md.data[k] = md.data[k] >= 64 ? 255 : 0;
     }
     mc.putImageData(md, 0, 0);
 
-    // Apply hard binary mask to scratch canvas
+    // Apply hard binary mask — scratch layer now exactly matches image
     sctx.globalCompositeOperation = 'destination-in';
     sctx.drawImage(maskC, 0, 0, w, h);
     sctx.globalCompositeOperation = 'source-over';
 
-    // Count opaque pixels for accurate reveal detection
+    // Count opaque pixels for accurate reveal threshold
     var px = sctx.getImageData(0, 0, w, h).data;
     opaquePixels = 0;
     for (var j = 3; j < px.length; j += 4) {
       if (px[j] >= 128) opaquePixels++;
     }
 
-    // Ensure the browser has painted the canvas BEFORE showing the image
+    // Wait one frame so the browser paints the canvas before showing image
     requestAnimationFrame(function () {
       if (reveal) reveal.classList.add('ready');
     });
@@ -692,8 +710,8 @@ function _drawShareCard(bgImg, revealImg, finalMsgText) {
 
   // ── 6. Scratch card — image drawn directly, no box ──────────────
   // Match the image's natural 1.46:1 landscape ratio (2333 × 1919 content)
-  var cardW = 720;
-  var cardH = Math.round(cardW / 1.463);   // ≈ 492
+  var cardW = 940;
+  var cardH = Math.round(cardW / 1.463);   // ≈ 642
   var cardX = MX - cardW / 2;
   var cardY = yPos;
   if (revealImg && revealImg.complete && revealImg.naturalWidth > 0) {
