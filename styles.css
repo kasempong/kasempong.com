@@ -1232,19 +1232,24 @@ a { color: inherit; text-decoration: none; }
 /* ============================================================
    CHANGELOG
    ============================================================ */
-.changelog-btn {
+.changelog-hero-link {
   background: none;
   border: none;
   cursor: pointer;
-  color: var(--text-muted);
-  font-size: 0.78rem;
   font-family: var(--font-sans);
-  letter-spacing: 0.04em;
-  margin-top: 0.6rem;
+  font-size: 0.78rem;
+  color: var(--text-muted);
+  letter-spacing: 0.06em;
   padding: 0;
-  transition: color 0.2s;
+  margin-top: 4px;
+  text-decoration: none;
+  opacity: 0.6;
+  transition: opacity 0.2s, color 0.2s;
 }
-.changelog-btn:hover { color: var(--accent); }
+.changelog-hero-link:hover {
+  opacity: 1;
+  color: var(--accent);
+}
 
 .changelog-overlay {
   position: fixed; inset: 0;
