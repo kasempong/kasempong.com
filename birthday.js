@@ -793,14 +793,11 @@ function _drawShareCard(bgImg, revealImg, finalMsgText) {
   c.textBaseline = 'middle';
   c.fillText('🌐', sbX + 36, sbY + sbH / 2);
 
-  // Main text — "specially created for TonTon via kasempong.com"
-  c.font         = 'bold 38px Sriracha, sans-serif';
+  // Footer text — minimal
+  c.font         = '28px sans-serif';
   c.textAlign    = 'left';
-  c.fillStyle    = '#7b1fa2';
-  c.fillText('specially created for TonTon', sbX + 108, sbY + sbH / 2 - 18);
-  c.font         = 'bold 36px sans-serif';
-  c.fillStyle    = '#e91e8c';
-  c.fillText('via kasempong.com ✨', sbX + 108, sbY + sbH / 2 + 24);
+  c.fillStyle    = 'rgba(120, 80, 160, 0.55)';
+  c.fillText('kasempong.com', sbX + 108, sbY + sbH / 2);
 
   // ── Share or download ────────────────────────────────────────────
   canvas.toBlob(function (blob) {
