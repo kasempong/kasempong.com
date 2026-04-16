@@ -344,10 +344,12 @@ function launchConfetti() {
 function resetScratch() {
   var sc = document.getElementById('scratchCanvas');
   if (!sc) return;
-  // Clear the canvas and remove the revealed class so it can be re-scratched
   sc.classList.remove('revealed');
   var sctx = sc.getContext('2d');
   sctx.clearRect(0, 0, sc.width, sc.height);
+  // Hide image again so it doesn't flash before initScratch redraws the canvas
+  var rev = document.querySelector('.scratch-reveal');
+  if (rev) rev.classList.remove('ready');
 }
 
 function initScratch() {
@@ -410,19 +412,36 @@ function initScratch() {
   }
 
   function applyImageMask(imgEl) {
-    // Clip scratch layer to image's own opaque pixels — removes box/bg entirely
+    // ── Build a BINARY alpha mask from the image ─────────────────────
+    // Anti-aliased soft edges cause semi-transparent canvas pixels that
+    // let the image show through ("ghosting"). Thresholding to 0/255
+    // gives a hard clean edge with zero leakage.
+    var maskC = document.createElement('canvas');
+    maskC.width = w; maskC.height = h;
+    var mc = maskC.getContext('2d');
+    mc.drawImage(imgEl, 0, 0, w, h);
+    var md = mc.getImageData(0, 0, w, h);
+    for (var k = 3; k < md.data.length; k += 4) {
+      md.data[k] = md.data[k] >= 64 ? 255 : 0;
+    }
+    mc.putImageData(md, 0, 0);
+
+    // Apply hard binary mask to scratch canvas
     sctx.globalCompositeOperation = 'destination-in';
-    sctx.drawImage(imgEl, 0, 0, w, h);
+    sctx.drawImage(maskC, 0, 0, w, h);
     sctx.globalCompositeOperation = 'source-over';
 
     // Count opaque pixels for accurate reveal detection
     var px = sctx.getImageData(0, 0, w, h).data;
     opaquePixels = 0;
-    for (var k = 3; k < px.length; k += 4) {
-      if (px[k] >= 128) opaquePixels++;
+    for (var j = 3; j < px.length; j += 4) {
+      if (px[j] >= 128) opaquePixels++;
     }
 
-    if (reveal) reveal.classList.add('ready');
+    // Ensure the browser has painted the canvas BEFORE showing the image
+    requestAnimationFrame(function () {
+      if (reveal) reveal.classList.add('ready');
+    });
   }
 
   drawScratchLayer();
@@ -671,37 +690,23 @@ function _drawShareCard(bgImg, revealImg, finalMsgText) {
   c.fillText('💕', MX + 200, yPos - 16);
   yPos += 80;
 
-  // ── 6. Scratch card (white rounded square) ───────────────────────
-  var cardSize = 620;
-  var cardX    = MX - cardSize / 2;
-  var cardY    = yPos;
-  var cardR    = 52;
-  c.fillStyle   = 'rgba(255,255,255,0.75)';
-  c.shadowColor = 'rgba(180,80,160,0.25)';
-  c.shadowBlur  = 30;
-  c.beginPath();
-  if (c.roundRect) { c.roundRect(cardX, cardY, cardSize, cardSize, cardR); }
-  else             { _roundRectPath(c, cardX, cardY, cardSize, cardSize, cardR); }
-  c.fill();
-  c.shadowBlur = 0;
-  // Photo or placeholder inside
+  // ── 6. Scratch card — image drawn directly, no box ──────────────
+  // Match the image's natural 1.46:1 landscape ratio (2333 × 1919 content)
+  var cardW = 720;
+  var cardH = Math.round(cardW / 1.463);   // ≈ 492
+  var cardX = MX - cardW / 2;
+  var cardY = yPos;
   if (revealImg && revealImg.complete && revealImg.naturalWidth > 0) {
-    c.save();
-    c.beginPath();
-    if (c.roundRect) { c.roundRect(cardX, cardY, cardSize, cardSize, cardR); }
-    else             { _roundRectPath(c, cardX, cardY, cardSize, cardSize, cardR); }
-    c.clip();
-    c.drawImage(revealImg, cardX, cardY, cardSize, cardSize);
-    c.restore();
+    c.drawImage(revealImg, cardX, cardY, cardW, cardH);
   } else {
     c.font = '140px sans-serif';
     c.textAlign    = 'center';
     c.textBaseline = 'middle';
     c.globalAlpha  = 0.55;
-    c.fillText('📸', MX, cardY + cardSize / 2);
+    c.fillText('📸', MX, cardY + cardH / 2);
     c.globalAlpha  = 1;
   }
-  yPos = cardY + cardSize + 50;
+  yPos = cardY + cardH + 50;
 
   // ── 7. Final message text (read from DOM) ────────────────────────
   if (finalMsgText.trim()) {
