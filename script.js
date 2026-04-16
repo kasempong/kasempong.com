@@ -95,6 +95,18 @@ function applyLang(lang) {
     btn.classList.toggle('active', btn.dataset.lang === lang);
   });
 
+  // Show WIP overlay for TH / ZH
+  const wipOverlay = document.getElementById('langWipOverlay');
+  if (wipOverlay) {
+    if (lang === 'th' || lang === 'zh') {
+      wipOverlay.classList.add('show');
+      wipOverlay.removeAttribute('aria-hidden');
+    } else {
+      wipOverlay.classList.remove('show');
+      wipOverlay.setAttribute('aria-hidden', 'true');
+    }
+  }
+
   // Restart typing with new language roles
   roleIndex = 0; charIndex = 0; deleting = false;
   if (typingTimer) clearTimeout(typingTimer);
