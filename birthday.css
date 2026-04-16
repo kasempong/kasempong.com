@@ -517,11 +517,11 @@ h1 {
 /* ── Scratch card ──────────────────────────────────────────────── */
 .scratch-card {
   position: relative;
-  width: min(240px, 65vw);
-  height: min(240px, 65vw);
-  border-radius: 28px;
+  width: min(88vw, 380px);
+  height: min(56vw, 245px);
+  border-radius: 50% / 42%;
   overflow: hidden;
-  box-shadow: 0 14px 44px rgba(180, 100, 230, 0.25);
+  box-shadow: 0 14px 44px rgba(180, 100, 230, 0.28), 0 0 0 3px rgba(200,120,255,0.35);
   animation: pop-in 0.7s 0.25s cubic-bezier(0.34, 1.56, 0.64, 1) both;
   flex-shrink: 0;
 }
@@ -561,7 +561,7 @@ h1 {
   inset: 0;
   width: 100%;
   height: 100%;
-  border-radius: 28px;
+  border-radius: 50% / 42%;
   cursor: crosshair;
   touch-action: none;  /* prevent scroll while scratching */
   transition: opacity 0.7s ease;

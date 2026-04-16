@@ -356,9 +356,10 @@ function initScratch() {
   var finalMsg  = document.getElementById('finalMsg');
   if (!card || !sc) return;
 
-  var size     = card.offsetWidth;
-  sc.width     = size;
-  sc.height    = size;
+  var w        = card.offsetWidth;
+  var h        = card.offsetHeight;
+  sc.width     = w;
+  sc.height    = h;
 
   var sctx     = sc.getContext('2d');
   var isDown   = false;
@@ -366,36 +367,19 @@ function initScratch() {
   var checkTimer = null;
 
   // ── Draw the scratch layer ───────────────────────────────────────
-  // Background gradient
-  var grad = sctx.createLinearGradient(0, 0, size, size);
+  // Background gradient — CSS clip-path handles the oval shape
+  var grad = sctx.createLinearGradient(0, 0, w, h);
   grad.addColorStop(0,   '#f0a0d0');
   grad.addColorStop(0.5, '#d070e8');
   grad.addColorStop(1,   '#b060ff');
   sctx.fillStyle = grad;
-  sctx.beginPath();
-  // roundRect polyfill for Safari <16
-  if (sctx.roundRect) {
-    sctx.roundRect(0, 0, size, size, 28);
-  } else {
-    var r = 28;
-    sctx.moveTo(r, 0);
-    sctx.lineTo(size - r, 0);
-    sctx.quadraticCurveTo(size, 0, size, r);
-    sctx.lineTo(size, size - r);
-    sctx.quadraticCurveTo(size, size, size - r, size);
-    sctx.lineTo(r, size);
-    sctx.quadraticCurveTo(0, size, 0, size - r);
-    sctx.lineTo(0, r);
-    sctx.quadraticCurveTo(0, 0, r, 0);
-    sctx.closePath();
-  }
-  sctx.fill();
+  sctx.fillRect(0, 0, w, h);
 
   // Sparkle dots pattern
   sctx.fillStyle = 'rgba(255, 255, 255, 0.18)';
   for (var i = 0; i < 60; i++) {
-    var dx = Math.random() * size;
-    var dy = Math.random() * size;
+    var dx = Math.random() * w;
+    var dy = Math.random() * h;
     var dr = Math.random() * 3 + 1;
     sctx.beginPath();
     sctx.arc(dx, dy, dr, 0, Math.PI * 2);
@@ -408,19 +392,19 @@ function initScratch() {
   var stars = ['✦','✧','⋆','✦','✧','⋆','✦','✧'];
   stars.forEach(function (s) {
     sctx.fillText(s,
-      Math.random() * (size - 30) + 8,
-      Math.random() * (size - 30) + 24
+      Math.random() * (w - 30) + 8,
+      Math.random() * (h - 30) + 24
     );
   });
 
   // Center hint text
   sctx.fillStyle = 'rgba(255, 255, 255, 0.95)';
-  sctx.font = 'bold ' + Math.round(size * 0.085) + 'px sans-serif';
+  sctx.font = 'bold ' + Math.round(Math.min(w, h) * 0.11) + 'px sans-serif';
   sctx.textAlign = 'center';
   sctx.textBaseline = 'middle';
-  sctx.fillText('ขูดเลย!', size / 2, size / 2 - size * 0.08);
-  sctx.font = Math.round(size * 0.12) + 'px sans-serif';
-  sctx.fillText('✨', size / 2, size / 2 + size * 0.1);
+  sctx.fillText('ขูดเลย!', w / 2, h / 2 - h * 0.1);
+  sctx.font = Math.round(Math.min(w, h) * 0.14) + 'px sans-serif';
+  sctx.fillText('✨', w / 2, h / 2 + h * 0.12);
 
   // Canvas is fully painted — now safe to show the photo beneath
   var reveal = card.querySelector('.scratch-reveal');
@@ -430,7 +414,7 @@ function initScratch() {
   function scratchAt(x, y) {
     sctx.globalCompositeOperation = 'destination-out';
     sctx.beginPath();
-    sctx.arc(x, y, size * 0.12, 0, Math.PI * 2);
+    sctx.arc(x, y, Math.min(w, h) * 0.12, 0, Math.PI * 2);
     sctx.fill();
     sctx.globalCompositeOperation = 'source-over';
 
@@ -452,14 +436,14 @@ function initScratch() {
     if (!rect.width || !rect.height) return null; // guard: canvas not yet rendered
     var src  = e.touches ? e.touches[0] : e;
     return {
-      x: (src.clientX - rect.left) * (size / rect.width),
-      y: (src.clientY - rect.top)  * (size / rect.height),
+      x: (src.clientX - rect.left) * (w / rect.width),
+      y: (src.clientY - rect.top)  * (h / rect.height),
     };
   }
 
   function checkReveal() {
-    var pixels  = sctx.getImageData(0, 0, size, size).data;
-    var total   = size * size;
+    var pixels  = sctx.getImageData(0, 0, w, h).data;
+    var total   = w * h;
     var erased  = 0;
     for (var i = 3; i < pixels.length; i += 4) {
       if (pixels[i] < 128) erased++;
@@ -701,45 +685,60 @@ function _drawShareCard(bgImg, revealImg, finalMsgText) {
     yPos += Math.max(finalMsgText.split('\n').length, 1) * 66 + 30;
   }
 
-  // ── 8. Website pill (replacing the share button) ─────────────────
-  var pillW = 520, pillH = 100, pillR = 50;
-  var pillX = MX - pillW / 2;
-  var pillY = yPos + 10;
-  var pillG = c.createLinearGradient(pillX, 0, pillX + pillW, 0);
-  pillG.addColorStop(0, '#e91e8c');
-  pillG.addColorStop(1, '#7b1fa2');
-  c.fillStyle   = pillG;
-  c.shadowColor = 'rgba(233,30,140,0.40)';
-  c.shadowBlur  = 24;
-  c.beginPath();
-  if (c.roundRect) { c.roundRect(pillX, pillY, pillW, pillH, pillR); }
-  else             { _roundRectPath(c, pillX, pillY, pillW, pillH, pillR); }
-  c.fill();
-  c.shadowBlur = 0;
-  c.fillStyle    = '#fff';
-  c.font         = 'bold 50px sans-serif';
-  c.textAlign    = 'center';
-  c.textBaseline = 'middle';
-  c.fillText('🌐 kasempong.com', MX, pillY + pillH / 2);
-  yPos = pillY + pillH + 60;
-
-  // ── 9. Deco emoji row ────────────────────────────────────────────
+  // ── 8. Deco emoji scatter (fills space after message) ────────────
   var decoEmojis = ['💕','✨','🌸','💜','🎀','⭐'];
   c.font = '62px sans-serif';
+  c.textAlign    = 'center';
   c.textBaseline = 'middle';
   decoEmojis.forEach(function (em, i) {
     var dex = 140 + (i % 3) * ((W - 280) / 2);
     var dey = yPos + Math.floor(i / 3) * 110;
     c.fillText(em, dex, dey);
   });
-  yPos += 250;
 
-  // ── 10. Credit ───────────────────────────────────────────────────
-  c.fillStyle    = 'rgba(74, 32, 96, 0.72)';
-  c.font         = '46px Sriracha, sans-serif';
-  c.textAlign    = 'center';
-  c.textBaseline = 'alphabetic';
-  c.fillText('สร้างโดยหนึ่ง เพื่ออวยพรต้นในวันพิเศษ', MX, Math.min(yPos, H - 60));
+  // ── 9. Footer search-bar (fixed to bottom of canvas) ────────────
+  var sbH   = 110;                         // bar height
+  var sbW   = W - 160;                     // bar width (margin from border)
+  var sbX   = MX - sbW / 2;
+  var sbY   = H - BW - 30 - sbH;          // sits just above lower border
+  var sbR   = sbH / 2;                     // fully rounded ends (pill)
+
+  // Frosted glass backing
+  c.fillStyle   = 'rgba(255, 255, 255, 0.82)';
+  c.shadowColor = 'rgba(200, 100, 220, 0.30)';
+  c.shadowBlur  = 22;
+  c.beginPath();
+  if (c.roundRect) { c.roundRect(sbX, sbY, sbW, sbH, sbR); }
+  else             { _roundRectPath(c, sbX, sbY, sbW, sbH, sbR); }
+  c.fill();
+  c.shadowBlur = 0;
+
+  // Thin gradient stroke (like a cute search box border)
+  var sbBorder = c.createLinearGradient(sbX, 0, sbX + sbW, 0);
+  sbBorder.addColorStop(0,   '#ff6fa3');
+  sbBorder.addColorStop(0.5, '#c77dff');
+  sbBorder.addColorStop(1,   '#ffb347');
+  c.strokeStyle = sbBorder;
+  c.lineWidth   = 4;
+  c.beginPath();
+  if (c.roundRect) { c.roundRect(sbX, sbY, sbW, sbH, sbR); }
+  else             { _roundRectPath(c, sbX, sbY, sbW, sbH, sbR); }
+  c.stroke();
+
+  // Globe icon on left
+  c.font         = '52px sans-serif';
+  c.textAlign    = 'left';
+  c.textBaseline = 'middle';
+  c.fillText('🌐', sbX + 36, sbY + sbH / 2);
+
+  // Main text — "specially created for TonTon via kasempong.com"
+  c.font         = 'bold 38px Sriracha, sans-serif';
+  c.textAlign    = 'left';
+  c.fillStyle    = '#7b1fa2';
+  c.fillText('specially created for TonTon', sbX + 108, sbY + sbH / 2 - 18);
+  c.font         = 'bold 36px sans-serif';
+  c.fillStyle    = '#e91e8c';
+  c.fillText('via kasempong.com ✨', sbX + 108, sbY + sbH / 2 + 24);
 
   // ── Share or download ────────────────────────────────────────────
   canvas.toBlob(function (blob) {
