@@ -600,8 +600,7 @@ applyLang(currentLang);
         wrap.classList.add('kuromi-activating');
         setTimeout(function () {
           wrap.classList.remove('kuromi-activating');
-          sessionStorage.setItem('bd_access', '1');
-          window.location.href = 'birthday.html';
+          if (window.openBdGate) window.openBdGate();
         }, 320);
       }, HOLD_MS);
     }

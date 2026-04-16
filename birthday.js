@@ -367,48 +367,77 @@ function initScratch() {
   var checkTimer = null;
 
   // ── Draw the scratch layer ───────────────────────────────────────
-  // Background gradient — CSS clip-path handles the oval shape
-  var grad = sctx.createLinearGradient(0, 0, w, h);
-  grad.addColorStop(0,   '#f0a0d0');
-  grad.addColorStop(0.5, '#d070e8');
-  grad.addColorStop(1,   '#b060ff');
-  sctx.fillStyle = grad;
-  sctx.fillRect(0, 0, w, h);
+  var reveal = card.querySelector('.scratch-reveal');
+  var opaquePixels = 0;  // set after masking
 
-  // Sparkle dots pattern
-  sctx.fillStyle = 'rgba(255, 255, 255, 0.18)';
-  for (var i = 0; i < 60; i++) {
-    var dx = Math.random() * w;
-    var dy = Math.random() * h;
-    var dr = Math.random() * 3 + 1;
-    sctx.beginPath();
-    sctx.arc(dx, dy, dr, 0, Math.PI * 2);
-    sctx.fill();
+  function drawScratchLayer() {
+    sctx.clearRect(0, 0, w, h);
+
+    // Full gradient fill (will be masked to image shape below)
+    var grad = sctx.createLinearGradient(0, 0, w, h);
+    grad.addColorStop(0,   '#f0a0d0');
+    grad.addColorStop(0.5, '#d070e8');
+    grad.addColorStop(1,   '#b060ff');
+    sctx.fillStyle = grad;
+    sctx.fillRect(0, 0, w, h);
+
+    // Sparkle dots
+    sctx.fillStyle = 'rgba(255, 255, 255, 0.18)';
+    for (var i = 0; i < 60; i++) {
+      var dx = Math.random() * w;
+      var dy = Math.random() * h;
+      var dr = Math.random() * 3 + 1;
+      sctx.beginPath();
+      sctx.arc(dx, dy, dr, 0, Math.PI * 2);
+      sctx.fill();
+    }
+
+    // Stars ✦
+    sctx.fillStyle = 'rgba(255, 255, 255, 0.35)';
+    sctx.font = 'bold 16px sans-serif';
+    ['✦','✧','⋆','✦','✧','⋆','✦','✧'].forEach(function (s) {
+      sctx.fillText(s, Math.random() * (w - 30) + 8, Math.random() * (h - 30) + 24);
+    });
+
+    // Center hint text
+    sctx.fillStyle = 'rgba(255, 255, 255, 0.95)';
+    sctx.font = 'bold ' + Math.round(Math.min(w, h) * 0.11) + 'px sans-serif';
+    sctx.textAlign = 'center';
+    sctx.textBaseline = 'middle';
+    sctx.fillText('ขูดเลย!', w / 2, h / 2 - h * 0.1);
+    sctx.font = Math.round(Math.min(w, h) * 0.14) + 'px sans-serif';
+    sctx.fillText('✨', w / 2, h / 2 + h * 0.12);
   }
 
-  // Stars ✦
-  sctx.fillStyle = 'rgba(255, 255, 255, 0.35)';
-  sctx.font = 'bold 16px sans-serif';
-  var stars = ['✦','✧','⋆','✦','✧','⋆','✦','✧'];
-  stars.forEach(function (s) {
-    sctx.fillText(s,
-      Math.random() * (w - 30) + 8,
-      Math.random() * (h - 30) + 24
-    );
-  });
+  function applyImageMask(imgEl) {
+    // Clip scratch layer to image's own opaque pixels — removes box/bg entirely
+    sctx.globalCompositeOperation = 'destination-in';
+    sctx.drawImage(imgEl, 0, 0, w, h);
+    sctx.globalCompositeOperation = 'source-over';
 
-  // Center hint text
-  sctx.fillStyle = 'rgba(255, 255, 255, 0.95)';
-  sctx.font = 'bold ' + Math.round(Math.min(w, h) * 0.11) + 'px sans-serif';
-  sctx.textAlign = 'center';
-  sctx.textBaseline = 'middle';
-  sctx.fillText('ขูดเลย!', w / 2, h / 2 - h * 0.1);
-  sctx.font = Math.round(Math.min(w, h) * 0.14) + 'px sans-serif';
-  sctx.fillText('✨', w / 2, h / 2 + h * 0.12);
+    // Count opaque pixels for accurate reveal detection
+    var px = sctx.getImageData(0, 0, w, h).data;
+    opaquePixels = 0;
+    for (var k = 3; k < px.length; k += 4) {
+      if (px[k] >= 128) opaquePixels++;
+    }
 
-  // Canvas is fully painted — now safe to show the photo beneath
-  var reveal = card.querySelector('.scratch-reveal');
-  if (reveal) reveal.classList.add('ready');
+    if (reveal) reveal.classList.add('ready');
+  }
+
+  drawScratchLayer();
+
+  // Apply mask via the reveal image (same-origin, no CORS issues)
+  var imgEl = reveal ? reveal.querySelector('img') : null;
+  if (imgEl) {
+    if (imgEl.complete && imgEl.naturalWidth > 0) {
+      applyImageMask(imgEl);
+    } else {
+      imgEl.addEventListener('load', function () { applyImageMask(imgEl); }, { once: true });
+    }
+  } else {
+    if (reveal) reveal.classList.add('ready');
+  }
 
   // ── Scratch erase helpers ────────────────────────────────────────
   function scratchAt(x, y) {
@@ -442,13 +471,14 @@ function initScratch() {
   }
 
   function checkReveal() {
-    var pixels  = sctx.getImageData(0, 0, w, h).data;
-    var total   = w * h;
-    var erased  = 0;
+    if (!opaquePixels) return;
+    var pixels    = sctx.getImageData(0, 0, w, h).data;
+    var remaining = 0;
     for (var i = 3; i < pixels.length; i += 4) {
-      if (pixels[i] < 128) erased++;
+      if (pixels[i] >= 128) remaining++;
     }
-    if (erased / total > 0.6) {
+    // Trigger when 60% of the image's own opaque pixels are scratched
+    if ((opaquePixels - remaining) / opaquePixels > 0.6) {
       autoReveal();
     }
   }

@@ -212,7 +212,7 @@
     setTimeout(function () {
       document.body.classList.add('fade-out');
       setTimeout(function () {
-        window.location.replace('/');
+        sessionStorage.setItem('intro_v2','1'); window.location.replace('/');
       }, 440);
     }, 3400);
   </script>
