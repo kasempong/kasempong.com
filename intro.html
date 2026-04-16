@@ -6,216 +6,572 @@
   <meta name="robots" content="noindex, nofollow">
   <title>kasempong.com</title>
   <link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>🦷</text></svg>">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Nunito:wght@400;700;800&display=swap" rel="stylesheet">
   <style>
     *, *::before, *::after { margin: 0; padding: 0; box-sizing: border-box; }
 
     html, body {
       width: 100%; height: 100%;
       overflow: hidden;
-      background: #fdf8f4;
+      background: #070414;
       font-family: 'Nunito', -apple-system, 'Helvetica Neue', Arial, sans-serif;
     }
 
-    /* Warm background matching homepage bg1 */
+    /* ── Background ────────────────────────────────────────── */
     body::before {
       content: '';
       position: fixed; inset: 0;
-      background-image: url('bg1.webp'), url('bg1.png');
+      background-image: url('bg1.webp');
       background-size: cover;
       background-position: center;
       opacity: 0;
-      animation: bgFadeIn 0.6s 0.1s ease forwards;
+      animation: bgFade 1.4s 0.1s ease forwards;
       z-index: 0;
     }
+    @keyframes bgFade { to { opacity: 1; } }
 
-    @keyframes bgFadeIn {
-      to { opacity: 1; }
-    }
-
-    /* Stage */
-    .stage {
+    /* ── Particle canvas ───────────────────────────────────── */
+    #bg-canvas {
       position: fixed; inset: 0;
       z-index: 1;
+      pointer-events: none;
+    }
+
+    /* ── Music button ──────────────────────────────────────── */
+    #music-btn {
+      position: fixed;
+      top: 18px; right: 18px;
+      z-index: 20;
+      background: rgba(255,255,255,0.07);
+      border: 1px solid rgba(255,255,255,0.15);
+      border-radius: 50%;
+      width: 44px; height: 44px;
+      font-size: 18px;
+      cursor: pointer;
+      display: flex; align-items: center; justify-content: center;
+      transition: background 0.2s, transform 0.15s;
+      backdrop-filter: blur(10px);
+      -webkit-backdrop-filter: blur(10px);
+      -webkit-tap-highlight-color: transparent;
+    }
+    #music-btn:hover { background: rgba(255,255,255,0.14); transform: scale(1.06); }
+    #music-btn:active { transform: scale(0.94); }
+
+    /* ── Center stage ──────────────────────────────────────── */
+    #center-stage {
+      position: fixed;
+      top: 50%; left: 50%;
+      transform: translate(-50%, -50%);
+      z-index: 10;
       display: flex;
       flex-direction: column;
       align-items: center;
-      justify-content: flex-end;
-      padding-bottom: 12vh;
-      pointer-events: none;
+      gap: 12px;
+      text-align: center;
     }
 
-    /* Name tag that floats above Kuromi */
-    .name-tag {
-      font-size: clamp(18px, 5vw, 26px);
-      font-weight: 700;
-      color: #4a2060;
+    /* ── Name ──────────────────────────────────────────────── */
+    #name-wrap {
+      font-weight: 800;
+      font-size: clamp(2.6rem, 9vw, 4.8rem);
       letter-spacing: 0.04em;
-      text-shadow: 0 2px 12px rgba(255,255,255,0.9), 0 0 24px rgba(200,120,255,0.4);
+      background: linear-gradient(135deg, #c8a8ff 0%, #f0dcff 40%, #9a78ff 70%, #ddc8ff 100%);
+      -webkit-background-clip: text;
+      -webkit-text-fill-color: transparent;
+      background-clip: text;
+      filter: drop-shadow(0 0 28px rgba(170,110,255,0.65));
+      display: flex;
+      gap: 0.01em;
+      line-height: 1.1;
+    }
+
+    .name-letter {
+      display: inline-block;
+      opacity: 0;
+      transform: translateY(16px) scale(0.82);
+      will-change: transform, opacity;
+    }
+    .name-letter.lit {
+      animation: letterPop 0.52s cubic-bezier(0.34, 1.56, 0.64, 1) forwards;
+    }
+    @keyframes letterPop {
+      to { opacity: 1; transform: translateY(0) scale(1); }
+    }
+
+    /* ── Tooth ─────────────────────────────────────────────── */
+    #tooth {
+      font-size: clamp(1.7rem, 5.5vw, 2.6rem);
+      line-height: 1;
+      opacity: 0;
+      transform: scale(0.4) rotate(-40deg);
+      will-change: transform, opacity;
+    }
+    #tooth.show {
+      animation: toothPop 0.58s cubic-bezier(0.34, 1.56, 0.64, 1) forwards;
+    }
+    @keyframes toothPop {
+      to { opacity: 1; transform: scale(1) rotate(0deg); }
+    }
+    #tooth.float {
+      opacity: 1;
+      transform: scale(1);
+      animation: toothFloat 3.2s ease-in-out infinite;
+    }
+    @keyframes toothFloat {
+      0%, 100% { transform: scale(1) translateY(0); }
+      50%       { transform: scale(1) translateY(-7px); }
+    }
+
+    /* ── Subtitle ──────────────────────────────────────────── */
+    #subtitle {
+      font-weight: 400;
+      font-size: clamp(0.82rem, 2.6vw, 1.05rem);
+      color: rgba(220, 200, 255, 0.7);
+      letter-spacing: 0.1em;
+      min-height: 1.5em;
+      opacity: 0;
+      transition: opacity 0.5s ease;
+    }
+    #subtitle.visible { opacity: 1; }
+
+    /* ── Enter button ──────────────────────────────────────── */
+    #enter-btn {
+      font-family: 'Nunito', -apple-system, sans-serif;
+      font-weight: 700;
+      font-size: clamp(0.88rem, 2.8vw, 1.05rem);
+      color: #e8d8ff;
+      background: rgba(130, 80, 210, 0.14);
+      border: 1.5px solid rgba(175, 125, 255, 0.4);
+      border-radius: 50px;
+      padding: 11px 30px;
+      cursor: pointer;
+      letter-spacing: 0.07em;
       opacity: 0;
       transform: translateY(10px);
-      margin-bottom: 8px;
-      /* shown during the pause phase */
+      pointer-events: none;
+      backdrop-filter: blur(10px);
+      -webkit-backdrop-filter: blur(10px);
+      will-change: transform, opacity;
+      -webkit-tap-highlight-color: transparent;
+      transition: background 0.2s, border-color 0.2s;
     }
-
-    /* Kuromi character */
-    .kuromi {
-      width: clamp(90px, 22vw, 140px);
-      height: auto;
-      display: block;
-      /* start off-screen right */
-      transform: translateX(120vw) scaleX(-1);
-      filter: drop-shadow(0 8px 20px rgba(120,0,180,0.3));
-      will-change: transform;
+    #enter-btn.show {
+      animation: btnReveal 0.65s cubic-bezier(0.34, 1.2, 0.64, 1) forwards;
     }
-
-    /* ── Animation phases ─────────────────────────────────────── */
-
-    /* Phase 1: slide in from right (0 → 0.85s) */
-    .kuromi.phase-enter {
-      animation: slideIn 0.85s cubic-bezier(0.25, 0.46, 0.45, 0.94) forwards;
+    #enter-btn.pulse {
+      opacity: 1;
+      transform: translateY(0);
+      pointer-events: auto;
+      animation: btnPulse 2.4s ease-in-out infinite;
     }
-    @keyframes slideIn {
-      from { transform: translateX(120vw) scaleX(-1); }
-      to   { transform: translateX(0)     scaleX(-1); }
-    }
-
-    /* Phase 2: bounce at center (0.85 → 1.65s) */
-    .kuromi.phase-bounce {
-      transform: translateX(0) scaleX(-1);
-      animation: bounce 0.8s ease forwards;
-    }
-    @keyframes bounce {
-      0%   { transform: translateX(0) scaleX(-1) translateY(0); }
-      22%  { transform: translateX(0) scaleX(-1) translateY(-18px); }
-      44%  { transform: translateX(0) scaleX(-1) translateY(0); }
-      66%  { transform: translateX(0) scaleX(-1) translateY(-10px); }
-      84%  { transform: translateX(0) scaleX(-1) translateY(0); }
-      100% { transform: translateX(0) scaleX(-1) translateY(0); }
-    }
-
-    /* Name tag appear during pause */
-    .name-tag.show {
-      animation: tagPop 0.5s cubic-bezier(0.34, 1.56, 0.64, 1) forwards;
-    }
-    @keyframes tagPop {
+    @keyframes btnReveal {
       to { opacity: 1; transform: translateY(0); }
     }
+    @keyframes btnPulse {
+      0%, 100% { box-shadow: 0 0 10px rgba(150,90,255,0.25), 0 0 0 0 rgba(150,90,255,0.18); }
+      50%       { box-shadow: 0 0 22px rgba(150,90,255,0.5), 0 0 0 10px rgba(150,90,255,0); }
+    }
+    #enter-btn:hover {
+      background: rgba(130, 80, 210, 0.28);
+      border-color: rgba(200, 160, 255, 0.65);
+    }
+    #enter-btn:active { transform: scale(0.96) !important; }
 
-    /* Phase 3: hold (1.65 → 2.65s) — no animation, just stays */
-    .kuromi.phase-hold {
-      transform: translateX(0) scaleX(-1);
-    }
-
-    /* Phase 4: exit left (2.65 → 3.25s) */
-    .kuromi.phase-exit {
-      transform: translateX(0) scaleX(-1);
-      animation: slideOut 0.6s cubic-bezier(0.55, 0, 1, 0.45) forwards;
-    }
-    @keyframes slideOut {
-      from { transform: translateX(0)      scaleX(1); opacity: 1; }
-      to   { transform: translateX(-120vw) scaleX(1); opacity: 0; }
-    }
-
-    /* Name tag fade with exit */
-    .name-tag.hide {
-      animation: tagFade 0.4s ease forwards;
-    }
-    @keyframes tagFade {
-      to { opacity: 0; transform: translateY(-8px); }
-    }
-
-    /* Final page fade-out */
-    body.fade-out {
-      animation: pageFade 0.45s ease forwards;
-    }
-    @keyframes pageFade {
-      to { opacity: 0; }
-    }
-
-    /* Sparkle particles */
-    .sparkles {
-      position: fixed; inset: 0;
-      z-index: 2;
+    /* ── Companions ────────────────────────────────────────── */
+    .companion {
+      position: fixed;
+      z-index: 8;
       pointer-events: none;
-      overflow: hidden;
-    }
-    .sp {
-      position: absolute;
-      font-size: 18px;
       opacity: 0;
-      animation: spFloat var(--dur) var(--delay) ease-in-out infinite;
+      will-change: left, top, opacity;
+      filter: drop-shadow(0 0 10px rgba(210,180,255,0.55));
+      user-select: none;
+      line-height: 1;
     }
-    @keyframes spFloat {
-      0%   { opacity: 0; transform: translateY(0)    scale(0.8); }
-      30%  { opacity: 0.7; }
-      70%  { opacity: 0.5; }
-      100% { opacity: 0; transform: translateY(-60px) scale(1.1); }
+
+    /* ── Vortex overlay ────────────────────────────────────── */
+    #vortex {
+      position: fixed; inset: 0;
+      z-index: 40;
+      pointer-events: none;
+      opacity: 0;
+      background: radial-gradient(circle at center, #010008 0%, #0b0328 55%, transparent 100%);
+      transform: scale(0);
+      border-radius: 50%;
+    }
+    #vortex.expand {
+      animation: vortexGrow 0.95s cubic-bezier(0.4, 0, 0.9, 0.9) forwards;
+    }
+    @keyframes vortexGrow {
+      0%   { transform: scale(0);   opacity: 1; border-radius: 50%; }
+      55%  { border-radius: 35%; }
+      100% { transform: scale(6);   opacity: 1; border-radius: 0; }
+    }
+
+    /* Suck-in for center stage on enter */
+    #center-stage.suck-in {
+      animation: suckCenter 0.6s cubic-bezier(0.6, 0, 1, 0.4) forwards;
+    }
+    @keyframes suckCenter {
+      0%   { transform: translate(-50%, -50%) scale(1)     rotate(0deg);   opacity: 1; }
+      100% { transform: translate(-50%, -50%) scale(0.015) rotate(220deg); opacity: 0; }
     }
   </style>
 </head>
 <body>
 
-  <!-- Ambient sparkles -->
-  <div class="sparkles" id="sparkles"></div>
+<canvas id="bg-canvas"></canvas>
 
-  <!-- Stage: name tag + Kuromi -->
-  <div class="stage">
-    <div class="name-tag" id="nameTag">kasempong.com ✨</div>
-    <img class="kuromi" id="kuromi" src="kuromi.webp" alt="" draggable="false">
-  </div>
+<button id="music-btn" aria-label="Toggle ambient music">🔈</button>
 
-  <script>
-    'use strict';
+<div id="center-stage">
+  <div id="name-wrap"></div>
+  <div id="tooth">🦷</div>
+  <div id="subtitle"></div>
+  <button id="enter-btn">Enter &rarr;</button>
+</div>
 
-    // ── Sparkles ──────────────────────────────────────────────
-    var container = document.getElementById('sparkles');
-    var glyphs = ['✦','✧','⋆','✨','💜','🌸','⭐'];
-    for (var i = 0; i < 14; i++) {
-      var sp = document.createElement('span');
-      sp.className = 'sp';
-      sp.textContent = glyphs[i % glyphs.length];
-      sp.style.left  = (Math.random() * 92 + 4) + '%';
-      sp.style.top   = (Math.random() * 75 + 5) + '%';
-      sp.style.setProperty('--dur',   (2.2 + Math.random() * 2.5) + 's');
-      sp.style.setProperty('--delay', (Math.random() * 2.5) + 's');
-      container.appendChild(sp);
-    }
+<!-- Companions -->
+<div id="comp-0" class="companion" style="font-size:20px">✦</div>
+<div id="comp-1" class="companion" style="font-size:26px">🟡</div>
+<div id="comp-2" class="companion" style="font-size:22px">🌙</div>
 
-    // ── Phase sequencer ───────────────────────────────────────
-    var kuromi  = document.getElementById('kuromi');
-    var nameTag = document.getElementById('nameTag');
+<div id="vortex"></div>
 
-    function setPhase(phase) {
-      kuromi.className = 'kuromi phase-' + phase;
-    }
+<script>
+'use strict';
 
-    // 0.15s  — enter
-    setTimeout(function () { setPhase('enter'); }, 150);
+// ── Particle canvas ───────────────────────────────────────────────
+var canvas  = document.getElementById('bg-canvas');
+var ctx     = canvas.getContext('2d');
+var pars    = [];
+var GLYPHS  = ['✦', '✧', '⋆', '🌙'];
 
-    // 1.0s   — bounce
-    setTimeout(function () { setPhase('bounce'); }, 1000);
+function resizeCanvas() {
+  canvas.width  = window.innerWidth;
+  canvas.height = window.innerHeight;
+}
 
-    // 1.8s   — hold + show name
-    setTimeout(function () {
-      setPhase('hold');
-      nameTag.classList.add('show');
-    }, 1800);
+function makePar() {
+  return {
+    x:          Math.random() * canvas.width,
+    y:          canvas.height + 10 + Math.random() * 80,
+    glyph:      GLYPHS[Math.floor(Math.random() * GLYPHS.length)],
+    size:       9 + Math.random() * 11,
+    vy:         0.22 + Math.random() * 0.40,
+    vx:         (Math.random() - 0.5) * 0.16,
+    opacity:    0,
+    maxOpacity: 0.12 + Math.random() * 0.22,
+    dying:      false,
+  };
+}
 
-    // 2.85s  — exit + hide name
-    setTimeout(function () {
-      setPhase('exit');
-      nameTag.classList.remove('show');
-      nameTag.classList.add('hide');
-    }, 2850);
+function initPars() {
+  pars = [];
+  for (var i = 0; i < 45; i++) {
+    var p = makePar();
+    p.y = Math.random() * (canvas.height + 50); // pre-scatter
+    pars.push(p);
+  }
+}
 
-    // 3.4s   — fade page → redirect
-    setTimeout(function () {
-      document.body.classList.add('fade-out');
-      setTimeout(function () {
-        sessionStorage.setItem('intro_v2','1'); window.location.replace('/');
-      }, 440);
-    }, 3400);
-  </script>
+function tickPars() {
+  for (var i = 0; i < pars.length; i++) {
+    var p = pars[i];
+    p.y -= p.vy;
+    p.x += p.vx;
+    if (!p.dying) p.opacity = Math.min(p.opacity + 0.007, p.maxOpacity);
+    if (p.y < canvas.height * 0.12) { p.dying = true; p.opacity -= 0.004; }
+    if (p.opacity <= 0 && p.dying) pars[i] = makePar();
+  }
+}
 
+function drawPars() {
+  ctx.clearRect(0, 0, canvas.width, canvas.height);
+  for (var i = 0; i < pars.length; i++) {
+    var p = pars[i];
+    if (p.opacity <= 0) continue;
+    ctx.save();
+    ctx.globalAlpha = p.opacity;
+    ctx.font = p.size + 'px serif';
+    ctx.fillText(p.glyph, p.x, p.y);
+    ctx.restore();
+  }
+}
+
+// ── Companions ────────────────────────────────────────────────────
+var COMP_CFG = [
+  { radiusBase: 112, baseAngle: 0,    speed: 0.44, flyDelay: 2900 },
+  { radiusBase: 155, baseAngle: 2.09, speed: 0.27, flyDelay: 3550 },
+  { radiusBase: 198, baseAngle: 4.19, speed: 0.17, flyDelay: 4200 },
+];
+var FLY_DUR = 900;
+var showComps = Math.min(window.innerWidth, window.innerHeight) >= 480;
+
+function getRadius(base) {
+  var minDim = Math.min(window.innerWidth, window.innerHeight);
+  return base * Math.max(0.58, Math.min(1.0, minDim / 640));
+}
+
+function orbitXY(cfg, angle) {
+  var cx = window.innerWidth  / 2;
+  var cy = window.innerHeight / 2;
+  var r  = getRadius(cfg.radiusBase);
+  // Slightly elliptical on small screens so companions stay to sides
+  var wide = window.innerWidth < 560 ? 1.4 : 1.0;
+  return {
+    x: cx + r * wide   * Math.cos(angle) - 14,
+    y: cy + r * 0.82   * Math.sin(angle) - 14,
+  };
+}
+
+function offScreenXY(idx) {
+  var cx = window.innerWidth  / 2;
+  var cy = window.innerHeight / 2;
+  if (idx === 0) return { x: window.innerWidth  + 50, y: cy - 90 };
+  if (idx === 1) return { x: cx + 40,              y: window.innerHeight + 50 };
+  return             { x: -50,                    y: cy + 70 };
+}
+
+function easeOut(t) { return 1 - Math.pow(1 - t, 3); }
+
+var compEls = [
+  document.getElementById('comp-0'),
+  document.getElementById('comp-1'),
+  document.getElementById('comp-2'),
+];
+
+var compState = COMP_CFG.map(function(cfg, i) {
+  return {
+    cfg:           cfg,
+    el:            compEls[i],
+    phase:         'waiting',   // waiting | flying | orbiting
+    flyStart:      null,
+    flyFrom:       null,
+    orbitStart:    null,
+  };
+});
+
+// ── Main RAF loop ─────────────────────────────────────────────────
+var rafId       = null;
+var loopAlive   = true;
+var loopT0      = null;
+
+function mainLoop(ts) {
+  if (!loopT0) loopT0 = ts;
+  var elapsed = ts - loopT0;
+
+  // Companions fly-in trigger
+  if (showComps) {
+    compState.forEach(function(s, idx) {
+      if (s.phase === 'waiting' && elapsed >= s.cfg.flyDelay) {
+        s.phase    = 'flying';
+        s.flyStart = ts;
+        s.flyFrom  = offScreenXY(idx);
+      }
+    });
+
+    compState.forEach(function(s) {
+      if (s.phase === 'flying') {
+        var t    = Math.min((ts - s.flyStart) / FLY_DUR, 1);
+        var ease = easeOut(t);
+        var tgt  = orbitXY(s.cfg, s.cfg.baseAngle);
+        s.el.style.left    = (s.flyFrom.x + (tgt.x - s.flyFrom.x) * ease) + 'px';
+        s.el.style.top     = (s.flyFrom.y + (tgt.y - s.flyFrom.y) * ease) + 'px';
+        s.el.style.opacity = String(Math.min(ease * 1.3, 1));
+        if (t >= 1) { s.phase = 'orbiting'; s.orbitStart = ts; }
+      } else if (s.phase === 'orbiting') {
+        var sec   = (ts - s.orbitStart) / 1000;
+        var angle = s.cfg.baseAngle + s.cfg.speed * sec;
+        var pos   = orbitXY(s.cfg, angle);
+        s.el.style.left    = pos.x + 'px';
+        s.el.style.top     = pos.y + 'px';
+        s.el.style.opacity = '1';
+      }
+    });
+  }
+
+  tickPars();
+  drawPars();
+
+  if (loopAlive) rafId = requestAnimationFrame(mainLoop);
+}
+
+// ── Name letters ─────────────────────────────────────────────────
+var NAME     = 'Kasempong';
+var nameWrap = document.getElementById('name-wrap');
+NAME.split('').forEach(function(ch) {
+  var s = document.createElement('span');
+  s.className   = 'name-letter';
+  s.textContent = ch;
+  nameWrap.appendChild(s);
+});
+var nameLetters = nameWrap.querySelectorAll('.name-letter');
+
+function revealName() {
+  nameLetters.forEach(function(el, i) {
+    setTimeout(function() { el.classList.add('lit'); }, i * 190);
+  });
+}
+
+// ── Tooth ─────────────────────────────────────────────────────────
+var toothEl = document.getElementById('tooth');
+
+function revealTooth() {
+  toothEl.classList.add('show');
+  setTimeout(function() {
+    toothEl.classList.remove('show');
+    toothEl.style.opacity   = '1';
+    toothEl.style.transform = 'scale(1)';
+    requestAnimationFrame(function() { toothEl.classList.add('float'); });
+  }, 680);
+}
+
+// ── Subtitle typewriter ───────────────────────────────────────────
+var subEl = document.getElementById('subtitle');
+var SUB   = 'Be humble. Be patient.';
+
+function typeSubtitle() {
+  subEl.classList.add('visible');
+  var i = 0;
+  var iv = setInterval(function() {
+    subEl.textContent += SUB[i++];
+    if (i >= SUB.length) clearInterval(iv);
+  }, 62);
+}
+
+// ── Enter button ──────────────────────────────────────────────────
+var enterBtn = document.getElementById('enter-btn');
+
+function showEnterBtn() {
+  enterBtn.classList.add('show');
+  setTimeout(function() {
+    enterBtn.classList.remove('show');
+    enterBtn.style.opacity   = '1';
+    enterBtn.style.transform = 'translateY(0)';
+    requestAnimationFrame(function() { enterBtn.classList.add('pulse'); });
+  }, 700);
+}
+
+// ── Black hole transition ─────────────────────────────────────────
+var entered = false;
+
+function triggerBlackHole() {
+  if (entered) return;
+  entered = true;
+  enterBtn.disabled = true;
+  loopAlive = false;
+  cancelAnimationFrame(rafId);
+
+  var cx = window.innerWidth  / 2;
+  var cy = window.innerHeight / 2;
+
+  // Suck center stage inward
+  document.getElementById('center-stage').classList.add('suck-in');
+
+  // Suck companions to center
+  compEls.forEach(function(el) {
+    el.style.transition = 'left 0.5s ease-in, top 0.5s ease-in, transform 0.5s ease-in, opacity 0.4s ease-in';
+    el.style.left       = (cx - 14) + 'px';
+    el.style.top        = (cy - 14) + 'px';
+    el.style.transform  = 'scale(0.04) rotate(400deg)';
+    el.style.opacity    = '0';
+  });
+
+  // Fade out particles
+  canvas.style.transition = 'opacity 0.45s ease';
+  canvas.style.opacity    = '0';
+
+  // Expand vortex with small delay so suck-in plays first
+  setTimeout(function() {
+    document.getElementById('vortex').classList.add('expand');
+  }, 80);
+
+  // Navigate
+  setTimeout(function() {
+    sessionStorage.setItem('intro_v2', '1');
+    window.location.replace('/');
+  }, 980);
+}
+
+enterBtn.addEventListener('click', triggerBlackHole);
+enterBtn.addEventListener('touchend', function(e) {
+  e.preventDefault();
+  triggerBlackHole();
+});
+
+// ── Ambient music ─────────────────────────────────────────────────
+var audioCtx  = null;
+var masterGain = null;
+var musicOn   = false;
+var musicBtn  = document.getElementById('music-btn');
+
+function startMusic() {
+  if (musicOn) return;
+  musicOn   = true;
+  audioCtx  = new (window.AudioContext || window.webkitAudioContext)();
+  masterGain = audioCtx.createGain();
+  masterGain.gain.setValueAtTime(0, audioCtx.currentTime);
+  masterGain.gain.linearRampToValueAtTime(0.11, audioCtx.currentTime + 3);
+  masterGain.connect(audioCtx.destination);
+
+  // Slow LFO breathing
+  var lfo = audioCtx.createOscillator();
+  lfo.type = 'sine';
+  lfo.frequency.value = 0.06;
+  var lfoGain = audioCtx.createGain();
+  lfoGain.gain.value = 0.026;
+  lfo.connect(lfoGain);
+  lfoGain.connect(masterGain.gain);
+  lfo.start();
+
+  // A minor pad — A2 C#3 E3 A3
+  [110, 138.6, 164.8, 220].forEach(function(freq) {
+    var osc = audioCtx.createOscillator();
+    osc.type = 'sine';
+    osc.frequency.value = freq + (Math.random() - 0.5) * 1.8;
+    var g = audioCtx.createGain();
+    g.gain.value = 0.26;
+    osc.connect(g);
+    g.connect(masterGain);
+    osc.start();
+  });
+
+  musicBtn.textContent = '🔊';
+}
+
+function stopMusic() {
+  if (!musicOn || !masterGain) return;
+  masterGain.gain.linearRampToValueAtTime(0, audioCtx.currentTime + 0.7);
+  setTimeout(function() {
+    try { audioCtx.close(); } catch(e) {}
+    audioCtx = null; masterGain = null; musicOn = false;
+  }, 800);
+  musicBtn.textContent = '🔈';
+}
+
+musicBtn.addEventListener('click', function() { musicOn ? stopMusic() : startMusic(); });
+
+// ── Boot sequence ─────────────────────────────────────────────────
+resizeCanvas();
+initPars();
+requestAnimationFrame(mainLoop);
+
+// Name letters: 500ms
+setTimeout(revealName, 500);
+
+// Tooth: after last letter (500 + 8×190 + 500 buffer = ~2520ms)
+setTimeout(revealTooth, 2550);
+
+// Subtitle: 2950ms
+setTimeout(typeSubtitle, 2950);
+
+// Enter button: subtitle done (~2950 + 22×62 ≈ 4314ms) + 200ms buffer
+setTimeout(showEnterBtn, 4550);
+
+window.addEventListener('resize', resizeCanvas);
+</script>
 </body>
 </html>
