@@ -939,6 +939,19 @@ a { color: inherit; text-decoration: none; }
   display: block;
   animation: ckuromiGlow 3.2s ease-in-out infinite;
   transform-origin: center bottom;
+  -webkit-touch-callout: none;
+  user-select: none;
+  pointer-events: none;   /* pass all touches to parent — kills iOS image save menu */
+}
+
+/* Long-press activation flash */
+#ckuromi-wrap.kuromi-activating #ckuromi img {
+  animation: kuromiActivate 0.32s ease forwards;
+}
+@keyframes kuromiActivate {
+  0%   { filter: drop-shadow(0 0 8px #ff88cc);  transform: translate(-50%,-50%) scale(1);    }
+  50%  { filter: drop-shadow(0 0 30px #ff44aa) drop-shadow(0 0 50px #cc00ff); transform: translate(-50%,-50%) scale(1.22); }
+  100% { filter: drop-shadow(0 0 18px #cc44ff); transform: translate(-50%,-50%) scale(1.1);  }
 }
 
 @keyframes ckuromiGlow {
