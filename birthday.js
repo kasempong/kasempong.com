@@ -1,12 +1,20 @@
 'use strict';
 
 // ── Password gate — self-contained overlay on this page ──────────
+// Skip if arriving from the main site gate (bd_access already set)
 (function () {
   var SECRET  = '28042001';
   var gate    = document.getElementById('bdGate');
   var display = document.getElementById('bdGateDisplay');
   var input   = document.getElementById('bdGateInput');
   var error   = document.getElementById('bdGateError');
+
+  // Already authenticated via main site — hide gate and clear token
+  if (sessionStorage.getItem('bd_access')) {
+    sessionStorage.removeItem('bd_access');
+    gate.classList.add('hidden');
+    return;
+  }
 
   function updateDisplay() {
     var len = input.value.length;
@@ -729,19 +737,21 @@ function _drawShareCard(bgImg, revealImg, finalMsgText) {
   var yPos = barY + 110;
   c.textAlign = 'center';
   c.textBaseline = 'alphabetic';
-  c.shadowColor = 'rgba(40,0,80,0.45)';
-  c.shadowBlur   = 14;
-  c.fillStyle = '#4a2060';
+  c.shadowColor = 'rgba(60, 0, 100, 0.85)';
+  c.shadowBlur   = 20;
+  c.fillStyle = '#ffffff';
   c.font = 'bold italic 90px Sriracha, sans-serif';
   c.fillText('🎂 Happy Birthday 🎂', MX, yPos);
   yPos += 128;
-  c.fillStyle = '#cc0066';
+  c.fillStyle = '#ffffff';
   c.font = 'bold italic 108px Sriracha, sans-serif';
   c.fillText('TonTon!', MX, yPos);
+  yPos += 60;
   c.shadowBlur = 0;
-  c.font = '74px sans-serif';
-  c.fillText('💕', MX + 200, yPos - 16);
-  yPos += 80;
+  c.font = '36px Sriracha, sans-serif';
+  c.fillStyle = 'rgba(255, 255, 255, 0.75)';
+  c.fillText('from Nueng with love \uD83E\uDD0D', MX, yPos);
+  yPos += 60;
 
   // ── 6. Scratch card — image drawn at natural aspect ratio ─────────
   var imgRatio = (revealImg && revealImg.naturalWidth && revealImg.naturalHeight)
