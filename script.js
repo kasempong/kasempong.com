@@ -579,6 +579,49 @@ applyLang(currentLang);
 
   function loop() { updateStar(); updateJup(); updateMoon(); updateKuromi(); requestAnimationFrame(loop); }
   loop();
+
+  // ── Kuromi long-press → birthday page ─────────────────────────
+  (function () {
+    const wrap = document.getElementById('ckuromi-wrap');
+    if (!wrap) return;
+
+    // Kill the native context menu / iOS callout on the image
+    wrap.addEventListener('contextmenu', e => e.preventDefault());
+
+    const HOLD_MS = 500;
+    const MOVE_LIMIT = 12;   // px — cancel if dragged this far
+    let pressTimer = null, startX = 0, startY = 0;
+
+    function startHold(cx, cy) {
+      startX = cx; startY = cy;
+      pressTimer = setTimeout(function () {
+        pressTimer = null;
+        // Brief glow-pulse then navigate
+        wrap.classList.add('kuromi-activating');
+        setTimeout(function () {
+          wrap.classList.remove('kuromi-activating');
+          sessionStorage.setItem('bd_access', '1');
+          window.location.href = 'birthday.html';
+        }, 320);
+      }, HOLD_MS);
+    }
+
+    function cancelHold(cx, cy) {
+      if (!pressTimer) return;
+      if (Math.abs(cx - startX) > MOVE_LIMIT || Math.abs(cy - startY) > MOVE_LIMIT) {
+        clearTimeout(pressTimer); pressTimer = null;
+      }
+    }
+
+    function endHold() {
+      if (pressTimer) { clearTimeout(pressTimer); pressTimer = null; }
+    }
+
+    wrap.addEventListener('pointerdown',  e => startHold(e.clientX, e.clientY));
+    wrap.addEventListener('pointermove',  e => cancelHold(e.clientX, e.clientY));
+    wrap.addEventListener('pointerup',    endHold);
+    wrap.addEventListener('pointercancel', endHold);
+  })();
 })();
 
 // ── Flying ships ──────────────────────────────────────────────
@@ -792,58 +835,7 @@ document.querySelectorAll('.pin, .section-title, .section-subtitle, .section-eye
   });
 })();
 
-// ── Tree random messages ───────────────────────────────────────
-(function () {
-  const TREE_MSGS = [
-    '🌳 i make your air, you\'re welcome',
-    '🍃 CO₂ in, O₂ out. that\'s me.',
-    '🌱 please plant more trees',
-    '💚 hug a tree today. seriously.',
-    '🌍 i\'ve been here longer than wifi',
-    '🍂 yes i drop leaves. it\'s called autumn.',
-    '☀️ sun + water = me thriving rn',
-    '🐦 12 birds live in me currently',
-    '🌧️ i literally make it rain',
-    '♻️ i\'m already recycling',
-    '🌿 deforestation is not it',
-    '🍃 trees per person: 422. protect them.',
-  ];
-
-  function showTreeMsg() {
-    const island = document.getElementById('island-widget');
-    if (!island) return;
-
-    const msg  = TREE_MSGS[Math.floor(Math.random() * TREE_MSGS.length)];
-    const rect = island.getBoundingClientRect();
-
-    const el = document.createElement('div');
-    el.className   = 'vinyl-toast tree-toast';
-    el.textContent = msg;
-    document.body.appendChild(el);
-
-    // Position to the right of the tree, vertically centred on it
-    const tw = el.offsetWidth || 180;
-    const rawLeft = rect.right + 14;
-    const left = Math.min(rawLeft, window.innerWidth - tw - 12);
-    const top  = rect.top + window.scrollY + rect.height / 2;
-    el.style.left      = left + 'px';
-    el.style.top       = top + 'px';
-    el.style.transform = 'translateY(-50%)';  // vertically centre on tree
-
-    requestAnimationFrame(() => el.classList.add('show'));
-
-    setTimeout(function () {
-      el.classList.remove('show');
-      el.addEventListener('transitionend', () => el.remove(), { once: true });
-    }, 2000);
-  }
-
-  // First message after 3s, then every 10s
-  setTimeout(function tick() {
-    showTreeMsg();
-    setTimeout(tick, 10000);
-  }, 3000);
-})();
+// ── Tree random messages — disabled ───────────────────────────
 
 // ── Sukiyaki "available soon" toast ───────────────────────────
 (function () {
