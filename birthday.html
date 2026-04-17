@@ -99,11 +99,26 @@
     <!-- Screen 4: Feed the Pet -->
     <div class="screen" id="s-feed">
       <p class="game-title" id="feedTitle"></p>
-      <div class="feed-dots" id="feedDots"></div>
-      <div class="feed-arena">
-        <img class="feed-pet-img" id="feedPetImg" src="" alt="">
+
+      <!-- Fill bar -->
+      <div class="feed-bar-wrap">
+        <div class="feed-bar-track">
+          <div class="feed-bar-fill" id="feedBarFill"></div>
+        </div>
+        <span class="feed-bar-emoji" id="feedBarEmoji">🍗</span>
       </div>
-      <button class="btn-feed" id="feedBtn">ให้อาหาร 🍖</button>
+
+      <!-- Pet zone -->
+      <div class="feed-pet-zone" id="feedPetZone">
+        <img class="feed-pet-img" id="feedPetImg" src="" alt="">
+        <div class="feed-hearts-layer" id="feedHeartsLayer"></div>
+      </div>
+
+      <!-- Food shelf — drag items to pet -->
+      <div class="feed-food-shelf" id="feedFoodShelf"></div>
+
+      <!-- Drag ghost: fixed overlay, follows finger globally -->
+      <span class="feed-drag-ghost" id="feedDragGhost"></span>
     </div>
 
     <!-- Screen 5: Q3 -->

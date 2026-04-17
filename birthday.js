@@ -373,10 +373,13 @@ var catchGame = (function () {
     total  = 10;
     active = true;
     document.getElementById('catchCounter').textContent = '0 / 10';
-    resize();
-    for (var i = 0; i < 3; i++) hearts.push(spawnHeart(i * 90));
-    if (rafId) cancelAnimationFrame(rafId);
-    tick();
+    // Defer resize() until the screen is visible — offsetWidth is 0 during transition
+    requestAnimationFrame(function () {
+      resize();
+      for (var i = 0; i < 3; i++) hearts.push(spawnHeart(i * 90));
+      if (rafId) cancelAnimationFrame(rafId);
+      tick();
+    });
   }
 
   function stop() {
@@ -394,66 +397,223 @@ var feedGame = (function () {
     { name: 'ดิ๊กกี้', img: 'dicky.webp' },
     { name: 'โชยุ',    img: 'shoyu.webp' },
   ];
-  var MAX_FEED = 6;
-  var currentPet, feedCount;
+  // Drag this many pixels over the pet zone to fill the bar fully (~5 sec per pet)
+  var FILL_DIST = 2000;
+  var FOODS    = ['🍗','🍚','🍖','🐟','🍎','🍊','🍇','🍓','🫐'];
+  var SPARKLES = ['💕','✨','🌸','💫','🩷','⭐'];
 
-  function updateDots() {
-    var container = document.getElementById('feedDots');
-    container.innerHTML = '';
-    for (var i = 0; i < MAX_FEED; i++) {
-      var d = document.createElement('div');
-      d.className = 'feed-dot' + (i < feedCount ? ' filled' : '');
-      container.appendChild(d);
+  var currentPet    = 0;
+  var fillPct       = 0;
+  var petDone       = false;
+  var dragging      = false;
+  var lastDragX     = 0, lastDragY = 0;
+  var lastSparkle   = 0;
+  var lastBump      = 0;
+  var petZoneEl     = null;
+  var _nextPetTimer = null;
+  var _docMove      = null;
+  var _docUp        = null;
+
+  // ── Bar ──────────────────────────────────────────────────────
+  function setBar(pct) {
+    fillPct = Math.min(100, pct);
+    document.getElementById('feedBarFill').style.width = fillPct + '%';
+    var now = Date.now();
+    if (fillPct > 0 && fillPct % 15 < 3 && now - lastBump > 400) {
+      lastBump = now;
+      var icon = document.getElementById('feedBarEmoji');
+      icon.classList.remove('bump');
+      void icon.offsetWidth;
+      icon.classList.add('bump');
     }
   }
 
+  // ── Floating sparkle at local coords inside pet zone ─────────
+  function sparkle(lx, ly) {
+    var layer = document.getElementById('feedHeartsLayer');
+    if (!layer) return;
+    var el = document.createElement('span');
+    el.className = 'feed-float-heart';
+    el.textContent = SPARKLES[Math.floor(Math.random() * SPARKLES.length)];
+    el.style.left = (lx + Math.random() * 30 - 15) + 'px';
+    el.style.top  = (ly + Math.random() * 20 - 10) + 'px';
+    layer.appendChild(el);
+    el.addEventListener('animationend', function () { el.remove(); }, { once: true });
+  }
+
+  // ── Pet satisfied ─────────────────────────────────────────────
+  function completePet() {
+    if (petDone) return;
+    petDone  = true;
+    dragging = false;
+
+    var ghost = document.getElementById('feedDragGhost');
+    if (ghost) ghost.style.display = 'none';
+    if (petZoneEl) petZoneEl.classList.remove('stroking');
+
+    var img = document.getElementById('feedPetImg');
+    img.classList.remove('happy');
+    void img.offsetWidth;
+    img.classList.add('happy');
+
+    // Burst of sparkles across pet zone
+    if (petZoneEl) {
+      var r = petZoneEl.getBoundingClientRect();
+      for (var i = 0; i < 8; i++) {
+        (function (delay) {
+          setTimeout(function () {
+            sparkle(
+              r.width  * Math.random(),
+              r.height * 0.3 + r.height * 0.5 * Math.random()
+            );
+          }, delay);
+        })(i * 80);
+      }
+    }
+
+    currentPet++;
+    if (currentPet < PETS.length) {
+      _nextPetTimer = setTimeout(function () { petDone = false; showPet(); }, 800);
+    } else {
+      _nextPetTimer = setTimeout(function () {
+        heartStep++;
+        advanceHeart(heartStep);
+        goTo(5);
+      }, 800);
+    }
+  }
+
+  // ── Show current pet ──────────────────────────────────────────
   function showPet() {
     var pet = PETS[currentPet];
     document.getElementById('feedTitle').textContent = 'ให้อาหาร ' + pet.name + '! 🐾';
     var img = document.getElementById('feedPetImg');
     img.src = pet.img;
     img.classList.remove('happy');
-    feedCount = 0;
-    updateDots();
+    setBar(0);
   }
 
-  function feed() {
-    feedCount++;
-    updateDots();
+  // ── Build food shelf — each item is a drag handle ─────────────
+  function buildShelf() {
+    var shelf = document.getElementById('feedFoodShelf');
+    shelf.innerHTML = '';
+    FOODS.forEach(function (emoji) {
+      var item = document.createElement('div');
+      item.className = 'food-item';
+      item.textContent = emoji;
 
-    // Happy bounce on the pet image
-    var img = document.getElementById('feedPetImg');
-    img.classList.remove('happy');
-    void img.offsetWidth;
-    img.classList.add('happy');
+      item.addEventListener('pointerdown', function (e) {
+        if (petDone) return;
+        e.preventDefault();
+        try { item.setPointerCapture(e.pointerId); } catch (_) {}
 
-    if (feedCount >= MAX_FEED) {
-      currentPet++;
-      if (currentPet < PETS.length) {
-        setTimeout(showPet, 700);
-      } else {
-        // All pets fed — advance!
-        document.getElementById('feedBtn').disabled = true;
-        setTimeout(function () {
-          heartStep++;
-          advanceHeart(heartStep);
-          goTo(5);
-        }, 700);
+        dragging  = true;
+        lastDragX = e.clientX;
+        lastDragY = e.clientY;
+
+        // Show ghost at finger position
+        var ghost = document.getElementById('feedDragGhost');
+        if (ghost) {
+          ghost.textContent    = emoji;
+          ghost.style.left     = e.clientX + 'px';
+          ghost.style.top      = e.clientY + 'px';
+          ghost.style.display  = 'block';
+        }
+        document.getElementById('feedBarEmoji').textContent = emoji;
+      });
+
+      shelf.appendChild(item);
+    });
+  }
+
+  // ── Global pointer listeners (capture drag anywhere on screen) ─
+  function attachDocListeners() {
+    _docMove = function (e) {
+      if (!dragging || petDone) return;
+
+      // Move ghost to finger
+      var ghost = document.getElementById('feedDragGhost');
+      if (ghost) {
+        ghost.style.left = e.clientX + 'px';
+        ghost.style.top  = e.clientY + 'px';
       }
+
+      if (!petZoneEl) return;
+      var rect    = petZoneEl.getBoundingClientRect();
+      var overPet = e.clientX >= rect.left && e.clientX <= rect.right &&
+                    e.clientY >= rect.top  && e.clientY <= rect.bottom;
+
+      if (overPet) {
+        petZoneEl.classList.add('stroking');
+
+        // Accumulate drag distance → fill bar
+        var dx   = e.clientX - lastDragX;
+        var dy   = e.clientY - lastDragY;
+        var dist = Math.sqrt(dx * dx + dy * dy);
+        setBar(fillPct + (dist / FILL_DIST) * 100);
+
+        // Throttled sparkles at local pet-zone coords
+        var now = Date.now();
+        if (now - lastSparkle > 100) {
+          lastSparkle = now;
+          sparkle(e.clientX - rect.left, e.clientY - rect.top);
+        }
+
+        if (fillPct >= 100) completePet();
+      } else {
+        petZoneEl.classList.remove('stroking');
+      }
+
+      lastDragX = e.clientX;
+      lastDragY = e.clientY;
+    };
+
+    _docUp = function () {
+      if (!dragging) return;
+      dragging = false;
+      var ghost = document.getElementById('feedDragGhost');
+      if (ghost) ghost.style.display = 'none';
+      if (petZoneEl) petZoneEl.classList.remove('stroking');
+    };
+
+    document.addEventListener('pointermove',   _docMove);
+    document.addEventListener('pointerup',     _docUp);
+    document.addEventListener('pointercancel', _docUp);
+  }
+
+  function detachDocListeners() {
+    if (_docMove) { document.removeEventListener('pointermove',   _docMove); _docMove = null; }
+    if (_docUp)   {
+      document.removeEventListener('pointerup',     _docUp);
+      document.removeEventListener('pointercancel', _docUp);
+      _docUp = null;
     }
   }
 
+  // ── Public ────────────────────────────────────────────────────
   function start() {
-    currentPet = 0;
-    var btn = document.getElementById('feedBtn');
-    btn.disabled = false;
-    btn.onclick = feed;
+    petZoneEl   = document.getElementById('feedPetZone');
+    fillPct     = 0;
+    petDone     = false;
+    dragging    = false;
+    currentPet  = 0;
+    lastBump    = 0;
+    lastSparkle = 0;
+    buildShelf();
+    attachDocListeners();
     showPet();
+    document.getElementById('feedBarEmoji').textContent = FOODS[0];
   }
 
   function stop() {
-    var btn = document.getElementById('feedBtn');
-    if (btn) { btn.disabled = false; btn.onclick = null; }
+    detachDocListeners();
+    dragging = false;
+    if (_nextPetTimer) { clearTimeout(_nextPetTimer); _nextPetTimer = null; }
+    var ghost = document.getElementById('feedDragGhost');
+    if (ghost) ghost.style.display = 'none';
+    if (petZoneEl) petZoneEl.classList.remove('stroking');
+    var layer = document.getElementById('feedHeartsLayer');
+    if (layer) layer.innerHTML = '';
   }
 
   return { start: start, stop: stop };
