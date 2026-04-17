@@ -883,15 +883,15 @@ h1 {
   line-height: 1;
   pointer-events: none;
   display: none;
-  transform: translate(-50%, -60%);
+  transform: translate(-50%, -100%);
   filter: drop-shadow(0 4px 10px rgba(0,0,0,0.28));
   z-index: 1000;
   animation: ghost-wiggle 0.4s ease-in-out infinite alternate;
 }
 
 @keyframes ghost-wiggle {
-  0%   { transform: translate(-50%, -60%) rotate(-8deg) scale(1);    }
-  100% { transform: translate(-50%, -60%) rotate(8deg)  scale(1.1); }
+  0%   { transform: translate(-50%, -100%) rotate(-8deg) scale(1);    }
+  100% { transform: translate(-50%, -100%) rotate(8deg)  scale(1.1); }
 }
 
 /* ── Food shelf — tap to select ─────────────────────────────────── */

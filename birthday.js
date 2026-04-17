@@ -397,8 +397,8 @@ var feedGame = (function () {
     { name: 'ดิ๊กกี้', img: 'dicky.webp' },
     { name: 'โชยุ',    img: 'shoyu.webp' },
   ];
-  // Drag this many pixels over the pet zone to fill the bar fully (~5 sec per pet)
-  var FILL_DIST = 2000;
+  // Drag this many pixels over the pet zone to fill the bar fully (~7 sec per pet)
+  var FILL_DIST = 2800;
   var FOODS    = ['🍗','🍚','🍖','🐟','🍎','🍊','🍇','🍓','🫐'];
   var SPARKLES = ['💕','✨','🌸','💫','🩷','⭐'];
 
