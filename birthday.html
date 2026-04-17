@@ -31,14 +31,18 @@
     <div class="prog-track">
       <div class="prog-start" id="progStart"></div>
       <div class="prog-conn" id="conn0"></div>
-      <div class="plat" id="plat0"></div>
+      <div class="plat plat-star" id="plat0"></div>
       <div class="prog-conn" id="conn1"></div>
       <div class="plat" id="plat1"></div>
       <div class="prog-conn" id="conn2"></div>
       <div class="plat" id="plat2"></div>
       <div class="prog-conn" id="conn3"></div>
-      <div class="plat" id="plat3"></div>
+      <div class="plat plat-star" id="plat3"></div>
       <div class="prog-conn" id="conn4"></div>
+      <div class="plat" id="plat4"></div>
+      <div class="prog-conn" id="conn5"></div>
+      <div class="plat" id="plat5"></div>
+      <div class="prog-conn" id="conn6"></div>
       <div class="prog-goal" id="progGoal">💗</div>
     </div>
     <div class="heart-sprite" id="heartSprite">💕</div>
@@ -61,7 +65,14 @@
       <button class="btn-go" id="startBtn">เริ่มเลย 💕</button>
     </div>
 
-    <!-- Screen 1: Q1 -->
+    <!-- Screen 1: Catch the Hearts -->
+    <div class="screen" id="s-catch">
+      <p class="game-title">จับหัวใจให้ได้ 10 ดวง! 💗</p>
+      <div class="catch-counter" id="catchCounter">0 / 10</div>
+      <canvas id="catchCanvas" class="catch-canvas"></canvas>
+    </div>
+
+    <!-- Screen 2: Q1 -->
     <div class="screen" id="s1">
       <div class="q-icon">🐾</div>
       <h2 class="q-text">ใครตัวเหม็นที่สุด?</h2>
@@ -85,7 +96,17 @@
       </div>
     </div>
 
-    <!-- Screen 3: Q3 -->
+    <!-- Screen 4: Feed the Pet -->
+    <div class="screen" id="s-feed">
+      <p class="game-title" id="feedTitle"></p>
+      <div class="feed-dots" id="feedDots"></div>
+      <div class="feed-arena">
+        <img class="feed-pet-img" id="feedPetImg" src="" alt="">
+      </div>
+      <button class="btn-feed" id="feedBtn">ให้อาหาร 🍖</button>
+    </div>
+
+    <!-- Screen 5: Q3 -->
     <div class="screen" id="s3">
       <div class="q-icon">🏠</div>
       <h2 class="q-text">ที่ไหนอบอุ่นที่สุด?</h2>

@@ -61,14 +61,21 @@ const MESSAGES = {
 
 // ── State ─────────────────────────────────────────────────────────
 let currentIdx  = 0;   // which screen is showing
-let heartStep   = 0;   // 0=start island, 1-4=plats, 5=goal
+let heartStep   = 0;   // 0=start island, 1-7=plats, 7=goal
+
+// Screen index → heart step when arriving at that screen
+// [s0, s-catch, s1/Q1, s2/Q2, s-feed, s3/Q3, s4/Q4, s5/Q5, s6/final]
+var SCREEN_HEART_STEP = [0, 0, 1, 2, 3, 4, 5, 6, 7];
+
+// Question number → next screen index
+var Q_NEXT = { 1: 3, 2: 4, 3: 6, 4: 7, 5: 8 };
 
 // ── DOM ───────────────────────────────────────────────────────────
 const allScreens   = Array.from(document.querySelectorAll('.screen'));
 const progressWrap = document.getElementById('progressWrap');
 const heartSprite  = document.getElementById('heartSprite');
-const plats        = Array.from(document.querySelectorAll('.plat'));   // 4 elements
-const conns        = Array.from(document.querySelectorAll('.prog-conn')); // 5 elements
+const plats        = Array.from(document.querySelectorAll('.plat'));      // 6 elements
+const conns        = Array.from(document.querySelectorAll('.prog-conn')); // 7 elements
 const progStart    = document.getElementById('progStart');
 const progGoal     = document.getElementById('progGoal');
 const popup        = document.getElementById('popup');
@@ -82,6 +89,10 @@ function goTo(nextIdx) {
   var cur  = allScreens[currentIdx];
   var next = allScreens[nextIdx];
 
+  // Stop game when leaving a game screen
+  if (currentIdx === 1) catchGame.stop();
+  if (currentIdx === 4) feedGame.stop();
+
   cur.classList.add('exit');
   cur.classList.remove('active');
 
@@ -89,6 +100,10 @@ function goTo(nextIdx) {
     cur.classList.remove('exit');
     next.classList.add('active');
     currentIdx = nextIdx;
+
+    // Start game when entering a game screen
+    if (nextIdx === 1) catchGame.start();
+    if (nextIdx === 4) feedGame.start();
   }, 380);
 }
 
@@ -100,28 +115,31 @@ function jumpBackTo(targetIdx) {
   pendingAfterHide = null;
   popup.classList.remove('show');
 
+  // Stop any active game when jumping away
+  if (currentIdx === 1) catchGame.stop();
+  if (currentIdx === 4) feedGame.stop();
+
   // ── Reset final screen if we're jumping from it ─────────────────
-  if (currentIdx === 6) {
+  if (currentIdx === 8) {
     resetScratch();
     var msg = document.getElementById('finalMsg');
     if (msg) msg.classList.remove('visible');
   }
 
   // ── Reset choices for all screens from targetIdx up to current ───
-  // (re-enable every question we're jumping past / back to)
   for (var s = targetIdx; s < currentIdx; s++) {
-    var grp = document.getElementById('choices' + s);
-    if (grp) {
-      grp.querySelectorAll('.choice').forEach(function (c) {
+    var scr = allScreens[s];
+    if (scr) {
+      scr.querySelectorAll('.choice').forEach(function (c) {
         c.classList.remove('locked', 'chosen');
       });
     }
   }
 
-  // ── Undo heart progress to targetIdx - 1 ────────────────────────
-  // screen 1 (Q1) → heartStep becomes 0 (start island, no plats done)
-  // screen 2 (Q2) → heartStep becomes 1 (plat0 done)
-  var newHeartStep = Math.max(0, targetIdx - 1);
+  // ── Undo heart progress using SCREEN_HEART_STEP mapping ─────────
+  var newHeartStep = SCREEN_HEART_STEP[targetIdx] !== undefined
+    ? SCREEN_HEART_STEP[targetIdx]
+    : Math.max(0, targetIdx - 1);
   heartStep = newHeartStep;
 
   // Un-mark platforms
@@ -129,11 +147,11 @@ function jumpBackTo(targetIdx) {
     plats[p].classList.remove('done');
   }
   // Un-mark connectors
-  for (var c = newHeartStep; c < conns.length; c++) {
-    conns[c].classList.remove('done');
+  for (var ci = newHeartStep; ci < conns.length; ci++) {
+    conns[ci].classList.remove('done');
   }
   // Un-mark goal
-  if (newHeartStep < 5) {
+  if (newHeartStep < 7) {
     progGoal.classList.remove('reached');
     progGoal.style.cursor = 'default';
   }
@@ -160,6 +178,10 @@ function jumpBackTo(targetIdx) {
     target.classList.add('active');
     currentIdx = targetIdx;
 
+    // Restart game if jumping back to a game screen
+    if (targetIdx === 1) catchGame.start();
+    if (targetIdx === 4) feedGame.start();
+
     setTimeout(function () {
       screensContainer.classList.remove('going-back');
     }, 50);
@@ -172,19 +194,19 @@ function goBack() {
 }
 
 // ── Progress heart ────────────────────────────────────────────────
-// step 0 = start island, 1-4 = plat[0-3], 5 = goal
+// step 0 = start island, 1-6 = plat[0-5], 7 = goal
 function getHeartTargetX(step) {
   var wrapRect = progressWrap.getBoundingClientRect();
   var el;
   if (step === 0)      el = progStart;
-  else if (step >= 5)  el = progGoal;
+  else if (step >= 7)  el = progGoal;
   else                 el = plats[step - 1];
   var r = el.getBoundingClientRect();
   return r.left + r.width / 2 - wrapRect.left;
 }
 
 function advanceHeart(step) {
-  // Mark platforms done: steps 1-4 fill plat[0-3]; step 5 fills all
+  // Mark platforms done: steps 1-6 fill plat[0-5]
   var platsDone = Math.min(step, plats.length);
   for (var i = 0; i < platsDone; i++) plats[i].classList.add('done');
 
@@ -194,7 +216,7 @@ function advanceHeart(step) {
   }
 
   // Activate goal on final step
-  if (step >= 5) {
+  if (step >= 7) {
     progGoal.classList.add('reached');
     progGoal.style.cursor = 'pointer';
   }
@@ -255,15 +277,187 @@ document.querySelectorAll('.choice').forEach(function (btn) {
     var msg = MESSAGES[q];
     showPopup(msg, function () {
       if (q < 5) {
-        goTo(q + 1);
+        goTo(Q_NEXT[q]);
       } else {
-        goTo(6);
+        goTo(8);
         setTimeout(launchConfetti, 700);
         setTimeout(initScratch, 900);
       }
     });
   });
 });
+
+// ── Catch the Hearts mini-game ────────────────────────────────────
+var catchGame = (function () {
+  var canvas, ctx, hearts, caught, total, rafId, active;
+
+  function init() {
+    canvas = document.getElementById('catchCanvas');
+    ctx = canvas.getContext('2d');
+    canvas.addEventListener('pointerdown', function (e) {
+      if (!active) return;
+      var rect = canvas.getBoundingClientRect();
+      var scaleX = canvas.width / rect.width;
+      var scaleY = canvas.height / rect.height;
+      var x = (e.clientX - rect.left) * scaleX;
+      var y = (e.clientY - rect.top)  * scaleY;
+      onTap(x, y);
+    }, { passive: true });
+  }
+
+  function resize() {
+    if (!canvas) return;
+    canvas.width  = canvas.offsetWidth  || 300;
+    canvas.height = canvas.offsetHeight || 300;
+  }
+
+  var HEART_EMOJIS = ['💗','💖','💕','🩷','❤️'];
+
+  function spawnHeart(offsetY) {
+    return {
+      x:     Math.random() * (canvas.width - 80) + 40,
+      y:     -(offsetY || 0) - 40,
+      vy:    Math.random() * 1.8 + 1.4,
+      emoji: HEART_EMOJIS[Math.floor(Math.random() * HEART_EMOJIS.length)],
+    };
+  }
+
+  function tick() {
+    if (!active) return;
+    ctx.clearRect(0, 0, canvas.width, canvas.height);
+
+    hearts = hearts.filter(function (h) {
+      h.y += h.vy;
+      ctx.font = '52px sans-serif';
+      ctx.textAlign = 'center';
+      ctx.textBaseline = 'middle';
+      ctx.fillText(h.emoji, h.x, h.y);
+      return h.y < canvas.height + 60;
+    });
+
+    // Keep 3–4 hearts falling at a time (up to remaining uncaught)
+    var remaining = total - caught - hearts.length;
+    while (hearts.length < 3 && remaining > 0) {
+      hearts.push(spawnHeart(Math.random() * 80));
+      remaining--;
+    }
+
+    rafId = requestAnimationFrame(tick);
+  }
+
+  function onTap(x, y) {
+    if (!active) return;
+    var hitIdx = -1;
+    hearts.forEach(function (h, i) {
+      var dx = h.x - x, dy = h.y - y;
+      if (dx * dx + dy * dy < 1600 && hitIdx === -1) hitIdx = i; // 40px radius
+    });
+    if (hitIdx === -1) return;
+
+    hearts.splice(hitIdx, 1);
+    caught++;
+    document.getElementById('catchCounter').textContent = caught + ' / 10';
+
+    if (caught >= total) {
+      stop();
+      heartStep++;
+      advanceHeart(heartStep);
+      setTimeout(function () { goTo(2); }, 600);
+    }
+  }
+
+  function start() {
+    if (!canvas) init();
+    hearts = [];
+    caught = 0;
+    total  = 10;
+    active = true;
+    document.getElementById('catchCounter').textContent = '0 / 10';
+    resize();
+    for (var i = 0; i < 3; i++) hearts.push(spawnHeart(i * 90));
+    if (rafId) cancelAnimationFrame(rafId);
+    tick();
+  }
+
+  function stop() {
+    active = false;
+    if (rafId) { cancelAnimationFrame(rafId); rafId = null; }
+  }
+
+  return { start: start, stop: stop };
+}());
+
+// ── Feed the Pet mini-game ─────────────────────────────────────────
+var feedGame = (function () {
+  var PETS = [
+    { name: 'โมโม่',   img: 'momo.webp'  },
+    { name: 'ดิ๊กกี้', img: 'dicky.webp' },
+    { name: 'โชยุ',    img: 'shoyu.webp' },
+  ];
+  var MAX_FEED = 6;
+  var currentPet, feedCount;
+
+  function updateDots() {
+    var container = document.getElementById('feedDots');
+    container.innerHTML = '';
+    for (var i = 0; i < MAX_FEED; i++) {
+      var d = document.createElement('div');
+      d.className = 'feed-dot' + (i < feedCount ? ' filled' : '');
+      container.appendChild(d);
+    }
+  }
+
+  function showPet() {
+    var pet = PETS[currentPet];
+    document.getElementById('feedTitle').textContent = 'ให้อาหาร ' + pet.name + '! 🐾';
+    var img = document.getElementById('feedPetImg');
+    img.src = pet.img;
+    img.classList.remove('happy');
+    feedCount = 0;
+    updateDots();
+  }
+
+  function feed() {
+    feedCount++;
+    updateDots();
+
+    // Happy bounce on the pet image
+    var img = document.getElementById('feedPetImg');
+    img.classList.remove('happy');
+    void img.offsetWidth;
+    img.classList.add('happy');
+
+    if (feedCount >= MAX_FEED) {
+      currentPet++;
+      if (currentPet < PETS.length) {
+        setTimeout(showPet, 700);
+      } else {
+        // All pets fed — advance!
+        document.getElementById('feedBtn').disabled = true;
+        setTimeout(function () {
+          heartStep++;
+          advanceHeart(heartStep);
+          goTo(5);
+        }, 700);
+      }
+    }
+  }
+
+  function start() {
+    currentPet = 0;
+    var btn = document.getElementById('feedBtn');
+    btn.disabled = false;
+    btn.onclick = feed;
+    showPet();
+  }
+
+  function stop() {
+    var btn = document.getElementById('feedBtn');
+    if (btn) { btn.disabled = false; btn.onclick = null; }
+  }
+
+  return { start: start, stop: stop };
+}());
 
 // ── Start button ──────────────────────────────────────────────────
 startBtn.addEventListener('click', function () {
@@ -287,10 +481,10 @@ plats.forEach(function (plat, i) {
   });
 });
 
-// Goal reached → clicking goes back to Q5 (screen 5)
+// Goal reached → clicking goes back to Q5 (screen 7)
 progGoal.addEventListener('click', function () {
-  if (progGoal.classList.contains('reached') && currentIdx > 5) {
-    jumpBackTo(5);
+  if (progGoal.classList.contains('reached') && currentIdx > 7) {
+    jumpBackTo(7);
   }
 });
 
