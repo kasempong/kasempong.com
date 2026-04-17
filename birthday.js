@@ -511,13 +511,16 @@ var feedGame = (function () {
         lastDragX = e.clientX;
         lastDragY = e.clientY;
 
+        // Dim the shelf item so it looks "picked up"
+        item.classList.add('food-held');
+
         // Show ghost at finger position
         var ghost = document.getElementById('feedDragGhost');
         if (ghost) {
-          ghost.textContent    = emoji;
-          ghost.style.left     = e.clientX + 'px';
-          ghost.style.top      = e.clientY + 'px';
-          ghost.style.display  = 'block';
+          ghost.textContent   = emoji;
+          ghost.style.left    = e.clientX + 'px';
+          ghost.style.top     = e.clientY + 'px';
+          ghost.style.display = 'block';
         }
         document.getElementById('feedBarEmoji').textContent = emoji;
       });
@@ -574,6 +577,11 @@ var feedGame = (function () {
       var ghost = document.getElementById('feedDragGhost');
       if (ghost) ghost.style.display = 'none';
       if (petZoneEl) petZoneEl.classList.remove('stroking');
+      // Un-dim all shelf items
+      var shelf = document.getElementById('feedFoodShelf');
+      if (shelf) shelf.querySelectorAll('.food-held').forEach(function (el) {
+        el.classList.remove('food-held');
+      });
     };
 
     document.addEventListener('pointermove',   _docMove);
