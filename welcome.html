@@ -491,14 +491,14 @@ requestAnimationFrame(mainLoop);
 // Name letters: 500ms
 setTimeout(revealName, 500);
 
-// Tooth: after last letter (500 + 8×190 + 500 buffer = ~2520ms)
-setTimeout(revealTooth, 2550);
+// Tooth: mid-name (letter ~5 landing) for a snappier feel
+setTimeout(revealTooth, 1400);
 
-// Subtitle: 2950ms
-setTimeout(typeSubtitle, 2950);
+// Subtitle: shortly after tooth settles
+setTimeout(typeSubtitle, 1900);
 
-// Enter button: subtitle done (~2950 + 22×62 ≈ 4314ms) + 200ms buffer
-setTimeout(showEnterBtn, 4550);
+// Enter button: subtitle done (~1900 + 22×62 ≈ 3264ms) + 250ms buffer
+setTimeout(showEnterBtn, 3500);
 
 window.addEventListener('resize', resizeCanvas);
 </script>
