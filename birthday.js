@@ -61,21 +61,21 @@ const MESSAGES = {
 
 // ── State ─────────────────────────────────────────────────────────
 let currentIdx  = 0;   // which screen is showing
-let heartStep   = 0;   // 0=start island, 1-7=plats, 7=goal
+let heartStep   = 0;   // 0=start island, 1-7=plats, 8=goal
 
 // Screen index → heart step when arriving at that screen
-// [s0, s-catch, s1/Q1, s2/Q2, s-feed, s3/Q3, s4/Q4, s5/Q5, s6/final]
-var SCREEN_HEART_STEP = [0, 0, 1, 2, 3, 4, 5, 6, 7];
+// [s0, s-mag1, s-catch, s-mag2, s1/Q1, s2/Q2, s-mag3, s-feed, s-mag4, s3/Q3, s4/Q4, s-bouquet, s5/Q5, s6/final]
+var SCREEN_HEART_STEP = [0, 0, 0, 1, 1, 2, 3, 3, 4, 4, 5, 6, 7, 8];
 
 // Question number → next screen index
-var Q_NEXT = { 1: 3, 2: 4, 3: 6, 4: 7, 5: 8 };
+var Q_NEXT = { 1: 5, 2: 6, 3: 10, 4: 11, 5: 13 };
 
 // ── DOM ───────────────────────────────────────────────────────────
 const allScreens   = Array.from(document.querySelectorAll('.screen'));
 const progressWrap = document.getElementById('progressWrap');
 const heartSprite  = document.getElementById('heartSprite');
-const plats        = Array.from(document.querySelectorAll('.plat'));      // 6 elements
-const conns        = Array.from(document.querySelectorAll('.prog-conn')); // 7 elements
+const plats        = Array.from(document.querySelectorAll('.plat'));      // 7 elements
+const conns        = Array.from(document.querySelectorAll('.prog-conn')); // 8 elements
 const progStart    = document.getElementById('progStart');
 const progGoal     = document.getElementById('progGoal');
 const popup        = document.getElementById('popup');
@@ -90,8 +90,9 @@ function goTo(nextIdx) {
   var next = allScreens[nextIdx];
 
   // Stop game when leaving a game screen
-  if (currentIdx === 1) catchGame.stop();
-  if (currentIdx === 4) feedGame.stop();
+  if (cur.id === 's-catch')   catchGame.stop();
+  if (cur.id === 's-feed')    feedGame.stop();
+  if (cur.id === 's-bouquet') bouquetGame.stop();
 
   cur.classList.add('exit');
   cur.classList.remove('active');
@@ -102,8 +103,9 @@ function goTo(nextIdx) {
     currentIdx = nextIdx;
 
     // Start game when entering a game screen
-    if (nextIdx === 1) catchGame.start();
-    if (nextIdx === 4) feedGame.start();
+    if (next.id === 's-catch')   catchGame.start();
+    if (next.id === 's-feed')    feedGame.start();
+    if (next.id === 's-bouquet') bouquetGame.start();
   }, 380);
 }
 
@@ -116,11 +118,13 @@ function jumpBackTo(targetIdx) {
   popup.classList.remove('show');
 
   // Stop any active game when jumping away
-  if (currentIdx === 1) catchGame.stop();
-  if (currentIdx === 4) feedGame.stop();
+  var curScr = allScreens[currentIdx];
+  if (curScr && curScr.id === 's-catch')   catchGame.stop();
+  if (curScr && curScr.id === 's-feed')    feedGame.stop();
+  if (curScr && curScr.id === 's-bouquet') bouquetGame.stop();
 
   // ── Reset final screen if we're jumping from it ─────────────────
-  if (currentIdx === 8) {
+  if (currentIdx === 13) {
     resetScratch();
     var msg = document.getElementById('finalMsg');
     if (msg) msg.classList.remove('visible');
@@ -151,7 +155,7 @@ function jumpBackTo(targetIdx) {
     conns[ci].classList.remove('done');
   }
   // Un-mark goal
-  if (newHeartStep < 7) {
+  if (newHeartStep < 8) {
     progGoal.classList.remove('reached');
     progGoal.style.cursor = 'default';
   }
@@ -179,8 +183,10 @@ function jumpBackTo(targetIdx) {
     currentIdx = targetIdx;
 
     // Restart game if jumping back to a game screen
-    if (targetIdx === 1) catchGame.start();
-    if (targetIdx === 4) feedGame.start();
+    var tgtScr = allScreens[targetIdx];
+    if (tgtScr && tgtScr.id === 's-catch')   catchGame.start();
+    if (tgtScr && tgtScr.id === 's-feed')    feedGame.start();
+    if (tgtScr && tgtScr.id === 's-bouquet') bouquetGame.start();
 
     setTimeout(function () {
       screensContainer.classList.remove('going-back');
@@ -194,12 +200,12 @@ function goBack() {
 }
 
 // ── Progress heart ────────────────────────────────────────────────
-// step 0 = start island, 1-6 = plat[0-5], 7 = goal
+// step 0 = start island, 1-7 = plat[0-6], 8 = goal
 function getHeartTargetX(step) {
   var wrapRect = progressWrap.getBoundingClientRect();
   var el;
   if (step === 0)      el = progStart;
-  else if (step >= 7)  el = progGoal;
+  else if (step >= 8)  el = progGoal;
   else                 el = plats[step - 1];
   var r = el.getBoundingClientRect();
   return r.left + r.width / 2 - wrapRect.left;
@@ -216,7 +222,7 @@ function advanceHeart(step) {
   }
 
   // Activate goal on final step
-  if (step >= 7) {
+  if (step >= 8) {
     progGoal.classList.add('reached');
     progGoal.style.cursor = 'pointer';
   }
@@ -279,7 +285,7 @@ document.querySelectorAll('.choice').forEach(function (btn) {
       if (q < 5) {
         goTo(Q_NEXT[q]);
       } else {
-        goTo(8);
+        goTo(13);
         setTimeout(launchConfetti, 700);
         setTimeout(initScratch, 900);
       }
@@ -362,7 +368,7 @@ var catchGame = (function () {
       stop();
       heartStep++;
       advanceHeart(heartStep);
-      setTimeout(function () { goTo(2); }, 600);
+      setTimeout(function () { goTo(3); }, 600);  // → s-mag2 (momo cheer)
     }
   }
 
@@ -478,7 +484,7 @@ var feedGame = (function () {
       _nextPetTimer = setTimeout(function () {
         heartStep++;
         advanceHeart(heartStep);
-        goTo(5);
+        goTo(8);  // → s-mag4 (momo thanks)
       }, 800);
     }
   }
@@ -627,6 +633,223 @@ var feedGame = (function () {
   return { start: start, stop: stop };
 }());
 
+// ── Build the Bouquet mini-game ────────────────────────────────────
+var bouquetGame = (function () {
+  var FLOWERS = [
+    { bloom: '🌸' },
+    { bloom: '🌺' },
+    { bloom: '🌻' },
+    { bloom: '🌷' },
+    { bloom: '🌼' },
+  ];
+  // Pixels of drag movement needed to fill one flower's ring
+  var FLOWER_FILL_DIST = 420;
+  // Hit-detection padding around each bud's bounding rect
+  var HIT_PAD = 22;
+  // Throttle water drops (ms)
+  var DROP_INTERVAL = 90;
+
+  var flowerEls  = [];  // { bud, ring, emojiEl, fill, done, bloom }
+  var bloomed    = 0;
+  var dragging   = false;
+  var lastX      = 0, lastY = 0;
+  var ghostEl    = null;
+  var canEl      = null;
+  var lastDrop   = 0;
+  var _docMove   = null;
+  var _docUp     = null;
+  var _doneTimer = null;
+
+  // ── Build the flower garden ────────────────────────────────────
+  function buildGarden() {
+    var garden = document.getElementById('flowerGarden');
+    var display = document.getElementById('bouquetDisplay');
+    if (!garden || !display) return;
+    garden.innerHTML  = '';
+    display.innerHTML = '🌿';
+    flowerEls = [];
+    bloomed   = 0;
+
+    FLOWERS.forEach(function (f) {
+      var bud = document.createElement('div');
+      bud.className = 'flower-bud';
+
+      var ring = document.createElement('div');
+      ring.className = 'flower-ring';
+
+      var emoji = document.createElement('span');
+      emoji.className  = 'flower-emoji';
+      emoji.textContent = '🌱';
+
+      bud.appendChild(ring);
+      bud.appendChild(emoji);
+      garden.appendChild(bud);
+
+      flowerEls.push({ bud: bud, ring: ring, emojiEl: emoji, fill: 0, done: false, bloom: f.bloom });
+    });
+  }
+
+  // ── Build the watering can shelf ──────────────────────────────
+  function buildShelf() {
+    var shelf = document.getElementById('wateringShelf');
+    if (!shelf) return;
+    shelf.innerHTML = '';
+    canEl = document.createElement('span');
+    canEl.className   = 'water-can-item';
+    canEl.textContent = '🪣';
+    canEl.addEventListener('pointerdown', onCanDown);
+    shelf.appendChild(canEl);
+  }
+
+  // ── Pointer down on the watering can ──────────────────────────
+  function onCanDown(e) {
+    e.preventDefault();
+    try { canEl.setPointerCapture(e.pointerId); } catch (_) {}
+    dragging = true;
+    lastX    = e.clientX;
+    lastY    = e.clientY;
+    lastDrop = 0;
+    canEl.classList.add('can-held');
+
+    ghostEl = document.getElementById('waterDragGhost');
+    if (ghostEl) {
+      ghostEl.style.left    = e.clientX + 'px';
+      ghostEl.style.top     = e.clientY + 'px';
+      ghostEl.style.display = 'block';
+    }
+  }
+
+  // ── Water drop sparkle inside a flower bud ────────────────────
+  function spawnDrop(bud) {
+    var drop = document.createElement('span');
+    drop.className    = 'water-drop';
+    drop.textContent  = ['💧', '✦', '·', '○'][Math.floor(Math.random() * 4)];
+    drop.style.left   = (10 + Math.random() * 50) + 'px';
+    drop.style.top    = (10 + Math.random() * 30) + 'px';
+    bud.appendChild(drop);
+    drop.addEventListener('animationend', function () { drop.remove(); }, { once: true });
+  }
+
+  // ── A flower finishes filling ──────────────────────────────────
+  function bloomFlower(f) {
+    if (f.done) return;
+    f.done        = true;
+    f.fill        = 100;
+    f.ring.style.background = 'conic-gradient(rgba(255,110,200,0.55) 360deg, transparent 360deg)';
+    f.emojiEl.textContent   = f.bloom;
+    f.bud.classList.add('bloomed');
+
+    // Add to bouquet display with pop-in animation
+    var display = document.getElementById('bouquetDisplay');
+    if (display) {
+      // Remove placeholder text on first bloom
+      if (bloomed === 0) display.innerHTML = '';
+      var blmEl = document.createElement('span');
+      blmEl.textContent = f.bloom;
+      blmEl.style.fontSize = '26px';
+      blmEl.className  = 'bouquet-bloom-in';
+      display.appendChild(blmEl);
+    }
+
+    bloomed++;
+    if (bloomed >= FLOWERS.length) {
+      // All flowers bloomed → advance progress and go to Q5
+      _doneTimer = setTimeout(function () {
+        dragging = false;
+        if (ghostEl) ghostEl.style.display = 'none';
+        if (canEl)   canEl.classList.remove('can-held');
+        heartStep++;
+        advanceHeart(heartStep);
+        goTo(12);   // → s5/Q5
+      }, 800);
+    }
+  }
+
+  // ── Global pointer move & up ───────────────────────────────────
+  function attachDocListeners() {
+    _docMove = function (e) {
+      if (!dragging) return;
+
+      // Move ghost
+      if (ghostEl) {
+        ghostEl.style.left = e.clientX + 'px';
+        ghostEl.style.top  = e.clientY + 'px';
+      }
+
+      var dx   = e.clientX - lastX;
+      var dy   = e.clientY - lastY;
+      var dist = Math.sqrt(dx * dx + dy * dy);
+
+      flowerEls.forEach(function (f) {
+        if (f.done) return;
+        var r   = f.bud.getBoundingClientRect();
+        var over = e.clientX >= r.left - HIT_PAD && e.clientX <= r.right  + HIT_PAD &&
+                   e.clientY >= r.top  - HIT_PAD && e.clientY <= r.bottom + HIT_PAD;
+        if (over && dist > 0) {
+          f.fill = Math.min(100, f.fill + (dist / FLOWER_FILL_DIST) * 100);
+          var deg = (f.fill / 100) * 360;
+          f.ring.style.background =
+            'conic-gradient(rgba(80,190,255,0.78) ' + deg + 'deg, rgba(180,210,255,0.22) ' + deg + 'deg)';
+
+          // Throttled water-drop sparkle
+          var now = Date.now();
+          if (now - lastDrop > DROP_INTERVAL) {
+            lastDrop = now;
+            spawnDrop(f.bud);
+          }
+
+          if (f.fill >= 100) bloomFlower(f);
+        }
+      });
+
+      lastX = e.clientX;
+      lastY = e.clientY;
+    };
+
+    _docUp = function () {
+      if (!dragging) return;
+      dragging = false;
+      if (ghostEl) ghostEl.style.display = 'none';
+      if (canEl)   canEl.classList.remove('can-held');
+    };
+
+    document.addEventListener('pointermove',   _docMove);
+    document.addEventListener('pointerup',     _docUp);
+    document.addEventListener('pointercancel', _docUp);
+  }
+
+  function detachDocListeners() {
+    if (_docMove) { document.removeEventListener('pointermove',   _docMove); _docMove = null; }
+    if (_docUp)   {
+      document.removeEventListener('pointerup',     _docUp);
+      document.removeEventListener('pointercancel', _docUp);
+      _docUp = null;
+    }
+  }
+
+  // ── Public ────────────────────────────────────────────────────
+  function start() {
+    dragging  = false;
+    bloomed   = 0;
+    lastDrop  = 0;
+    ghostEl   = document.getElementById('waterDragGhost');
+    if (ghostEl) ghostEl.style.display = 'none';
+    buildGarden();
+    buildShelf();
+    attachDocListeners();
+  }
+
+  function stop() {
+    detachDocListeners();
+    dragging = false;
+    if (_doneTimer) { clearTimeout(_doneTimer); _doneTimer = null; }
+    if (ghostEl) ghostEl.style.display = 'none';
+    if (canEl)   canEl.classList.remove('can-held');
+  }
+
+  return { start: start, stop: stop };
+}());
+
 // ── Start button ──────────────────────────────────────────────────
 startBtn.addEventListener('click', function () {
   showProgress();
@@ -649,11 +872,27 @@ plats.forEach(function (plat, i) {
   });
 });
 
-// Goal reached → clicking goes back to Q5 (screen 7)
+// Goal reached → clicking goes back to Q5 (screen 12)
 progGoal.addEventListener('click', function () {
-  if (progGoal.classList.contains('reached') && currentIdx > 7) {
-    jumpBackTo(7);
+  if (progGoal.classList.contains('reached') && currentIdx > 12) {
+    jumpBackTo(12);
   }
+});
+
+// ── Mag screens: tap anywhere to advance ─────────────────────────
+document.querySelectorAll('.mag-screen').forEach(function (magEl) {
+  magEl.addEventListener('click', function () {
+    if (allScreens[currentIdx] === magEl) {
+      goTo(currentIdx + 1);
+    }
+  });
+  // Prevent double-fire on mobile
+  magEl.addEventListener('touchend', function (e) {
+    e.preventDefault();
+    if (allScreens[currentIdx] === magEl) {
+      goTo(currentIdx + 1);
+    }
+  }, { passive: false });
 });
 
 // ── Confetti ──────────────────────────────────────────────────────

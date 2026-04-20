@@ -43,6 +43,8 @@
       <div class="prog-conn" id="conn5"></div>
       <div class="plat" id="plat5"></div>
       <div class="prog-conn" id="conn6"></div>
+      <div class="plat" id="plat6"></div>
+      <div class="prog-conn" id="conn7"></div>
       <div class="prog-goal" id="progGoal">💗</div>
     </div>
     <div class="heart-sprite" id="heartSprite">💕</div>
@@ -65,11 +67,33 @@
       <button class="btn-go" id="startBtn">เริ่มเลย 💕</button>
     </div>
 
+    <!-- Mag 1: shoyu intro → before Catch Hearts -->
+    <div class="screen mag-screen" id="s-mag1">
+      <div class="mag-pet-wrap">
+        <img class="mag-pet" src="shoyu.webp" alt="shoyu">
+        <div class="mag-bubble mag-bubble--right">
+          ฉันซ่อนหัวใจไว้แล้ว...<br>ลองหาดูสิ~ 🖤
+        </div>
+      </div>
+      <p class="mag-tap-hint">แตะเพื่อต่อไป ✦</p>
+    </div>
+
     <!-- Screen 1: Catch the Hearts -->
     <div class="screen" id="s-catch">
       <p class="game-title">จับหัวใจให้ได้ 10 ดวง! 💗</p>
       <div class="catch-counter" id="catchCounter">0 / 10</div>
       <canvas id="catchCanvas" class="catch-canvas"></canvas>
+    </div>
+
+    <!-- Mag 2: momo cheer → after Catch Hearts -->
+    <div class="screen mag-screen" id="s-mag2">
+      <div class="mag-pet-wrap">
+        <img class="mag-pet" src="momo.webp" alt="momo">
+        <div class="mag-bubble mag-bubble--left">
+          เก่งมากเลย!<br>จับได้หมดเลย 🐙✨
+        </div>
+      </div>
+      <p class="mag-tap-hint">แตะเพื่อต่อไป ✦</p>
     </div>
 
     <!-- Screen 2: Q1 -->
@@ -94,6 +118,17 @@
         <button class="choice" data-q="2">พี่คุโรมิ</button>
         <button class="choice" data-q="2">น้องสติ๊ช</button>
       </div>
+    </div>
+
+    <!-- Mag 3: dicky intro → before Feed Pet -->
+    <div class="screen mag-screen" id="s-mag3">
+      <div class="mag-pet-wrap">
+        <img class="mag-pet" src="dicky.webp" alt="dicky">
+        <div class="mag-bubble mag-bubble--right">
+          โอ้ย หิวมากแระ...<br>ให้อาหารหน่อยได้มั้ย 🐶💕
+        </div>
+      </div>
+      <p class="mag-tap-hint">แตะเพื่อต่อไป ✦</p>
     </div>
 
     <!-- Screen 4: Feed the Pet -->
@@ -121,6 +156,17 @@
       <span class="feed-drag-ghost" id="feedDragGhost"></span>
     </div>
 
+    <!-- Mag 4: momo thanks → after Feed Pet -->
+    <div class="screen mag-screen" id="s-mag4">
+      <div class="mag-pet-wrap">
+        <img class="mag-pet" src="momo.webp" alt="momo">
+        <div class="mag-bubble mag-bubble--left">
+          อิ่มสุดแล้ว~<br>ขอบคุณต้นนะ 🥰💕
+        </div>
+      </div>
+      <p class="mag-tap-hint">แตะเพื่อต่อไป ✦</p>
+    </div>
+
     <!-- Screen 5: Q3 -->
     <div class="screen" id="s3">
       <div class="q-icon">🏠</div>
@@ -144,7 +190,16 @@
       </div>
     </div>
 
-    <!-- Screen 5: Q5 -->
+    <!-- Screen 11: Build the Bouquet -->
+    <div class="screen" id="s-bouquet">
+      <p class="game-title">💧 รดน้ำดอกไม้ให้บาน!</p>
+      <div class="bouquet-display" id="bouquetDisplay">🌿</div>
+      <div class="flower-garden" id="flowerGarden"></div>
+      <div class="watering-shelf" id="wateringShelf"></div>
+      <span class="water-drag-ghost" id="waterDragGhost">🪣</span>
+    </div>
+
+    <!-- Screen 12: Q5 -->
     <div class="screen" id="s5">
       <div class="q-icon">✨</div>
       <h2 class="q-text">น่ารักจัง</h2>
