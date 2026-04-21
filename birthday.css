@@ -25,6 +25,7 @@ html, body {
   background: #000;
   color: #4a2060;
   user-select: none;
+  touch-action: manipulation; /* disable double-tap zoom */
 }
 
 body::before {
