@@ -633,174 +633,324 @@ var feedGame = (function () {
   return { start: start, stop: stop };
 }());
 
-// ── Build the Bouquet mini-game ────────────────────────────────────
+// ── Build the Bouquet (SVG + GSAP) ────────────────────────────────
 var bouquetGame = (function () {
-  var FLOWERS = [
-    { bloom: '🌸' },
-    { bloom: '🌺' },
-    { bloom: '🌻' },
-    { bloom: '🌷' },
-    { bloom: '🌼' },
+  // ── Flower shape definitions ─────────────────────────────────
+  var DEFS = [
+    { // Rose
+      petalPath:  'M0,0 C-14,-18 -18,-46 0,-66 C18,-46 14,-18 0,0',
+      petalCount: 10, petalDist: 26,
+      colors: { p1:'#FF6B9D', p2:'#FF9EC4', center:'#FFD700', stem:'#3d8a4a' },
+      centerR: 14,
+    },
+    { // Sunflower
+      petalPath:  'M0,0 C-8,-14 -10,-50 0,-72 C10,-50 8,-14 0,0',
+      petalCount: 14, petalDist: 24,
+      colors: { p1:'#FFD000', p2:'#FFA500', center:'#5C3317', stem:'#3d8a4a' },
+      centerR: 18,
+    },
+    { // Tulip
+      petalPath:  'M0,0 C-20,-8 -24,-44 0,-60 C24,-44 20,-8 0,0',
+      petalCount: 6, petalDist: 18,
+      colors: { p1:'#E8527A', p2:'#FF8FAB', center:'#FFE066', stem:'#3d8a4a' },
+      centerR: 12,
+    },
+    { // Daisy
+      petalPath:  'M0,0 C-7,-12 -8,-40 0,-56 C8,-40 7,-12 0,0',
+      petalCount: 14, petalDist: 18,
+      colors: { p1:'#FFFFFF', p2:'#DDE8FF', center:'#FFD700', stem:'#3d8a4a' },
+      centerR: 15,
+    },
+    { // Lavender
+      petalPath:  'M0,0 C-6,-7 -8,-22 0,-32 C8,-22 6,-7 0,0',
+      petalCount: 12, petalDist: 12,
+      colors: { p1:'#C77DFF', p2:'#E0B0FF', center:'#9B5DE5', stem:'#5a8a6a' },
+      centerR: 9,
+    },
+    { // Lily
+      petalPath:  'M0,0 C-16,-10 -20,-52 0,-72 C20,-52 16,-10 0,0',
+      petalCount: 6, petalDist: 22,
+      colors: { p1:'#FF9EC4', p2:'#FFCCE0', center:'#FF6060', stem:'#3d8a4a' },
+      centerR: 13,
+    },
   ];
-  // Pixels of drag movement needed to fill one flower's ring
-  var FLOWER_FILL_DIST = 420;
-  // Hit-detection padding around each bud's bounding rect
-  var HIT_PAD = 22;
-  // Throttle water drops (ms)
-  var DROP_INTERVAL = 90;
 
-  var flowerEls  = [];  // { bud, ring, emojiEl, fill, done, bloom }
-  var bloomed    = 0;
-  var dragging   = false;
-  var lastX      = 0, lastY = 0;
-  var ghostEl    = null;
-  var canEl      = null;
-  var lastDrop   = 0;
-  var _docMove   = null;
-  var _docUp     = null;
-  var _doneTimer = null;
+  var NS        = 'http://www.w3.org/2000/svg';
+  var FILL_DIST = 360;   // px drag = 100% fill
+  var HIT_PAD   = 44;    // px padding around flower hit zone
 
-  // ── Build the flower garden ────────────────────────────────────
-  function buildGarden() {
-    var garden = document.getElementById('flowerGarden');
-    var display = document.getElementById('bouquetDisplay');
-    if (!garden || !display) return;
-    garden.innerHTML  = '';
-    display.innerHTML = '🌿';
-    flowerEls = [];
-    bloomed   = 0;
+  var currentFlower  = 0;
+  var fillPct        = 0;
+  var dragging       = false;
+  var lastX = 0, lastY = 0;
+  var activeTimeline = null;
+  var ghostEl        = null;
+  var canEl          = null;
+  var _doneTimer     = null;
+  var _docMove       = null;
+  var _docUp         = null;
 
-    FLOWERS.forEach(function (f) {
-      var bud = document.createElement('div');
-      bud.className = 'flower-bud';
+  // ── SVG element helper ────────────────────────────────────────
+  function svgEl(tag, attrs) {
+    var e = document.createElementNS(NS, tag);
+    if (attrs) {
+      Object.keys(attrs).forEach(function (k) { e.setAttribute(k, attrs[k]); });
+    }
+    return e;
+  }
 
-      var ring = document.createElement('div');
-      ring.className = 'flower-ring';
+  // ── Build one flower SVG ──────────────────────────────────────
+  function buildFlower(def, size) {
+    var cx = size / 2;
+    var cy = Math.round(size * 0.74);   // stem base Y
+    var fy = cy - 112;                  // flower-head center Y
 
-      var emoji = document.createElement('span');
-      emoji.className  = 'flower-emoji';
-      emoji.textContent = '🌱';
+    var svg = svgEl('svg', { viewBox: '0 0 ' + size + ' ' + size });
+    svg.classList.add('flower-svg');
 
-      bud.appendChild(ring);
-      bud.appendChild(emoji);
-      garden.appendChild(bud);
-
-      flowerEls.push({ bud: bud, ring: ring, emojiEl: emoji, fill: 0, done: false, bloom: f.bloom });
+    // Stem (rect so transform-origin 50% 100% = bottom-centre works reliably)
+    var stem = svgEl('rect', {
+      x: cx - 2.5, y: fy + 8,
+      width: 5, height: cy - fy - 8,
+      fill: def.colors.stem, rx: 2.5,
     });
-  }
+    stem.classList.add('fl-stem');
+    svg.appendChild(stem);
 
-  // ── Build the watering can shelf ──────────────────────────────
-  function buildShelf() {
-    var shelf = document.getElementById('wateringShelf');
-    if (!shelf) return;
-    shelf.innerHTML = '';
-    canEl = document.createElement('span');
-    canEl.className   = 'water-can-item';
-    canEl.textContent = '🪣';
-    canEl.addEventListener('pointerdown', onCanDown);
-    shelf.appendChild(canEl);
-  }
+    // Leaves — placed near stem, rotation driven by GSAP
+    [
+      { cx: cx - 5, cy: cy - 48 },
+      { cx: cx + 5, cy: cy - 70 },
+    ].forEach(function (ls, i) {
+      var lf = svgEl('ellipse', {
+        cx: ls.cx, cy: ls.cy, rx: 20, ry: 8,
+        fill: def.colors.stem, opacity: 0.85,
+      });
+      lf.classList.add('fl-leaf', 'fl-leaf-' + i);
+      svg.appendChild(lf);
+    });
 
-  // ── Pointer down on the watering can ──────────────────────────
-  function onCanDown(e) {
-    e.preventDefault();
-    try { canEl.setPointerCapture(e.pointerId); } catch (_) {}
-    dragging = true;
-    lastX    = e.clientX;
-    lastY    = e.clientY;
-    lastDrop = 0;
-    canEl.classList.add('can-held');
+    // Bud (hides as flower opens)
+    var budG = svgEl('g');
+    budG.classList.add('fl-bud');
+    budG.appendChild(svgEl('ellipse', { cx: cx, cy: fy + 12, rx: 11, ry: 18, fill: def.colors.p1, opacity: 0.9 }));
+    budG.appendChild(svgEl('ellipse', { cx: cx, cy: fy +  6, rx:  6, ry: 12, fill: def.colors.p2 }));
+    svg.appendChild(budG);
 
-    ghostEl = document.getElementById('waterDragGhost');
-    if (ghostEl) {
-      ghostEl.style.left    = e.clientX + 'px';
-      ghostEl.style.top     = e.clientY + 'px';
-      ghostEl.style.display = 'block';
+    // Petals group — translated to flower-head centre
+    var petG = svgEl('g', { transform: 'translate(' + cx + ',' + fy + ')' });
+    petG.classList.add('fl-petals');
+    for (var i = 0; i < def.petalCount; i++) {
+      var ang = (360 / def.petalCount) * i;
+      var p = svgEl('path', {
+        d: def.petalPath,
+        fill: (i % 2 === 0) ? def.colors.p1 : def.colors.p2,
+        opacity: 0.93,
+        transform: 'rotate(' + ang + ') translate(0,' + (-def.petalDist) + ')',
+      });
+      p.classList.add('fl-petal');
+      petG.appendChild(p);
     }
+    svg.appendChild(petG);
+
+    // Centre circle
+    var cir = svgEl('circle', {
+      cx: cx, cy: fy, r: def.centerR,
+      fill: def.colors.center,
+      stroke: 'rgba(0,0,0,0.10)', 'stroke-width': 1.5,
+    });
+    cir.classList.add('fl-center');
+    svg.appendChild(cir);
+
+    // Pollen dots
+    var polG = svgEl('g');
+    polG.classList.add('fl-pollen');
+    [[-5,-4,2.4],[4,-3,1.9],[0,4,2.3],[-3,3,1.7]].forEach(function (d) {
+      polG.appendChild(svgEl('circle', {
+        cx: cx + d[0], cy: fy + d[1], r: d[2],
+        fill: 'rgba(255,255,255,0.65)',
+      }));
+    });
+    svg.appendChild(polG);
+
+    return svg;
   }
 
-  // ── Water drop sparkle inside a flower bud ────────────────────
-  function spawnDrop(bud) {
-    var drop = document.createElement('span');
-    drop.className    = 'water-drop';
-    drop.textContent  = ['💧', '✦', '·', '○'][Math.floor(Math.random() * 4)];
-    drop.style.left   = (10 + Math.random() * 50) + 'px';
-    drop.style.top    = (10 + Math.random() * 30) + 'px';
-    bud.appendChild(drop);
-    drop.addEventListener('animationend', function () { drop.remove(); }, { once: true });
+  // ── GSAP timeline (scrub 0→1 via drag) ───────────────────────
+  function buildTimeline(svg, size) {
+    var cx = size / 2;
+    var cy = Math.round(size * 0.74);
+    var fy = cy - 112;
+
+    var stem   = svg.querySelector('.fl-stem');
+    var leaf0  = svg.querySelector('.fl-leaf-0');
+    var leaf1  = svg.querySelector('.fl-leaf-1');
+    var bud    = svg.querySelector('.fl-bud');
+    var petals = svg.querySelectorAll('.fl-petal');
+    var center = svg.querySelector('.fl-center');
+    var pollen = svg.querySelector('.fl-pollen');
+
+    // Initial states — use svgOrigin (SVG coordinate space)
+    gsap.set(stem,   { scaleY: 0.08, svgOrigin: cx + ' ' + cy });
+    gsap.set(leaf0,  { scale: 0, opacity: 0, rotation: 0,  svgOrigin: (cx-5) + ' ' + (cy-48) });
+    gsap.set(leaf1,  { scale: 0, opacity: 0, rotation: 0,  svgOrigin: (cx+5) + ' ' + (cy-70) });
+    gsap.set(bud,    { scale: 1, opacity: 1 });
+    gsap.set(petals, { scale: 0, svgOrigin: '0 0' });
+    gsap.set(center, { scale: 0, svgOrigin: cx + ' ' + fy });
+    gsap.set(pollen, { scale: 0, opacity: 0, svgOrigin: cx + ' ' + fy });
+
+    var tl = gsap.timeline({ paused: true });
+    tl
+      // 0–32%: stem grows up from base
+      .to(stem,   { scaleY: 1, duration: 0.32, ease: 'power2.inOut' }, 0)
+      // 12–40%: leaves unfurl with rotation
+      .to(leaf0,  { scale: 1, opacity: 1, rotation: -40, duration: 0.28, ease: 'back.out(2)' }, 0.12)
+      .to(leaf1,  { scale: 1, opacity: 1, rotation:  40, duration: 0.28, ease: 'back.out(2)' }, 0.20)
+      // 28–48%: bud closes away
+      .to(bud,    { scale: 0, opacity: 0, duration: 0.20, ease: 'power2.in' }, 0.28)
+      // 34–72%: petals open in staggered cascade
+      .to(petals, {
+        scale: 1, duration: 0.38,
+        stagger: { each: 0.020, from: 'start' },
+        ease: 'back.out(1.8)',
+      }, 0.34)
+      // 63–78%: centre pops in
+      .to(center, { scale: 1, duration: 0.22, ease: 'back.out(2.8)' }, 0.63)
+      // 73–84%: pollen sparkles
+      .to(pollen, { scale: 1, opacity: 1, duration: 0.18, ease: 'back.out(3)' }, 0.73)
+      // 84–100%: petals sway gently — fully open
+      .to(petals, {
+        rotation: '+=3', yoyo: true, repeat: 1, duration: 0.08,
+        stagger: { each: 0.010, from: 'center' },
+        ease: 'sine.inOut',
+      }, 0.84);
+
+    return tl;
   }
 
-  // ── A flower finishes filling ──────────────────────────────────
-  function bloomFlower(f) {
-    if (f.done) return;
-    f.done        = true;
-    f.fill        = 100;
-    f.ring.style.background = 'conic-gradient(rgba(255,110,200,0.55) 360deg, transparent 360deg)';
-    f.emojiEl.textContent   = f.bloom;
-    f.bud.classList.add('bloomed');
+  // ── Water ring progress ───────────────────────────────────────
+  function setRing(pct) {
+    var ring = document.getElementById('waterRing');
+    if (ring) ring.style.setProperty('--fill-deg', (pct / 100 * 360) + 'deg');
+  }
 
-    // Add to bouquet display with pop-in animation
-    var display = document.getElementById('bouquetDisplay');
-    if (display) {
-      // Remove placeholder text on first bloom
-      if (bloomed === 0) display.innerHTML = '';
-      var blmEl = document.createElement('span');
-      blmEl.textContent = f.bloom;
-      blmEl.style.fontSize = '26px';
-      blmEl.className  = 'bouquet-bloom-in';
-      display.appendChild(blmEl);
+  // ── Bloom and slot into tray ──────────────────────────────────
+  function bloomCurrent() {
+    var wrap = document.getElementById('activeFlowerWrap');
+    if (!wrap) return;
+
+    // Complete bloom instantly
+    if (activeTimeline) {
+      gsap.to(activeTimeline, { progress: 1, duration: 0.22, ease: 'power2.out' });
     }
 
-    bloomed++;
-    if (bloomed >= FLOWERS.length) {
-      // All flowers bloomed → advance progress and go to Q5
-      _doneTimer = setTimeout(function () {
-        dragging = false;
-        if (ghostEl) ghostEl.style.display = 'none';
-        if (canEl)   canEl.classList.remove('can-held');
-        heartStep++;
-        advanceHeart(heartStep);
-        goTo(12);   // → s5/Q5
-      }, 800);
+    // Bounce pop
+    var svg = wrap.querySelector('.flower-svg');
+    if (svg) {
+      gsap.to(svg, {
+        scale: 1.22, duration: 0.16, ease: 'power2.out',
+        onComplete: function () {
+          gsap.to(svg, { scale: 1, duration: 0.30, ease: 'elastic.out(1, 0.5)' });
+        },
+      });
     }
+
+    setTimeout(function () {
+      slotInTray(currentFlower);
+      currentFlower++;
+
+      if (currentFlower >= DEFS.length) {
+        _doneTimer = setTimeout(function () {
+          dragging = false;
+          if (ghostEl) ghostEl.style.display = 'none';
+          if (canEl)   canEl.classList.remove('can-held');
+          heartStep++;
+          advanceHeart(heartStep);
+          goTo(12);   // → s5/Q5
+        }, 1400);
+      } else {
+        setTimeout(function () { loadFlower(currentFlower); }, 620);
+      }
+    }, 480);
   }
 
-  // ── Global pointer move & up ───────────────────────────────────
+  // ── Add a mini flower to the bouquet tray ────────────────────
+  function slotInTray(idx) {
+    var tray = document.getElementById('bouquetTray');
+    if (!tray) return;
+
+    var mini  = buildFlower(DEFS[idx], 72);
+    var miniTl = buildTimeline(mini, 72);
+    miniTl.progress(1);   // instantly fully bloomed
+
+    var slot = document.createElement('div');
+    slot.className = 'tray-slot';
+    slot.appendChild(mini);
+    tray.appendChild(slot);
+
+    gsap.fromTo(slot,
+      { scale: 0, opacity: 0, y: 16 },
+      { scale: 1, opacity: 1, y: 0, duration: 0.50, ease: 'back.out(2.2)' }
+    );
+  }
+
+  // ── Load flower onto center stage ─────────────────────────────
+  function loadFlower(idx) {
+    var wrap = document.getElementById('activeFlowerWrap');
+    if (!wrap) return;
+
+    if (activeTimeline) { activeTimeline.kill(); activeTimeline = null; }
+    wrap.innerHTML = '';
+    fillPct = 0;
+    setRing(0);
+
+    var svg = buildFlower(DEFS[idx], 240);
+    wrap.appendChild(svg);
+    activeTimeline = buildTimeline(svg, 240);
+
+    var ctr = document.getElementById('flowerCounter');
+    if (ctr) ctr.textContent = 'ดอกที่ ' + (idx + 1) + ' / ' + DEFS.length;
+
+    gsap.fromTo(svg,
+      { scale: 0.6, opacity: 0 },
+      { scale: 1, opacity: 1, duration: 0.40, ease: 'back.out(1.8)' }
+    );
+  }
+
+  // ── Global drag listeners ─────────────────────────────────────
   function attachDocListeners() {
     _docMove = function (e) {
       if (!dragging) return;
 
-      // Move ghost
       if (ghostEl) {
         ghostEl.style.left = e.clientX + 'px';
         ghostEl.style.top  = e.clientY + 'px';
       }
 
-      var dx   = e.clientX - lastX;
-      var dy   = e.clientY - lastY;
-      var dist = Math.sqrt(dx * dx + dy * dy);
+      var wrap = document.getElementById('activeFlowerWrap');
+      if (!wrap || !activeTimeline) return;
 
-      flowerEls.forEach(function (f) {
-        if (f.done) return;
-        var r   = f.bud.getBoundingClientRect();
-        var over = e.clientX >= r.left - HIT_PAD && e.clientX <= r.right  + HIT_PAD &&
-                   e.clientY >= r.top  - HIT_PAD && e.clientY <= r.bottom + HIT_PAD;
-        if (over && dist > 0) {
-          f.fill = Math.min(100, f.fill + (dist / FLOWER_FILL_DIST) * 100);
-          var deg = (f.fill / 100) * 360;
-          f.ring.style.background =
-            'conic-gradient(rgba(80,190,255,0.78) ' + deg + 'deg, rgba(180,210,255,0.22) ' + deg + 'deg)';
+      var r    = wrap.getBoundingClientRect();
+      var over = e.clientX >= r.left - HIT_PAD && e.clientX <= r.right  + HIT_PAD &&
+                 e.clientY >= r.top  - HIT_PAD && e.clientY <= r.bottom + HIT_PAD;
 
-          // Throttled water-drop sparkle
-          var now = Date.now();
-          if (now - lastDrop > DROP_INTERVAL) {
-            lastDrop = now;
-            spawnDrop(f.bud);
-          }
+      if (over) {
+        var dx   = e.clientX - lastX;
+        var dy   = e.clientY - lastY;
+        var dist = Math.sqrt(dx * dx + dy * dy);
+        fillPct  = Math.min(100, fillPct + (dist / FILL_DIST) * 100);
 
-          if (f.fill >= 100) bloomFlower(f);
+        // ← scrub GSAP timeline in real-time
+        activeTimeline.progress(fillPct / 100);
+        setRing(fillPct);
+
+        if (fillPct >= 100) {
+          dragging = false;
+          if (ghostEl) ghostEl.style.display = 'none';
+          if (canEl)   canEl.classList.remove('can-held');
+          bloomCurrent();
         }
-      });
+      }
 
       lastX = e.clientX;
       lastY = e.clientY;
@@ -827,15 +977,39 @@ var bouquetGame = (function () {
     }
   }
 
+  // ── Bind watering can ─────────────────────────────────────────
+  function bindCan() {
+    canEl = document.getElementById('waterCanItem');
+    if (!canEl) return;
+    canEl.addEventListener('pointerdown', function (e) {
+      if (currentFlower >= DEFS.length) return;
+      e.preventDefault();
+      try { canEl.setPointerCapture(e.pointerId); } catch (_) {}
+      dragging = true;
+      lastX    = e.clientX;
+      lastY    = e.clientY;
+      canEl.classList.add('can-held');
+      ghostEl = document.getElementById('waterDragGhost');
+      if (ghostEl) {
+        ghostEl.style.left    = e.clientX + 'px';
+        ghostEl.style.top     = e.clientY + 'px';
+        ghostEl.style.display = 'block';
+      }
+    });
+  }
+
   // ── Public ────────────────────────────────────────────────────
   function start() {
-    dragging  = false;
-    bloomed   = 0;
-    lastDrop  = 0;
-    ghostEl   = document.getElementById('waterDragGhost');
+    currentFlower  = 0;
+    fillPct        = 0;
+    dragging       = false;
+    activeTimeline = null;
+    ghostEl        = document.getElementById('waterDragGhost');
     if (ghostEl) ghostEl.style.display = 'none';
-    buildGarden();
-    buildShelf();
+    var tray = document.getElementById('bouquetTray');
+    if (tray) tray.innerHTML = '';
+    loadFlower(0);
+    bindCan();
     attachDocListeners();
   }
 
@@ -843,6 +1017,7 @@ var bouquetGame = (function () {
     detachDocListeners();
     dragging = false;
     if (_doneTimer) { clearTimeout(_doneTimer); _doneTimer = null; }
+    if (activeTimeline) { activeTimeline.kill(); activeTimeline = null; }
     if (ghostEl) ghostEl.style.display = 'none';
     if (canEl)   canEl.classList.remove('can-held');
   }
