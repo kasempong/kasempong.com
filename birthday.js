@@ -642,36 +642,42 @@ var bouquetGame = (function () {
   var DEFS = [
     { // 🌸 Rose — plump rounded petals, romantic warmth
       petalPath:  'M0,0 C-26,-2 -32,-38 0,-58 C32,-38 26,-2 0,0',
+      pw: 32, ph: 58,
       petalCount: 9, petalDist: 20,
       colors: { p1:'#FF6B9D', p2:'#FFCCE0', center:'#FFE566', stem:'#4a9a5a', outline:'rgba(180,30,80,0.30)' },
       centerR: 13,
     },
     { // 🌻 Sunflower — happy bold petals, high-contrast center
       petalPath:  'M0,0 C-9,-8 -11,-54 0,-72 C11,-54 9,-8 0,0',
+      pw: 11, ph: 72,
       petalCount: 13, petalDist: 18,
       colors: { p1:'#FFD600', p2:'#FFAA00', center:'#3E1800', stem:'#4a9a5a', outline:'rgba(140,70,0,0.30)' },
       centerR: 19,
     },
     { // 🌷 Tulip — wide cupped petals, bold shape
       petalPath:  'M0,0 C-30,0 -34,-32 0,-52 C34,-32 30,0 0,0',
+      pw: 34, ph: 52,
       petalCount: 6, petalDist: 12,
       colors: { p1:'#F44794', p2:'#FFA8C8', center:'#FFE566', stem:'#4a9a5a', outline:'rgba(160,10,60,0.28)' },
       centerR: 9,
     },
     { // 🌼 Daisy — cheerful thin petals, bright center
       petalPath:  'M0,0 C-7,-10 -9,-44 0,-60 C9,-44 7,-10 0,0',
+      pw: 9, ph: 60,
       petalCount: 14, petalDist: 14,
       colors: { p1:'#FFFFFF', p2:'#E4EEFF', center:'#FFD600', stem:'#4a9a5a', outline:'rgba(100,120,200,0.22)' },
       centerR: 14,
     },
     { // 💜 Lavender — small oval petals clustered tight
       petalPath:  'M0,0 C-11,-2 -14,-22 0,-34 C14,-22 11,-2 0,0',
+      pw: 14, ph: 34,
       petalCount: 16, petalDist: 6,
       colors: { p1:'#B47FFF', p2:'#E5C8FF', center:'#6D28D9', stem:'#6a9a7a', outline:'rgba(80,10,160,0.25)' },
       centerR: 8,
     },
     { // 🧡 Gerbera — many bold petals, vivid warm tone
       petalPath:  'M0,0 C-20,-4 -24,-50 0,-66 C24,-50 20,-4 0,0',
+      pw: 24, ph: 66,
       petalCount: 14, petalDist: 18,
       colors: { p1:'#FF5722', p2:'#FFC07A', center:'#B71C1C', stem:'#4a9a5a', outline:'rgba(160,40,0,0.28)' },
       centerR: 16,
@@ -717,6 +723,64 @@ var bouquetGame = (function () {
     });
   }
 
+  // ── Paper.js organic petal path generator ─────────────────────
+  // Lazy-initialised: first call sets up a headless Paper.js scope.
+  var _paperReady = false;
+  function _ensurePaper() {
+    if (_paperReady) return;
+    if (!window.paper) return;
+    try {
+      // Headless mode (no canvas — path math only)
+      window.paper.setup(new window.paper.Size(1000, 1000));
+      _paperReady = true;
+    } catch (e) {
+      try {
+        // Fallback: tiny off-screen canvas (never attached to DOM)
+        var c = document.createElement('canvas');
+        c.width = 200; c.height = 200;
+        window.paper.setup(c);
+        _paperReady = true;
+      } catch (e2) { /* give up — cubic-bezier fallbacks used */ }
+    }
+  }
+
+  // Returns an SVG path d-string for an organic petal.
+  //   pw  = half-width at the widest point (at base-240 units * s)
+  //   ph  = total height (base to tip)
+  //   jitter = 0–0.20 random wobble per key-point
+  // Path is centred at origin (0,0), tip pointing toward negative-Y.
+  function getOrganicPetalPath(pw, ph, jitter) {
+    _ensurePaper();
+    if (!_paperReady || !window.paper) {
+      // Simple cubic-bezier fallback (original shape, no jitter)
+      return 'M0,0 C-' + pw.toFixed(1) + ',0' +
+             ' -' + pw.toFixed(1) + ',-' + (ph * 0.72).toFixed(1) +
+             ' 0,-' + ph.toFixed(1) +
+             ' C' + pw.toFixed(1) + ',-' + (ph * 0.72).toFixed(1) +
+             ' ' + pw.toFixed(1) + ',0 0,0';
+    }
+    var p = window.paper;
+    function j(v) { return v * (1 + (Math.random() - 0.5) * jitter * 2); }
+    // 8 key-points: base → left bulge → tip → right bulge → base
+    var pts = [
+      [0,                    0],
+      [-j(pw * 0.28), -j(ph * 0.13)],
+      [-j(pw * 0.96), -j(ph * 0.43)],
+      [-j(pw * 0.62), -j(ph * 0.71)],
+      [(Math.random() - 0.5) * pw * 0.06, -j(ph)],  // tip: tiny x wobble
+      [ j(pw * 0.62), -j(ph * 0.71)],
+      [ j(pw * 0.96), -j(ph * 0.43)],
+      [ j(pw * 0.28), -j(ph * 0.13)],
+    ];
+    var path = new p.Path(pts.map(function (pt) { return new p.Point(pt[0], pt[1]); }));
+    path.closed = true;
+    path.smooth({ type: 'catmull-rom', factor: 0.6 });
+    var node = path.exportSVG();
+    var d = node ? (node.getAttribute('d') || '') : '';
+    path.remove();
+    return d || ('M0,0 L-' + pw + ',-' + (ph * 0.5) + ' 0,-' + ph + ' ' + pw + ',-' + (ph * 0.5) + 'Z');
+  }
+
   // ── Build one flower SVG (proportional geometry — works at any size) ──
   // All measurements scale with `size`. Flower head is at fy = size*0.37,
   // so petals always fit within the SVG viewBox (no overflow for most types).
@@ -739,6 +803,18 @@ var bouquetGame = (function () {
     var gStop2 = svgEl('stop', { offset: '100%','stop-color': def.colors.p2, 'stop-opacity': '1' });
     grad.appendChild(gStop1); grad.appendChild(gStop2);
     defs.appendChild(grad);
+
+    // ── Drop-shadow filter for depth on petals ───────────────────
+    var filtId = gid + '-shd';
+    var filt = svgEl('filter', { id: filtId, x: '-30%', y: '-30%', width: '160%', height: '160%' });
+    var fds  = svgEl('feDropShadow', {
+      dx: '0', dy: (2 * s).toFixed(1),
+      stdDeviation: (3 * s).toFixed(1),
+      'flood-color': 'rgba(0,0,0,0.22)',
+    });
+    filt.appendChild(fds);
+    defs.appendChild(filt);
+
     svg.appendChild(defs);
 
     // ── Stem (slight wiggle path for organic feel) ───────────────
@@ -789,7 +865,7 @@ var bouquetGame = (function () {
     }));
     svg.appendChild(budG);
 
-    // ── Petals group ─────────────────────────────────────────────
+    // ── Petals group (Paper.js organic bezier curves) ────────────
     // SVG attribute sets position + scale(0) as a hard fallback.
     // GSAP may override this with CSS transforms; if GSAP fails the
     // SVG attribute keeps the petals invisible at the correct position.
@@ -797,9 +873,13 @@ var bouquetGame = (function () {
     petG.classList.add('fl-petals');
     petG.setAttribute('transform', 'translate(' + cx + ',' + fy + ') scale(0)');
 
-    var scaledPath = scalePath(def.petalPath, s);
+    var pw        = (def.pw || 26) * s;    // petal half-width at this size
+    var ph        = (def.ph || 58) * s;    // petal height at this size
     var scaledDist = (def.petalDist * s).toFixed(2);
     var strokeW    = Math.max(0.6, 1.8 * s).toFixed(2);
+
+    // Outer petal group gets the drop-shadow so inner layers don't double-shadow
+    var petalShGroup = svgEl('g', { filter: 'url(#' + filtId + ')' });
 
     for (var i = 0; i < def.petalCount; i++) {
       // Organic angle jitter — breaks perfect radial symmetry
@@ -807,48 +887,88 @@ var bouquetGame = (function () {
       var ang     = baseAng + (i % 3 === 0 ? 3.5 : i % 3 === 1 ? -2.5 : 0.8);
       // Sine-wave size variation: neighboring petals subtly differ
       var szMul   = (0.86 + 0.28 * ((Math.sin(i * 2.1 + 1.2) + 1) / 2)).toFixed(3);
-      var p = svgEl('path', {
-        d: scaledPath,
+      var xfm     = 'rotate(' + ang.toFixed(1) + ') translate(0,-' + scaledDist + ') scale(' + szMul + ')';
+
+      // ── Main petal: organic catmull-rom bezier ──
+      var mainD = getOrganicPetalPath(pw, ph, 0.10);
+      var mainP = svgEl('path', {
+        d: mainD,
         fill: 'url(#' + gid + ')',
         stroke: def.colors.outline,
         'stroke-width': strokeW,
         'stroke-linejoin': 'round',
-        opacity: (0.88 + 0.10 * (i % 2)).toFixed(2),
-        transform: 'rotate(' + ang.toFixed(1) + ') translate(0,-' + scaledDist + ') scale(' + szMul + ')',
+        opacity: (0.90 + 0.08 * (i % 2)).toFixed(2),
+        transform: xfm,
       });
-      p.classList.add('fl-petal');
-      petG.appendChild(p);
+      mainP.classList.add('fl-petal');
+      petalShGroup.appendChild(mainP);
+
+      // ── Inner highlight: smaller petal, lighter fill, no stroke ──
+      var hilD = getOrganicPetalPath(pw * 0.55, ph * 0.62, 0.04);
+      var hilP = svgEl('path', {
+        d: hilD,
+        fill: def.colors.p2,
+        opacity: '0.38',
+        transform: xfm,
+      });
+      petalShGroup.appendChild(hilP);
+
+      // ── Petal vein: thin bezier from base toward tip ──
+      var vx = (pw * 0.07).toFixed(1);
+      var vy = (-ph * 0.48).toFixed(1);
+      var vt = (-ph * 0.88).toFixed(1);
+      var veinD = 'M0,0 Q' + vx + ',' + vy + ' 0,' + vt;
+      petalShGroup.appendChild(svgEl('path', {
+        d: veinD,
+        fill: 'none',
+        stroke: def.colors.outline,
+        'stroke-width': (Math.max(0.4, strokeW * 0.35)).toFixed(2),
+        'stroke-linecap': 'round',
+        opacity: '0.32',
+        transform: xfm,
+      }));
     }
+
+    petG.appendChild(petalShGroup);
     svg.appendChild(petG);
 
-    // ── Centre circle (shadow ring + main dot + pollen) ──────────
+    // ── Centre (tiered circles + dot ring — cel-shade style) ─────
     var cR = def.centerR * s;
-    // Shadow ring beneath center
+    // Outer shadow halo
     svg.appendChild(svgEl('circle', {
-      cx: cx, cy: fy, r: (cR * 1.28).toFixed(1),
-      fill: 'rgba(0,0,0,0.14)',
+      cx: cx, cy: fy, r: (cR * 1.30).toFixed(1),
+      fill: 'rgba(0,0,0,0.18)',
     }));
-    // Main center
+    // Main center disc
     var cir = svgEl('circle', {
       cx: cx, cy: fy, r: cR.toFixed(1),
       fill: def.colors.center,
-      stroke: 'rgba(255,255,255,0.38)',
+      stroke: 'rgba(255,255,255,0.30)',
       'stroke-width': Math.max(1, 2 * s).toFixed(1),
     });
     cir.classList.add('fl-center');
     svg.appendChild(cir);
+    // Inner lighter tier (cel-shade highlight)
+    svg.appendChild(svgEl('circle', {
+      cx: cx, cy: fy, r: (cR * 0.54).toFixed(1),
+      fill: 'rgba(255,255,255,0.28)',
+    }));
 
-    // Pollen sparkle dots
+    // Dot ring around center edge — replaces scattered pollen
     var polG = svgEl('g');
     polG.classList.add('fl-pollen');
-    [[-5,-4,2.5],[4.5,-2.5,2.0],[0,5,2.4],[-3.5,3.5,1.8],[2.5,-5,1.6],[-1,6,1.4]].forEach(function (d) {
+    var dotCount = Math.min(8, Math.max(5, Math.round(cR * 1.1)));
+    var dotR     = cR * 0.82;
+    var dotSize  = (cR * 0.17).toFixed(1);
+    for (var di = 0; di < dotCount; di++) {
+      var da = (2 * Math.PI / dotCount) * di;
       polG.appendChild(svgEl('circle', {
-        cx: (cx + d[0] * s).toFixed(1),
-        cy: (fy + d[1] * s).toFixed(1),
-        r:  (d[2] * s).toFixed(1),
-        fill: 'rgba(255,255,255,0.72)',
+        cx: (cx + Math.cos(da) * dotR).toFixed(1),
+        cy: (fy + Math.sin(da) * dotR).toFixed(1),
+        r:  dotSize,
+        fill: 'rgba(255,255,255,0.75)',
       }));
-    });
+    }
     svg.appendChild(polG);
 
     return svg;
