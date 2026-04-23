@@ -687,6 +687,9 @@ var bouquetGame = (function () {
   var blooming       = false;
   var lastX = 0, lastY = 0;
   var activeTimeline = null;
+  var activePetG     = null;   // fallback ref when GSAP isn't available
+  var activeCX       = 0;
+  var activeFY       = 0;
   var ghostEl        = null;
   var canEl          = null;
   var _doneTimer     = null;
@@ -710,11 +713,23 @@ var bouquetGame = (function () {
     var cx = size / 2;
     var cy = Math.round(size * 0.74);   // stem base Y
     var fy = cy - 112;                  // flower-head center Y
+    var gid = 'fg' + size + '_' + def.colors.p1.replace('#','');
 
     var svg = svgEl('svg', { viewBox: '0 0 ' + size + ' ' + size });
     svg.classList.add('flower-svg');
 
-    // Stem (rect so transform-origin 50% 100% = bottom-centre works reliably)
+    // SVG gradient defs for richer, less flat petals
+    var defs = svgEl('defs');
+    var grad = svgEl('linearGradient', { id: gid, x1: '0%', y1: '0%', x2: '0%', y2: '100%' });
+    var s1 = svgEl('stop', { offset: '0%' });
+    s1.style.stopColor = def.colors.p2;
+    var s2 = svgEl('stop', { offset: '100%' });
+    s2.style.stopColor = def.colors.p1;
+    grad.appendChild(s1); grad.appendChild(s2);
+    defs.appendChild(grad);
+    svg.appendChild(defs);
+
+    // Stem — grows from base, starts as tiny line
     var stem = svgEl('rect', {
       x: cx - 2.5, y: fy + 8,
       width: 5, height: cy - fy - 8,
@@ -723,41 +738,45 @@ var bouquetGame = (function () {
     stem.classList.add('fl-stem');
     svg.appendChild(stem);
 
-    // Leaves — placed near stem, rotation driven by GSAP
+    // Leaves — start folded, unfurl on bloom
     [
-      { cx: cx - 5, cy: cy - 48 },
-      { cx: cx + 5, cy: cy - 70 },
+      { cx: cx - 5, cy: cy - 44, ang: -35 },
+      { cx: cx + 5, cy: cy - 68, ang:  38 },
     ].forEach(function (ls, i) {
       var lf = svgEl('ellipse', {
-        cx: ls.cx, cy: ls.cy, rx: 20, ry: 8,
-        fill: def.colors.stem, opacity: 0.85,
+        cx: ls.cx, cy: ls.cy, rx: 22, ry: 8,
+        fill: def.colors.stem, opacity: 0.82,
+        transform: 'rotate(' + ls.ang + ',' + ls.cx + ',' + ls.cy + ')',
       });
       lf.classList.add('fl-leaf', 'fl-leaf-' + i);
       svg.appendChild(lf);
     });
 
-    // Bud (hides as flower opens)
+    // Bud (shown before bloom, hides as petals open)
     var budG = svgEl('g');
     budG.classList.add('fl-bud');
-    budG.appendChild(svgEl('ellipse', { cx: cx, cy: fy + 12, rx: 11, ry: 18, fill: def.colors.p1, opacity: 0.9 }));
-    budG.appendChild(svgEl('ellipse', { cx: cx, cy: fy +  6, rx:  6, ry: 12, fill: def.colors.p2 }));
+    budG.appendChild(svgEl('ellipse', { cx: cx, cy: fy + 13, rx: 11, ry: 19, fill: def.colors.p1, opacity: 0.92 }));
+    budG.appendChild(svgEl('ellipse', { cx: cx, cy: fy +  6, rx:  6, ry: 13, fill: def.colors.p2 }));
     svg.appendChild(budG);
 
-    // Petals group — NO SVG transform attribute.
-    // GSAP will manage x, y, and scale entirely via CSS transforms,
-    // so there is no SVG-attribute vs CSS-transform conflict.
+    // Petals group — SVG attribute sets position AND initial scale(0).
+    // This is the critical fallback: even if GSAP fails to initialise,
+    // the petals are invisible and correctly centred at the flower head.
     var petG = svgEl('g');
     petG.classList.add('fl-petals');
+    petG.setAttribute('transform', 'translate(' + cx + ',' + fy + ') scale(0)');
+
     for (var i = 0; i < def.petalCount; i++) {
-      var ang = (360 / def.petalCount) * i;
-      // Each petal path uses an SVG transform for its rotation+offset.
-      // GSAP never animates these individual paths — only petG is animated —
-      // so the SVG attribute is never overridden by a CSS transform.
+      // Slightly irregular spacing: every 3rd petal is nudged ±4°
+      var baseAng = (360 / def.petalCount) * i;
+      var ang     = baseAng + (i % 3 === 0 ? 4 : i % 3 === 1 ? -3 : 0);
+      // Organic size variation: alternating large/small using a sine pattern
+      var szMul   = 0.84 + 0.32 * ((Math.sin(i * 2.1 + 0.7) + 1) / 2);  // 0.84–1.16
       var p = svgEl('path', {
         d: def.petalPath,
-        fill: (i % 2 === 0) ? def.colors.p1 : def.colors.p2,
-        opacity: 0.93,
-        transform: 'rotate(' + ang + ') translate(0,' + (-def.petalDist) + ')',
+        fill: 'url(#' + gid + ')',
+        opacity: 0.88 + 0.10 * (i % 2),
+        transform: 'rotate(' + ang + ') translate(0,' + (-def.petalDist) + ') scale(' + szMul.toFixed(3) + ')',
       });
       p.classList.add('fl-petal');
       petG.appendChild(p);
@@ -776,10 +795,10 @@ var bouquetGame = (function () {
     // Pollen dots
     var polG = svgEl('g');
     polG.classList.add('fl-pollen');
-    [[-5,-4,2.4],[4,-3,1.9],[0,4,2.3],[-3,3,1.7]].forEach(function (d) {
+    [[-5,-4,2.4],[4,-3,1.9],[0,4,2.3],[-3,3,1.7],[-1,5.5,1.5]].forEach(function (d) {
       polG.appendChild(svgEl('circle', {
         cx: cx + d[0], cy: fy + d[1], r: d[2],
-        fill: 'rgba(255,255,255,0.65)',
+        fill: 'rgba(255,255,255,0.70)',
       }));
     });
     svg.appendChild(polG);
@@ -788,7 +807,9 @@ var bouquetGame = (function () {
   }
 
   // ── GSAP timeline (scrub 0→1 via drag) ───────────────────────
+  // Returns null if GSAP isn't loaded; caller falls back to direct SVG attrs.
   function buildTimeline(svg, size) {
+    if (typeof gsap === 'undefined') return null;
     var cx = size / 2;
     var cy = Math.round(size * 0.74);
     var fy = cy - 112;
@@ -849,18 +870,37 @@ var bouquetGame = (function () {
 
     // Complete bloom instantly
     if (activeTimeline) {
-      gsap.to(activeTimeline, { progress: 1, duration: 0.22, ease: 'power2.out' });
+      if (typeof gsap !== 'undefined') {
+        gsap.to(activeTimeline, { progress: 1, duration: 0.22, ease: 'power2.out' });
+      } else {
+        activeTimeline.progress(1);
+      }
+    } else if (activePetG) {
+      // GSAP-free fallback: snap petals to full scale
+      activePetG.setAttribute('transform',
+        'translate(' + activeCX + ',' + activeFY + ') scale(1)'
+      );
     }
 
     // Bounce pop
     var svg = wrap.querySelector('.flower-svg');
     if (svg) {
-      gsap.to(svg, {
-        scale: 1.22, duration: 0.16, ease: 'power2.out',
-        onComplete: function () {
-          gsap.to(svg, { scale: 1, duration: 0.30, ease: 'elastic.out(1, 0.5)' });
-        },
-      });
+      if (typeof gsap !== 'undefined') {
+        gsap.to(svg, {
+          scale: 1.22, duration: 0.16, ease: 'power2.out',
+          onComplete: function () {
+            gsap.to(svg, { scale: 1, duration: 0.30, ease: 'elastic.out(1, 0.5)' });
+          },
+        });
+      } else {
+        // CSS fallback bounce
+        svg.style.transition = 'transform 0.16s ease-out';
+        svg.style.transform  = 'scale(1.18)';
+        setTimeout(function () {
+          svg.style.transition = 'transform 0.35s cubic-bezier(0.34,1.56,0.64,1)';
+          svg.style.transform  = 'scale(1)';
+        }, 160);
+      }
     }
 
     _bloomTimer = setTimeout(function () {
@@ -893,20 +933,39 @@ var bouquetGame = (function () {
     var tray = document.getElementById('bouquetTray');
     if (!tray) return;
 
-    var mini  = buildFlower(DEFS[idx], 72);
+    var mini   = buildFlower(DEFS[idx], 72);
     var miniTl = buildTimeline(mini, 72);
-    miniTl.progress(1);   // instantly fully bloomed
-    miniTl.kill();        // release GSAP resources immediately
+    if (miniTl) {
+      miniTl.progress(1);   // instantly fully bloomed
+      miniTl.kill();        // release GSAP resources
+    } else {
+      // GSAP-free fallback: set petG to full scale via SVG attribute
+      var miniPetG = mini.querySelector('.fl-petals');
+      if (miniPetG) {
+        var mc = 36, mf = Math.round(72 * 0.74) - 112;
+        miniPetG.setAttribute('transform', 'translate(' + mc + ',' + mf + ') scale(1)');
+      }
+    }
 
     var slot = document.createElement('div');
     slot.className = 'tray-slot';
     slot.appendChild(mini);
     tray.appendChild(slot);
 
-    gsap.fromTo(slot,
-      { scale: 0, opacity: 0, y: 16 },
-      { scale: 1, opacity: 1, y: 0, duration: 0.50, ease: 'back.out(2.2)' }
-    );
+    if (typeof gsap !== 'undefined') {
+      gsap.fromTo(slot,
+        { scale: 0, opacity: 0, y: 16 },
+        { scale: 1, opacity: 1, y: 0, duration: 0.50, ease: 'back.out(2.2)' }
+      );
+    } else {
+      slot.style.transition = 'opacity 0.4s ease, transform 0.4s ease';
+      slot.style.opacity    = '0';
+      slot.style.transform  = 'scale(0)';
+      requestAnimationFrame(function () {
+        slot.style.opacity   = '1';
+        slot.style.transform = 'scale(1)';
+      });
+    }
   }
 
   // ── Load flower onto center stage ─────────────────────────────
@@ -915,21 +974,42 @@ var bouquetGame = (function () {
     if (!wrap) return;
 
     if (activeTimeline) { activeTimeline.kill(); activeTimeline = null; }
+    activePetG = null;
     wrap.innerHTML = '';
     fillPct = 0;
     setRing(0);
 
-    var svg = buildFlower(DEFS[idx], 240);
+    var size = 240;
+    var svg  = buildFlower(DEFS[idx], size);
     wrap.appendChild(svg);
-    activeTimeline = buildTimeline(svg, 240);
+
+    // Store petG reference for GSAP-free fallback animation
+    activePetG = svg.querySelector('.fl-petals');
+    activeCX   = size / 2;
+    activeFY   = Math.round(size * 0.74) - 112;
+
+    // petG already has scale(0) via SVG attribute (set in buildFlower).
+    // buildTimeline returns null if GSAP not loaded — that's fine.
+    activeTimeline = buildTimeline(svg, size);
 
     var ctr = document.getElementById('flowerCounter');
     if (ctr) ctr.textContent = 'ดอกที่ ' + (idx + 1) + ' / ' + DEFS.length;
 
-    gsap.fromTo(svg,
-      { scale: 0.6, opacity: 0 },
-      { scale: 1, opacity: 1, duration: 0.40, ease: 'back.out(1.8)' }
-    );
+    if (typeof gsap !== 'undefined') {
+      gsap.fromTo(svg,
+        { scale: 0.6, opacity: 0 },
+        { scale: 1, opacity: 1, duration: 0.40, ease: 'back.out(1.8)' }
+      );
+    } else {
+      // Fallback: simple CSS transition entrance
+      svg.style.transition = 'opacity 0.4s ease, transform 0.4s ease';
+      svg.style.opacity    = '0';
+      svg.style.transform  = 'scale(0.6)';
+      requestAnimationFrame(function () {
+        svg.style.opacity   = '1';
+        svg.style.transform = 'scale(1)';
+      });
+    }
   }
 
   // ── Watering can drag (pointer capture + element-level listeners) ──
@@ -960,7 +1040,7 @@ var bouquetGame = (function () {
       }
 
       var wrap = document.getElementById('activeFlowerWrap');
-      if (!wrap || !activeTimeline) return;
+      if (!wrap) return;
 
       var r    = wrap.getBoundingClientRect();
       var over = e.clientX >= r.left - HIT_PAD && e.clientX <= r.right  + HIT_PAD &&
@@ -972,7 +1052,15 @@ var bouquetGame = (function () {
         var dist = Math.sqrt(dx * dx + dy * dy);
         fillPct  = Math.min(100, fillPct + (dist / FILL_DIST) * 100);
 
-        activeTimeline.progress(fillPct / 100);
+        if (activeTimeline) {
+          // GSAP scrub (full multi-element animation)
+          activeTimeline.progress(fillPct / 100);
+        } else if (activePetG) {
+          // GSAP-free fallback: scale petals via SVG attribute directly
+          activePetG.setAttribute('transform',
+            'translate(' + activeCX + ',' + activeFY + ') scale(' + (fillPct / 100).toFixed(4) + ')'
+          );
+        }
         setRing(fillPct);
 
         if (fillPct >= 100) {
@@ -1025,6 +1113,7 @@ var bouquetGame = (function () {
     dragging       = false;
     blooming       = false;
     activeTimeline = null;
+    activePetG     = null;
     ghostEl        = document.getElementById('waterDragGhost');
     if (ghostEl) ghostEl.style.display = 'none';
     var tray = document.getElementById('bouquetTray');

@@ -989,6 +989,7 @@ h1 {
   display: flex;
   align-items: center;
   justify-content: center;
+  overflow: hidden;   /* clip SVG overflow so petals never escape the stage */
 }
 
 .active-flower-wrap {
@@ -998,6 +999,7 @@ h1 {
   align-items: center;
   justify-content: center;
   touch-action: none;
+  pointer-events: none;  /* SVG must never intercept taps meant for the water can */
 }
 
 .active-flower-wrap .flower-svg {
