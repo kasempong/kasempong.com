@@ -688,6 +688,28 @@ var bouquetGame = (function () {
   var FILL_DIST = 150;   // px drag = 100% fill
   var HIT_PAD   = 60;    // px padding around flower hit zone
 
+  // ── Composed bouquet layout (master SVG viewBox 0 0 320 200) ─────
+  var BQ_SIZE      = 90;                          // flower SVG size in bouquet
+  var BQ_STEM_BOT  = Math.round(BQ_SIZE * 0.88); // 79 — stem-bottom in flower's local coords
+  var BQ_HEAD_Y    = Math.round(BQ_SIZE * 0.37); // 33 — head center Y in flower's local coords
+  var BQ_RISE      = BQ_STEM_BOT - BQ_HEAD_Y;    // 46 — vertical dist stem→head in local space
+  var BQ_HALF      = BQ_SIZE / 2;                // 45 — half width
+  var BQ_VBW       = 320;                         // master SVG viewBox width
+  var BQ_VBH       = 200;                         // master SVG viewBox height
+  var BQ_PAPER_TOP = 165;                         // y-coord where paper starts (viewBox units)
+  var BQ_PAPER_H   = 35;                          // paper height when fully wrapped
+
+  // Six fan positions. sbx/sby = stem-bottom in viewBox coords, rot = tilt degrees.
+  // DOM order of <g id="bqFn"> in HTML controls z-order (back-to-front: 3,4,1,2,5,0).
+  var BQ_SLOTS = [
+    { sbx: 160, sby: 160, rot:   0 },  // 0 Rose        — center
+    { sbx: 140, sby: 160, rot: -20 },  // 1 Sunflower   — left-center
+    { sbx: 180, sby: 160, rot:  20 },  // 2 Tulip       — right-center
+    { sbx: 112, sby: 164, rot: -42 },  // 3 Daisy       — far left
+    { sbx: 208, sby: 164, rot:  42 },  // 4 Lavender    — far right
+    { sbx: 163, sby: 160, rot:   9 },  // 5 Gerbera     — centre-slight-right
+  ];
+
   var currentFlower  = 0;
   var fillPct        = 0;
   var dragging       = false;
@@ -1075,7 +1097,7 @@ var bouquetGame = (function () {
 
     _bloomTimer = setTimeout(function () {
       _bloomTimer = null;
-      slotInTray(currentFlower);
+      addToBouquet(currentFlower);
       currentFlower++;
 
       if (currentFlower >= DEFS.length) {
@@ -1101,49 +1123,56 @@ var bouquetGame = (function () {
     }, 480);
   }
 
-  // ── Add a mini flower to the bouquet tray ────────────────────
-  function slotInTray(idx) {
-    var tray = document.getElementById('bouquetTray');
-    if (!tray) return;
+  // ── Add a flower to the composed bouquet SVG ─────────────────
+  function addToBouquet(idx) {
+    var slotG = document.getElementById('bqF' + idx);
+    if (!slotG) return;
 
-    // Build at 180px (geometry works at this size) — CSS scales to 66px visually
-    var miniSize = 180;
-    var mini     = buildFlower(DEFS[idx], miniSize, idx);
-    var miniTl   = buildTimeline(mini, miniSize);
+    var slot = BQ_SLOTS[idx];
+
+    // Build flower at BQ_SIZE. Use a unique gid suffix to avoid id collision
+    // with the large active-stage flower (which uses idx without suffix).
+    var mini   = buildFlower(DEFS[idx], BQ_SIZE, idx + 100);
+    var miniTl = buildTimeline(mini, BQ_SIZE);
     if (miniTl) {
-      miniTl.progress(1);   // instantly fully bloomed
-      miniTl.kill();        // release GSAP resources
+      miniTl.progress(1);  // instantly fully bloomed
+      miniTl.kill();
     } else {
-      // GSAP-free fallback: advance petG to full scale via SVG attribute
       var miniPetG = mini.querySelector('.fl-petals');
       if (miniPetG) {
-        var mc = miniSize / 2;
-        var mf = Math.round(miniSize * 0.37);
-        miniPetG.setAttribute('transform', 'translate(' + mc + ',' + mf + ') scale(1)');
+        miniPetG.setAttribute('transform',
+          'translate(' + BQ_HALF + ',' + BQ_HEAD_Y + ') scale(1)'
+        );
       }
     }
 
-    var slot = document.createElement('div');
-    slot.className = 'tray-slot';
-    slot.appendChild(mini);
-    tray.appendChild(slot);
+    // ── Transform: stem-bottom lands at (sbx, sby), flower rotated by rot ──
+    // Equivalent steps (right-to-left application):
+    //   1. translate(-BQ_HALF, -BQ_STEM_BOT) — bring stem-bottom to local origin
+    //   2. rotate(rot)                        — tilt around that point
+    //   3. translate(sbx, sby)               — move to final global position
+    slotG.setAttribute('transform',
+      'translate(' + slot.sbx + ',' + slot.sby + ')' +
+      ' rotate(' + slot.rot + ')' +
+      ' translate(' + (-BQ_HALF) + ',' + (-BQ_STEM_BOT) + ')'
+    );
+    slotG.appendChild(mini);
 
+    // Entrance: pop in from flower-head position
+    var rotRad = slot.rot * Math.PI / 180;
+    var headVbX = (slot.sbx + BQ_RISE * Math.sin(rotRad)).toFixed(1);
+    var headVbY = (slot.sby - BQ_RISE * Math.cos(rotRad)).toFixed(1);
     if (typeof gsap !== 'undefined') {
-      gsap.fromTo(slot,
-        { scale: 0, opacity: 0, y: 16 },
-        { scale: 1, opacity: 1, y: 0, duration: 0.50, ease: 'back.out(2.2)' }
+      gsap.fromTo(slotG,
+        { scale: 0, opacity: 0, svgOrigin: headVbX + ' ' + headVbY },
+        { scale: 1, opacity: 1, duration: 0.55, ease: 'back.out(2.2)' }
       );
     } else {
-      slot.style.transition = 'opacity 0.4s ease, transform 0.4s ease';
-      slot.style.opacity    = '0';
-      slot.style.transform  = 'scale(0)';
-      requestAnimationFrame(function () {
-        slot.style.opacity   = '1';
-        slot.style.transform = 'scale(1)';
-      });
+      slotG.style.opacity = '0';
+      slotG.style.transition = 'opacity 0.4s ease';
+      requestAnimationFrame(function () { slotG.style.opacity = '1'; });
     }
 
-    // Burst hearts and grow the wrap paper
     burstHearts(idx);
     updateWrap(idx + 1);
   }
@@ -1286,36 +1315,52 @@ var bouquetGame = (function () {
     canEl.addEventListener('pointercancel', _onCanUp);
   }
 
-  // ── Bouquet wrap helpers ──────────────────────────────────────
-  var WRP_HEIGHTS = [0, 18, 34, 48, 60, 70, 80];
+  // ── Bouquet SVG wrap helpers ──────────────────────────────────
+  // All wrap elements live inside #bqMasterSvg as SVG rects/groups.
+  // Heights are in viewBox units (320×200 viewport).
 
   function updateWrap(count) {
-    var paper  = document.getElementById('bwPaper');
-    var ribbon = document.getElementById('bwRibbon');
+    var paper  = document.getElementById('bqPaperRect');
+    var ribbon = document.getElementById('bqRibRect');
     if (!paper) return;
-    paper.style.height = (WRP_HEIGHTS[Math.min(count, WRP_HEIGHTS.length - 1)] || 0) + 'px';
-    if (count >= 5 && ribbon) ribbon.style.opacity = '1';
+    // Grow paper progressively: 0 → 75% of BQ_PAPER_H while watering
+    var h = Math.round((count / DEFS.length) * BQ_PAPER_H * 0.78);
+    var y = BQ_VBH - h;
+    paper.setAttribute('y', y);
+    paper.setAttribute('height', h);
+    if (count >= 4 && ribbon) {
+      ribbon.setAttribute('y', y);
+      ribbon.setAttribute('height', h);
+      ribbon.setAttribute('opacity', '0.88');
+    }
   }
 
   function burstHearts(slotIdx) {
-    var tray = document.getElementById('bouquetTray');
-    if (!tray) return;
-    var tr  = tray.getBoundingClientRect();
-    var cx  = tr.left + (tr.width * (slotIdx + 0.5)) / DEFS.length;
-    var cy  = tr.top  + tr.height * 0.35;
-    var colors = ['#FF4D8B', '#FF90C0', '#FFD600', '#C084FC', '#7DDFFF'];
-    for (var i = 0; i < 5; i++) {
+    // Compute flower-head screen position from master SVG viewBox coords
+    var masterSvg = document.getElementById('bqMasterSvg');
+    if (!masterSvg) return;
+    var r = masterSvg.getBoundingClientRect();
+    var slot    = BQ_SLOTS[slotIdx];
+    var rotRad  = slot.rot * Math.PI / 180;
+    var vbX     = slot.sbx + BQ_RISE * Math.sin(rotRad);
+    var vbY     = slot.sby - BQ_RISE * Math.cos(rotRad);
+    var scaleX  = r.width  / BQ_VBW;
+    var scaleY  = r.height / BQ_VBH;
+    var cx      = r.left + vbX * scaleX;
+    var cy      = r.top  + vbY * scaleY;
+    var colors  = ['#FF4D8B','#FF90C0','#FFD600','#C084FC','#7DDFFF'];
+    for (var i = 0; i < 6; i++) {
       (function (i) {
-        var dot = document.createElement('div');
+        var dot   = document.createElement('div');
         dot.className = 'bq-heart';
-        var angle = (i / 5) * Math.PI * 2;
-        var hx    = Math.round(Math.cos(angle) * (16 + Math.random() * 10));
+        var angle = (i / 6) * Math.PI * 2;
+        var hx    = Math.round(Math.cos(angle) * (18 + Math.random() * 12));
         dot.style.cssText = [
           'left:' + (cx - 5) + 'px',
           'top:'  + (cy - 5) + 'px',
           'background:' + colors[i % colors.length],
           '--hx:' + hx + 'px',
-          'animation-delay:' + (i * 55) + 'ms',
+          'animation-delay:' + (i * 50) + 'ms',
         ].join(';');
         document.body.appendChild(dot);
         setTimeout(function () { dot.parentNode && dot.parentNode.removeChild(dot); }, 950);
@@ -1324,46 +1369,59 @@ var bouquetGame = (function () {
   }
 
   function playFullWrap(callback) {
-    var paper  = document.getElementById('bwPaper');
-    var ribbon = document.getElementById('bwRibbon');
-    var bow    = document.getElementById('bwBow');
+    var paper  = document.getElementById('bqPaperRect');
+    var ribbon = document.getElementById('bqRibRect');
+    var bow    = document.getElementById('bqBowG');
     var cont   = document.getElementById('bwContainer');
 
     if (!paper) { if (callback) callback(); return; }
 
-    // 1. Paper shoots up with bounce
-    paper.style.transition = 'height 0.4s cubic-bezier(0.34, 1.56, 0.64, 1)';
-    paper.style.height     = '88px';
-    if (ribbon) ribbon.style.opacity = '1';
+    // 1. Paper shoots up to full height with bounce
+    var finalY = BQ_VBH - BQ_PAPER_H;  // = 165
+    if (typeof gsap !== 'undefined') {
+      gsap.to(paper,  { attr: { y: finalY, height: BQ_PAPER_H }, duration: 0.42, ease: 'back.out(1.6)' });
+      if (ribbon) gsap.to(ribbon, { attr: { y: finalY, height: BQ_PAPER_H }, opacity: 0.9, duration: 0.42, ease: 'back.out(1.6)' });
+    } else {
+      paper.setAttribute('y', finalY);
+      paper.setAttribute('height', BQ_PAPER_H);
+      if (ribbon) { ribbon.setAttribute('y', finalY); ribbon.setAttribute('height', BQ_PAPER_H); ribbon.setAttribute('opacity', '0.9'); }
+    }
 
-    // 2. Bow pops in
+    // 2. Bow pops in at BQ_PAPER_TOP
     setTimeout(function () {
-      if (bow) {
-        bow.style.opacity   = '1';
-        bow.style.transform = 'scale(1) rotate(0deg)';
+      if (!bow) return;
+      if (typeof gsap !== 'undefined') {
+        gsap.fromTo(bow,
+          { scale: 0, opacity: 0, svgOrigin: '160 ' + finalY },
+          { scale: 1, opacity: 1, duration: 0.45, ease: 'back.out(2.8)' }
+        );
+      } else {
+        bow.setAttribute('opacity', '1');
       }
     }, 440);
 
-    // 3. Sparkle burst from wrap top
+    // 3. Sparkle burst from centre of bouquet
     setTimeout(function () {
-      if (!cont) return;
-      var r      = cont.getBoundingClientRect();
-      var cx     = r.left + r.width / 2;
-      var cy     = r.top  + r.height * 0.25;
+      var masterSvg = document.getElementById('bqMasterSvg');
+      var base = masterSvg ? masterSvg.getBoundingClientRect()
+                           : (cont ? cont.getBoundingClientRect() : null);
+      if (!base) return;
+      var cx     = base.left + base.width  * 0.50;
+      var cy     = base.top  + base.height * 0.38;
       var sparks = ['#FF4D8B','#FFD600','#C084FC','#7DDFFF','#FF9800','#4CAF60','#FF5FAE','#FFE566'];
-      for (var i = 0; i < 12; i++) {
+      for (var i = 0; i < 14; i++) {
         (function (i) {
           var sp  = document.createElement('div');
           sp.className = 'bq-spark';
-          var ang = (i / 12) * Math.PI * 2;
-          var d   = 22 + Math.random() * 24;
+          var ang = (i / 14) * Math.PI * 2;
+          var d   = 24 + Math.random() * 28;
           sp.style.cssText = [
             'left:' + (cx - 4.5) + 'px',
             'top:'  + (cy - 4.5) + 'px',
             'background:' + sparks[i % sparks.length],
             '--sx:' + Math.round(Math.cos(ang) * d) + 'px',
             '--sy:' + Math.round(Math.sin(ang) * d) + 'px',
-            'animation-delay:' + (i * 35) + 'ms',
+            'animation-delay:' + (i * 30) + 'ms',
           ].join(';');
           document.body.appendChild(sp);
           setTimeout(function () { sp.parentNode && sp.parentNode.removeChild(sp); }, 1200);
@@ -1376,18 +1434,12 @@ var bouquetGame = (function () {
   }
 
   function resetWrap() {
-    var paper  = document.getElementById('bwPaper');
-    var ribbon = document.getElementById('bwRibbon');
-    var bow    = document.getElementById('bwBow');
-    if (paper)  { paper.style.transition  = 'none'; paper.style.height    = '0'; }
-    if (ribbon) { ribbon.style.opacity    = '0'; }
-    if (bow)    { bow.style.opacity       = '0'; bow.style.transform   = 'scale(0) rotate(-8deg)'; }
-    // re-enable transition after frame
-    requestAnimationFrame(function () {
-      requestAnimationFrame(function () {
-        if (paper) paper.style.transition = '';
-      });
-    });
+    var paper  = document.getElementById('bqPaperRect');
+    var ribbon = document.getElementById('bqRibRect');
+    var bow    = document.getElementById('bqBowG');
+    if (paper)  { paper.setAttribute('y', BQ_VBH);  paper.setAttribute('height', '0'); }
+    if (ribbon) { ribbon.setAttribute('y', BQ_VBH); ribbon.setAttribute('height', '0'); ribbon.setAttribute('opacity', '0'); }
+    if (bow)    { bow.setAttribute('opacity', '0');  if (typeof gsap !== 'undefined') gsap.set(bow, { scale: 0 }); }
   }
 
   // ── Public ────────────────────────────────────────────────────
@@ -1400,8 +1452,14 @@ var bouquetGame = (function () {
     activePetG     = null;
     ghostEl        = document.getElementById('waterDragGhost');
     if (ghostEl) ghostEl.style.display = 'none';
-    var tray = document.getElementById('bouquetTray');
-    if (tray) tray.innerHTML = '';
+    // Clear all flower slots in the master bouquet SVG
+    [0, 1, 2, 3, 4, 5].forEach(function (i) {
+      var g = document.getElementById('bqF' + i);
+      if (!g) return;
+      g.innerHTML = '';
+      g.removeAttribute('transform');
+      if (typeof gsap !== 'undefined') gsap.set(g, { clearProps: 'all' });
+    });
     resetWrap();
     loadFlower(0);
     bindCan();   // attaches all listeners to canEl with pointer capture

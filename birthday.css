@@ -1021,7 +1021,26 @@ h1 {
   filter: drop-shadow(0 4px 10px rgba(160, 60, 220, 0.22));
 }
 
-/* ── Bouquet wrap ─────────────────────────────────────────────────── */
+/* ── Composed bouquet SVG ─────────────────────────────────────────── */
+.bq-master-wrap {
+  width: 100%;
+  max-width: 340px;
+  flex-shrink: 0;
+  display: flex;
+  justify-content: center;
+  align-items: center;
+}
+
+.bq-master-svg {
+  width: 100%;
+  max-width: 340px;
+  max-height: 185px;
+  height: auto;
+  overflow: visible;
+  filter: drop-shadow(0 6px 20px rgba(180, 60, 160, 0.16));
+}
+
+/* ── Old bouquet wrap styles (kept for safety) ─────────────────────── */
 .bw-container {
   position: relative;
   width: 100%;

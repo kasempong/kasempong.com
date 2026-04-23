@@ -193,18 +193,46 @@
     <!-- Screen 11: Build the Bouquet -->
     <div class="screen" id="s-bouquet">
       <p class="game-title">💐 สร้างช่อดอกไม้!</p>
-      <div class="bw-container" id="bwContainer">
-        <div class="bouquet-tray" id="bouquetTray"></div>
-        <div class="bouquet-wrap" id="bouquetWrap" aria-hidden="true">
-          <div class="bw-paper" id="bwPaper">
-            <div class="bw-ribbon" id="bwRibbon"></div>
-          </div>
-          <div class="bw-bow" id="bwBow">
-            <div class="bw-loop bw-loop-l"></div>
-            <div class="bw-loop bw-loop-r"></div>
-            <div class="bw-knot"></div>
-          </div>
-        </div>
+      <!-- Composed bouquet SVG — all 6 flowers fan into one beautiful bouquet -->
+      <div class="bq-master-wrap" id="bwContainer" aria-hidden="true">
+        <svg class="bq-master-svg" id="bqMasterSvg"
+             viewBox="0 0 320 200" xmlns="http://www.w3.org/2000/svg"
+             preserveAspectRatio="xMidYMid meet">
+          <defs>
+            <linearGradient id="bqPaperGrad" x1="0%" y1="0%" x2="100%" y2="0%">
+              <stop offset="0%"   stop-color="#FFCC88"/>
+              <stop offset="35%"  stop-color="#FFF4E0"/>
+              <stop offset="100%" stop-color="#FFCC88"/>
+            </linearGradient>
+            <linearGradient id="bqRibGrad" x1="0%" y1="0%" x2="100%" y2="0%">
+              <stop offset="0%"   stop-color="#FF5FAE"/>
+              <stop offset="50%"  stop-color="#FFADD4"/>
+              <stop offset="100%" stop-color="#FF5FAE"/>
+            </linearGradient>
+          </defs>
+          <!-- Flower slots — DOM order = z-order (back flowers first) -->
+          <g id="bqF3"></g>
+          <g id="bqF4"></g>
+          <g id="bqF1"></g>
+          <g id="bqF2"></g>
+          <g id="bqF5"></g>
+          <g id="bqF0"></g>
+          <!-- Paper wrap grows upward as flowers are added -->
+          <rect id="bqPaperRect" x="78" y="200" width="164" height="0"
+                fill="url(#bqPaperGrad)" rx="10" ry="6"/>
+          <!-- Ribbon stripe on wrap -->
+          <rect id="bqRibRect" x="152" y="200" width="16" height="0"
+                fill="url(#bqRibGrad)" opacity="0"/>
+          <!-- Bow — revealed on full wrap -->
+          <g id="bqBowG" opacity="0">
+            <ellipse id="bqBowL" cx="142" cy="165" rx="20" ry="11"
+                     fill="#FF80B0" transform="rotate(-28,142,165)"/>
+            <ellipse id="bqBowR" cx="178" cy="165" rx="20" ry="11"
+                     fill="#FF80B0" transform="rotate(28,178,165)"/>
+            <circle  id="bqBowK" cx="160" cy="165" r="11" fill="#FF4488"/>
+            <circle              cx="160" cy="165" r="5"  fill="#FFD4EA"/>
+          </g>
+        </svg>
       </div>
       <div class="active-flower-zone">
         <div class="flower-stage" id="flowerStage">
