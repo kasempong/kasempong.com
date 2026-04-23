@@ -235,10 +235,9 @@ function advanceHeart(step) {
   heartSprite.classList.remove('bounce');
   void heartSprite.offsetWidth;
   heartSprite.classList.add('bounce');
-  heartSprite.addEventListener('animationend', function handler() {
+  heartSprite.addEventListener('animationend', function () {
     heartSprite.classList.remove('bounce');
-    heartSprite.removeEventListener('animationend', handler);
-  });
+  }, { once: true });
 }
 
 function showProgress() {
@@ -965,10 +964,13 @@ var bouquetGame = (function () {
           dragging = false;
           if (ghostEl) ghostEl.style.display = 'none';
           if (canEl)   canEl.classList.remove('can-held');
-          heartStep++;
-          advanceHeart(heartStep);
-          goTo(12);   // → s5/Q5
-        }, 1400);
+          // Animate bouquet wrap, then advance
+          playFullWrap(function () {
+            heartStep++;
+            advanceHeart(heartStep);
+            goTo(12);   // → s5/Q5
+          });
+        }, 600);
       } else {
         _nextFlowTimer = setTimeout(function () {
           _nextFlowTimer = null;
@@ -1020,6 +1022,10 @@ var bouquetGame = (function () {
         slot.style.transform = 'scale(1)';
       });
     }
+
+    // Burst hearts and grow the wrap paper
+    burstHearts(idx);
+    updateWrap(idx + 1);
   }
 
   // ── Load flower onto center stage ─────────────────────────────
@@ -1160,6 +1166,110 @@ var bouquetGame = (function () {
     canEl.addEventListener('pointercancel', _onCanUp);
   }
 
+  // ── Bouquet wrap helpers ──────────────────────────────────────
+  var WRP_HEIGHTS = [0, 18, 34, 48, 60, 70, 80];
+
+  function updateWrap(count) {
+    var paper  = document.getElementById('bwPaper');
+    var ribbon = document.getElementById('bwRibbon');
+    if (!paper) return;
+    paper.style.height = (WRP_HEIGHTS[Math.min(count, WRP_HEIGHTS.length - 1)] || 0) + 'px';
+    if (count >= 5 && ribbon) ribbon.style.opacity = '1';
+  }
+
+  function burstHearts(slotIdx) {
+    var tray = document.getElementById('bouquetTray');
+    if (!tray) return;
+    var tr  = tray.getBoundingClientRect();
+    var cx  = tr.left + (tr.width * (slotIdx + 0.5)) / DEFS.length;
+    var cy  = tr.top  + tr.height * 0.35;
+    var colors = ['#FF4D8B', '#FF90C0', '#FFD600', '#C084FC', '#7DDFFF'];
+    for (var i = 0; i < 5; i++) {
+      (function (i) {
+        var dot = document.createElement('div');
+        dot.className = 'bq-heart';
+        var angle = (i / 5) * Math.PI * 2;
+        var hx    = Math.round(Math.cos(angle) * (16 + Math.random() * 10));
+        dot.style.cssText = [
+          'left:' + (cx - 5) + 'px',
+          'top:'  + (cy - 5) + 'px',
+          'background:' + colors[i % colors.length],
+          '--hx:' + hx + 'px',
+          'animation-delay:' + (i * 55) + 'ms',
+        ].join(';');
+        document.body.appendChild(dot);
+        setTimeout(function () { dot.parentNode && dot.parentNode.removeChild(dot); }, 950);
+      }(i));
+    }
+  }
+
+  function playFullWrap(callback) {
+    var paper  = document.getElementById('bwPaper');
+    var ribbon = document.getElementById('bwRibbon');
+    var bow    = document.getElementById('bwBow');
+    var cont   = document.getElementById('bwContainer');
+
+    if (!paper) { if (callback) callback(); return; }
+
+    // 1. Paper shoots up with bounce
+    paper.style.transition = 'height 0.4s cubic-bezier(0.34, 1.56, 0.64, 1)';
+    paper.style.height     = '88px';
+    if (ribbon) ribbon.style.opacity = '1';
+
+    // 2. Bow pops in
+    setTimeout(function () {
+      if (bow) {
+        bow.style.opacity   = '1';
+        bow.style.transform = 'scale(1) rotate(0deg)';
+      }
+    }, 440);
+
+    // 3. Sparkle burst from wrap top
+    setTimeout(function () {
+      if (!cont) return;
+      var r      = cont.getBoundingClientRect();
+      var cx     = r.left + r.width / 2;
+      var cy     = r.top  + r.height * 0.25;
+      var sparks = ['#FF4D8B','#FFD600','#C084FC','#7DDFFF','#FF9800','#4CAF60','#FF5FAE','#FFE566'];
+      for (var i = 0; i < 12; i++) {
+        (function (i) {
+          var sp  = document.createElement('div');
+          sp.className = 'bq-spark';
+          var ang = (i / 12) * Math.PI * 2;
+          var d   = 22 + Math.random() * 24;
+          sp.style.cssText = [
+            'left:' + (cx - 4.5) + 'px',
+            'top:'  + (cy - 4.5) + 'px',
+            'background:' + sparks[i % sparks.length],
+            '--sx:' + Math.round(Math.cos(ang) * d) + 'px',
+            '--sy:' + Math.round(Math.sin(ang) * d) + 'px',
+            'animation-delay:' + (i * 35) + 'ms',
+          ].join(';');
+          document.body.appendChild(sp);
+          setTimeout(function () { sp.parentNode && sp.parentNode.removeChild(sp); }, 1200);
+        }(i));
+      }
+    }, 580);
+
+    // 4. Callback after animation settles
+    setTimeout(function () { if (callback) callback(); }, 1700);
+  }
+
+  function resetWrap() {
+    var paper  = document.getElementById('bwPaper');
+    var ribbon = document.getElementById('bwRibbon');
+    var bow    = document.getElementById('bwBow');
+    if (paper)  { paper.style.transition  = 'none'; paper.style.height    = '0'; }
+    if (ribbon) { ribbon.style.opacity    = '0'; }
+    if (bow)    { bow.style.opacity       = '0'; bow.style.transform   = 'scale(0) rotate(-8deg)'; }
+    // re-enable transition after frame
+    requestAnimationFrame(function () {
+      requestAnimationFrame(function () {
+        if (paper) paper.style.transition = '';
+      });
+    });
+  }
+
   // ── Public ────────────────────────────────────────────────────
   function start() {
     currentFlower  = 0;
@@ -1172,6 +1282,7 @@ var bouquetGame = (function () {
     if (ghostEl) ghostEl.style.display = 'none';
     var tray = document.getElementById('bouquetTray');
     if (tray) tray.innerHTML = '';
+    resetWrap();
     loadFlower(0);
     bindCan();   // attaches all listeners to canEl with pointer capture
   }
@@ -1196,6 +1307,8 @@ var bouquetGame = (function () {
     if (activeTimeline) { activeTimeline.kill(); activeTimeline = null; }
     if (ghostEl) ghostEl.style.display = 'none';
     if (canEl)   canEl.classList.remove('can-held');
+    // Clean up any in-flight burst particles left over from rapid navigation
+    document.querySelectorAll('.bq-heart, .bq-spark').forEach(function (el) { el.parentNode && el.parentNode.removeChild(el); });
   }
 
   return { start: start, stop: stop };
@@ -1519,6 +1632,7 @@ function initScratch() {
   }
 
   function autoReveal() {
+    if (checkTimer) { clearTimeout(checkTimer); checkTimer = null; }  // prevent late checkReveal calls
     sc.classList.add('revealed');          // fade canvas to opacity 0
     sc.removeEventListener('pointerdown',  onDown);
     sc.removeEventListener('pointermove',  onMove);
