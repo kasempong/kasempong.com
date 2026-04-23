@@ -678,8 +678,8 @@ var bouquetGame = (function () {
   ];
 
   var NS        = 'http://www.w3.org/2000/svg';
-  var FILL_DIST = 360;   // px drag = 100% fill
-  var HIT_PAD   = 44;    // px padding around flower hit zone
+  var FILL_DIST = 150;   // px drag = 100% fill
+  var HIT_PAD   = 60;    // px padding around flower hit zone
 
   var currentFlower  = 0;
   var fillPct        = 0;

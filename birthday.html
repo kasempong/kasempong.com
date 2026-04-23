@@ -205,7 +205,6 @@
         <span class="water-can-item" id="waterCanItem">🪣</span>
         <span class="water-shelf-hint">ลากมาที่ดอกไม้ 💧</span>
       </div>
-      <span class="water-drag-ghost" id="waterDragGhost">🪣</span>
     </div>
 
     <!-- Screen 12: Q5 -->
@@ -238,6 +237,9 @@
     </div>
 
   </div><!-- /screens-container -->
+
+  <!-- Water-can drag ghost: lives outside .screens-container so position:fixed is viewport-relative (not trapped inside CSS transform) -->
+  <span class="water-drag-ghost" id="waterDragGhost">🪣</span>
 
   <!-- Home button -->
   <a class="btn-home" href="/" aria-label="กลับหน้าหลัก">🏠</a>
