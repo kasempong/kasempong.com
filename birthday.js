@@ -86,8 +86,10 @@ const startBtn     = document.getElementById('startBtn');
 var screensContainer = document.getElementById('screensContainer');
 
 function goTo(nextIdx) {
+  if (nextIdx < 0 || nextIdx >= allScreens.length) return;
   var cur  = allScreens[currentIdx];
   var next = allScreens[nextIdx];
+  if (!cur || !next) return;
 
   // Stop game when leaving a game screen
   if (cur.id === 's-catch')   catchGame.stop();
@@ -682,13 +684,17 @@ var bouquetGame = (function () {
   var currentFlower  = 0;
   var fillPct        = 0;
   var dragging       = false;
+  var blooming       = false;
   var lastX = 0, lastY = 0;
   var activeTimeline = null;
   var ghostEl        = null;
   var canEl          = null;
   var _doneTimer     = null;
-  var _docMove       = null;
-  var _docUp         = null;
+  var _bloomTimer    = null;
+  var _nextFlowTimer = null;
+  var _canDown       = null;
+  var _onCanMove     = null;
+  var _onCanUp       = null;
 
   // ── SVG element helper ────────────────────────────────────────
   function svgEl(tag, attrs) {
@@ -737,11 +743,16 @@ var bouquetGame = (function () {
     budG.appendChild(svgEl('ellipse', { cx: cx, cy: fy +  6, rx:  6, ry: 12, fill: def.colors.p2 }));
     svg.appendChild(budG);
 
-    // Petals group — translated to flower-head centre
-    var petG = svgEl('g', { transform: 'translate(' + cx + ',' + fy + ')' });
+    // Petals group — NO SVG transform attribute.
+    // GSAP will manage x, y, and scale entirely via CSS transforms,
+    // so there is no SVG-attribute vs CSS-transform conflict.
+    var petG = svgEl('g');
     petG.classList.add('fl-petals');
     for (var i = 0; i < def.petalCount; i++) {
       var ang = (360 / def.petalCount) * i;
+      // Each petal path uses an SVG transform for its rotation+offset.
+      // GSAP never animates these individual paths — only petG is animated —
+      // so the SVG attribute is never overridden by a CSS transform.
       var p = svgEl('path', {
         d: def.petalPath,
         fill: (i % 2 === 0) ? def.colors.p1 : def.colors.p2,
@@ -786,16 +797,18 @@ var bouquetGame = (function () {
     var leaf0  = svg.querySelector('.fl-leaf-0');
     var leaf1  = svg.querySelector('.fl-leaf-1');
     var bud    = svg.querySelector('.fl-bud');
-    var petals = svg.querySelectorAll('.fl-petal');
+    var petG   = svg.querySelector('.fl-petals');   // animate whole group
     var center = svg.querySelector('.fl-center');
     var pollen = svg.querySelector('.fl-pollen');
 
-    // Initial states — use svgOrigin (SVG coordinate space)
+    // Initial states.
+    // petG: GSAP sets x/y (instead of SVG translate attr) + scale 0.
+    //   This way GSAP owns ALL transforms on petG — no SVG-attr vs CSS conflict.
     gsap.set(stem,   { scaleY: 0.08, svgOrigin: cx + ' ' + cy });
-    gsap.set(leaf0,  { scale: 0, opacity: 0, rotation: 0,  svgOrigin: (cx-5) + ' ' + (cy-48) });
-    gsap.set(leaf1,  { scale: 0, opacity: 0, rotation: 0,  svgOrigin: (cx+5) + ' ' + (cy-70) });
+    gsap.set(leaf0,  { scale: 0, opacity: 0, rotation: 0, svgOrigin: (cx-5) + ' ' + (cy-48) });
+    gsap.set(leaf1,  { scale: 0, opacity: 0, rotation: 0, svgOrigin: (cx+5) + ' ' + (cy-70) });
     gsap.set(bud,    { scale: 1, opacity: 1 });
-    gsap.set(petals, { scale: 0, svgOrigin: '0 0' });
+    gsap.set(petG,   { x: cx, y: fy, scale: 0 });  // GSAP owns x/y/scale entirely
     gsap.set(center, { scale: 0, svgOrigin: cx + ' ' + fy });
     gsap.set(pollen, { scale: 0, opacity: 0, svgOrigin: cx + ' ' + fy });
 
@@ -803,27 +816,19 @@ var bouquetGame = (function () {
     tl
       // 0–32%: stem grows up from base
       .to(stem,   { scaleY: 1, duration: 0.32, ease: 'power2.inOut' }, 0)
-      // 12–40%: leaves unfurl with rotation
+      // 12–40%: leaves unfurl
       .to(leaf0,  { scale: 1, opacity: 1, rotation: -40, duration: 0.28, ease: 'back.out(2)' }, 0.12)
       .to(leaf1,  { scale: 1, opacity: 1, rotation:  40, duration: 0.28, ease: 'back.out(2)' }, 0.20)
-      // 28–48%: bud closes away
+      // 28–48%: bud folds away
       .to(bud,    { scale: 0, opacity: 0, duration: 0.20, ease: 'power2.in' }, 0.28)
-      // 34–72%: petals open in staggered cascade
-      .to(petals, {
-        scale: 1, duration: 0.38,
-        stagger: { each: 0.020, from: 'start' },
-        ease: 'back.out(1.8)',
-      }, 0.34)
+      // 34–72%: whole petal group blooms open
+      .to(petG,   { scale: 1, duration: 0.38, ease: 'back.out(1.8)' }, 0.34)
       // 63–78%: centre pops in
       .to(center, { scale: 1, duration: 0.22, ease: 'back.out(2.8)' }, 0.63)
       // 73–84%: pollen sparkles
       .to(pollen, { scale: 1, opacity: 1, duration: 0.18, ease: 'back.out(3)' }, 0.73)
-      // 84–100%: petals sway gently — fully open
-      .to(petals, {
-        rotation: '+=3', yoyo: true, repeat: 1, duration: 0.08,
-        stagger: { each: 0.010, from: 'center' },
-        ease: 'sine.inOut',
-      }, 0.84);
+      // 84–100%: whole group sways gently — fully open
+      .to(petG,   { rotation: '+=4', yoyo: true, repeat: 1, duration: 0.16, ease: 'sine.inOut' }, 0.84);
 
     return tl;
   }
@@ -836,6 +841,9 @@ var bouquetGame = (function () {
 
   // ── Bloom and slot into tray ──────────────────────────────────
   function bloomCurrent() {
+    if (blooming) return;   // guard: prevent double-bloom race
+    blooming = true;
+
     var wrap = document.getElementById('activeFlowerWrap');
     if (!wrap) return;
 
@@ -855,12 +863,14 @@ var bouquetGame = (function () {
       });
     }
 
-    setTimeout(function () {
+    _bloomTimer = setTimeout(function () {
+      _bloomTimer = null;
       slotInTray(currentFlower);
       currentFlower++;
 
       if (currentFlower >= DEFS.length) {
         _doneTimer = setTimeout(function () {
+          _doneTimer = null;
           dragging = false;
           if (ghostEl) ghostEl.style.display = 'none';
           if (canEl)   canEl.classList.remove('can-held');
@@ -869,7 +879,11 @@ var bouquetGame = (function () {
           goTo(12);   // → s5/Q5
         }, 1400);
       } else {
-        setTimeout(function () { loadFlower(currentFlower); }, 620);
+        _nextFlowTimer = setTimeout(function () {
+          _nextFlowTimer = null;
+          blooming = false;
+          loadFlower(currentFlower);
+        }, 620);
       }
     }, 480);
   }
@@ -882,6 +896,7 @@ var bouquetGame = (function () {
     var mini  = buildFlower(DEFS[idx], 72);
     var miniTl = buildTimeline(mini, 72);
     miniTl.progress(1);   // instantly fully bloomed
+    miniTl.kill();        // release GSAP resources immediately
 
     var slot = document.createElement('div');
     slot.className = 'tray-slot';
@@ -917,10 +932,27 @@ var bouquetGame = (function () {
     );
   }
 
-  // ── Global drag listeners ─────────────────────────────────────
-  function attachDocListeners() {
-    _docMove = function (e) {
+  // ── Watering can drag (pointer capture + element-level listeners) ──
+  // Using setPointerCapture so that pointermove/pointerup are always
+  // delivered to canEl even when the finger moves off it — works on
+  // iOS Safari, Android Chrome, and desktop browsers uniformly.
+  // Document-level listeners are intentionally NOT used here because
+  // iOS Safari does not reliably bubble captured pointer events to document.
+  function bindCan() {
+    canEl = document.getElementById('waterCanItem');
+    if (!canEl) return;
+
+    // Clean up any listeners from a previous start() call
+    if (_canDown)   canEl.removeEventListener('pointerdown',   _canDown,   { passive: false });
+    if (_onCanMove) canEl.removeEventListener('pointermove',   _onCanMove, { passive: false });
+    if (_onCanUp) {
+      canEl.removeEventListener('pointerup',     _onCanUp);
+      canEl.removeEventListener('pointercancel', _onCanUp);
+    }
+
+    _onCanMove = function (e) {
       if (!dragging) return;
+      e.preventDefault();   // prevent page scroll during drag
 
       if (ghostEl) {
         ghostEl.style.left = e.clientX + 'px';
@@ -940,7 +972,6 @@ var bouquetGame = (function () {
         var dist = Math.sqrt(dx * dx + dy * dy);
         fillPct  = Math.min(100, fillPct + (dist / FILL_DIST) * 100);
 
-        // ← scrub GSAP timeline in real-time
         activeTimeline.progress(fillPct / 100);
         setRing(fillPct);
 
@@ -956,34 +987,18 @@ var bouquetGame = (function () {
       lastY = e.clientY;
     };
 
-    _docUp = function () {
+    _onCanUp = function () {
       if (!dragging) return;
       dragging = false;
       if (ghostEl) ghostEl.style.display = 'none';
       if (canEl)   canEl.classList.remove('can-held');
     };
 
-    document.addEventListener('pointermove',   _docMove);
-    document.addEventListener('pointerup',     _docUp);
-    document.addEventListener('pointercancel', _docUp);
-  }
-
-  function detachDocListeners() {
-    if (_docMove) { document.removeEventListener('pointermove',   _docMove); _docMove = null; }
-    if (_docUp)   {
-      document.removeEventListener('pointerup',     _docUp);
-      document.removeEventListener('pointercancel', _docUp);
-      _docUp = null;
-    }
-  }
-
-  // ── Bind watering can ─────────────────────────────────────────
-  function bindCan() {
-    canEl = document.getElementById('waterCanItem');
-    if (!canEl) return;
-    canEl.addEventListener('pointerdown', function (e) {
-      if (currentFlower >= DEFS.length) return;
+    _canDown = function (e) {
+      if (blooming || currentFlower >= DEFS.length) return;
       e.preventDefault();
+      // Capture pointer so move/up always come to canEl even if finger
+      // moves off the element — the only reliable approach on iOS Safari
       try { canEl.setPointerCapture(e.pointerId); } catch (_) {}
       dragging = true;
       lastX    = e.clientX;
@@ -995,7 +1010,12 @@ var bouquetGame = (function () {
         ghostEl.style.top     = e.clientY + 'px';
         ghostEl.style.display = 'block';
       }
-    });
+    };
+
+    canEl.addEventListener('pointerdown',   _canDown,   { passive: false });
+    canEl.addEventListener('pointermove',   _onCanMove, { passive: false });
+    canEl.addEventListener('pointerup',     _onCanUp);
+    canEl.addEventListener('pointercancel', _onCanUp);
   }
 
   // ── Public ────────────────────────────────────────────────────
@@ -1003,20 +1023,33 @@ var bouquetGame = (function () {
     currentFlower  = 0;
     fillPct        = 0;
     dragging       = false;
+    blooming       = false;
     activeTimeline = null;
     ghostEl        = document.getElementById('waterDragGhost');
     if (ghostEl) ghostEl.style.display = 'none';
     var tray = document.getElementById('bouquetTray');
     if (tray) tray.innerHTML = '';
     loadFlower(0);
-    bindCan();
-    attachDocListeners();
+    bindCan();   // attaches all listeners to canEl with pointer capture
   }
 
   function stop() {
-    detachDocListeners();
+    // Remove all pointer listeners from canEl
+    if (canEl) {
+      if (_canDown)   canEl.removeEventListener('pointerdown',   _canDown,   { passive: false });
+      if (_onCanMove) canEl.removeEventListener('pointermove',   _onCanMove, { passive: false });
+      if (_onCanUp) {
+        canEl.removeEventListener('pointerup',     _onCanUp);
+        canEl.removeEventListener('pointercancel', _onCanUp);
+      }
+    }
+    _canDown = _onCanMove = _onCanUp = null;
+
     dragging = false;
-    if (_doneTimer) { clearTimeout(_doneTimer); _doneTimer = null; }
+    blooming = false;
+    if (_bloomTimer)    { clearTimeout(_bloomTimer);    _bloomTimer    = null; }
+    if (_nextFlowTimer) { clearTimeout(_nextFlowTimer); _nextFlowTimer = null; }
+    if (_doneTimer)     { clearTimeout(_doneTimer);     _doneTimer     = null; }
     if (activeTimeline) { activeTimeline.kill(); activeTimeline = null; }
     if (ghostEl) ghostEl.style.display = 'none';
     if (canEl)   canEl.classList.remove('can-held');
@@ -1056,18 +1089,21 @@ progGoal.addEventListener('click', function () {
 
 // ── Mag screens: tap anywhere to advance ─────────────────────────
 document.querySelectorAll('.mag-screen').forEach(function (magEl) {
-  magEl.addEventListener('click', function () {
-    if (allScreens[currentIdx] === magEl) {
-      goTo(currentIdx + 1);
-    }
-  });
-  // Prevent double-fire on mobile
+  // touchend handles mobile; stopPropagation + preventDefault block the
+  // synthetic click that iOS fires ~300ms later, preventing double-advance
   magEl.addEventListener('touchend', function (e) {
     e.preventDefault();
+    e.stopPropagation();
     if (allScreens[currentIdx] === magEl) {
       goTo(currentIdx + 1);
     }
   }, { passive: false });
+  // click handles desktop/mouse — skipped on touch because preventDefault above suppresses it
+  magEl.addEventListener('click', function (e) {
+    if (allScreens[currentIdx] === magEl) {
+      goTo(currentIdx + 1);
+    }
+  });
 });
 
 // ── Confetti ──────────────────────────────────────────────────────
@@ -1259,7 +1295,7 @@ function initScratch() {
     mc.drawImage(imgEl, drawX, drawY, drawW, drawH);
     var md = mc.getImageData(0, 0, w, h);
     for (var k = 3; k < md.data.length; k += 4) {
-      md.data[k] = md.data[k] >= 64 ? 255 : 0;
+      md.data[k] = md.data[k] >= 128 ? 255 : 0;  // match reveal-count threshold
     }
     mc.putImageData(md, 0, 0);
 
