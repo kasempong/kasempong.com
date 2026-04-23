@@ -197,7 +197,15 @@
       <div class="active-flower-zone">
         <div class="flower-stage" id="flowerStage">
           <div class="active-flower-wrap" id="activeFlowerWrap"></div>
-          <div class="water-ring" id="waterRing"></div>
+          <!-- SVG ring — stroke-dasharray approach works on all iOS versions -->
+          <svg class="water-ring" id="waterRing" viewBox="0 0 100 100" aria-hidden="true">
+            <circle cx="50" cy="50" r="43" fill="none" stroke="rgba(180,215,255,0.20)" stroke-width="6"/>
+            <circle id="waterRingFill" cx="50" cy="50" r="43" fill="none"
+                    stroke="rgba(70,185,255,0.88)" stroke-width="6"
+                    stroke-linecap="round"
+                    stroke-dasharray="270.18" stroke-dashoffset="270.18"
+                    transform="rotate(-90 50 50)"/>
+          </svg>
         </div>
         <p class="flower-counter" id="flowerCounter">ดอกที่ 1 / 6</p>
       </div>

@@ -989,7 +989,7 @@ h1 {
   display: flex;
   align-items: center;
   justify-content: center;
-  overflow: hidden;   /* clip SVG overflow so petals never escape the stage */
+  /* overflow: visible so petals and the SVG ring can extend slightly beyond */
 }
 
 .active-flower-wrap {
@@ -1006,11 +1006,18 @@ h1 {
   width: 100%;
   height: 100%;
   filter: drop-shadow(0 10px 26px rgba(160, 60, 220, 0.28));
+  animation: flowerSway 5s ease-in-out infinite;
+  transform-origin: center bottom;
+}
+
+@keyframes flowerSway {
+  0%, 100% { transform: rotate(-2.5deg); }
+  50%       { transform: rotate(2.5deg);  }
 }
 
 .tray-slot .flower-svg {
-  width: 62px;
-  height: 62px;
+  width: 66px;
+  height: 66px;
   filter: drop-shadow(0 4px 10px rgba(160, 60, 220, 0.22));
 }
 
@@ -1019,19 +1026,13 @@ h1 {
   overflow: visible;
 }
 
-/* Progress ring — hollow conic via mask */
+/* Progress ring — SVG stroke-dasharray (reliable on all iOS) */
 .water-ring {
   position: absolute;
-  inset: -10px;
-  border-radius: 50%;
+  inset: -12px;
   pointer-events: none;
-  background: conic-gradient(
-    rgba(70, 185, 255, 0.82) 0deg,
-    rgba(70, 185, 255, 0.82) var(--fill-deg, 0deg),
-    rgba(180, 215, 255, 0.16) var(--fill-deg, 0deg)
-  );
-  -webkit-mask: radial-gradient(farthest-side, transparent 80%, black 80%);
-  mask: radial-gradient(farthest-side, transparent 80%, black 80%);
+  overflow: visible;
+  filter: drop-shadow(0 0 6px rgba(70, 185, 255, 0.45));
 }
 
 .flower-counter {
