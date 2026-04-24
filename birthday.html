@@ -7,6 +7,8 @@
   <title>🎂 Happy Birthday TonTon!</title>
   <link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>🎂</text></svg>">
   <link rel="apple-touch-icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>🎂</text></svg>">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link href="https://fonts.googleapis.com/css2?family=Pacifico&display=swap" rel="stylesheet">
   <link rel="stylesheet" href="birthday.css">
 </head>
 <body>
@@ -210,6 +212,7 @@
                     transform="rotate(-90 50 50)"/>
           </svg>
         </div>
+        <p class="flower-name" id="flowerName"></p>
         <p class="flower-counter" id="flowerCounter">ดอกที่ 1 / 6</p>
       </div>
       <div class="watering-shelf" id="wateringShelf">
@@ -251,6 +254,20 @@
 
   <!-- Water-can drag ghost: lives outside .screens-container so position:fixed is viewport-relative (not trapped inside CSS transform) -->
   <span class="water-drag-ghost" id="waterDragGhost">🪣</span>
+
+  <!-- Bouquet reveal popup -->
+  <div id="bqRevealOverlay" class="bq-reveal-overlay" aria-modal="true" role="dialog">
+    <div class="bq-reveal-inner">
+      <div class="bq-reveal-floats" id="bqRevealFloats"></div>
+      <img class="bq-reveal-img" src="bq-stage-5.png" alt="bouquet" draggable="false">
+      <div class="bq-reveal-msg">
+        <p class="bq-reveal-line1">ช่อนี้เพื่อคุณ 💐</p>
+        <p class="bq-reveal-line2">Happy Birthday งับ 🥹<br>ขอให้มีแต่ความสุข น่ารักสดใสแบบนี้ไปตลอดเลย~</p>
+        <p class="bq-reveal-line3">หนึ่งรักต้นนะ 💕</p>
+      </div>
+      <button class="bq-reveal-btn" id="bqRevealBtn">ขอบคุณนะ 💗</button>
+    </div>
+  </div>
 
   <!-- Home button -->
   <a class="btn-home" href="/" aria-label="กลับหน้าหลัก">🏠</a>

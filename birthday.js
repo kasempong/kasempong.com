@@ -640,16 +640,16 @@ var bouquetGame = (function () {
   // Petal paths are defined at base size 240. scalePath() scales them for other sizes.
   // p1 = base/rich color, p2 = lighter tip color, outline = cartoon stroke color
   var DEFS = [
-    { flImg: 'fl-0.png', label: '🌸 Rose' },
-    { flImg: 'fl-1.png', label: '🌸 Lily' },
-    { flImg: 'fl-2.png', label: '🌷 Tulip' },
-    { flImg: 'fl-3.png', label: '🌼 Gerbera' },
-    { flImg: 'fl-4.png', label: '🌺 Carnation' },
-    { flImg: 'fl-5.png', label: '💜 Purple Rose' },
+    { flImg: 'fl-0.png', label: '🌸 Rose',        name: 'Rose' },
+    { flImg: 'fl-1.png', label: '🌸 Lily',        name: 'Lily' },
+    { flImg: 'fl-2.png', label: '🌷 Tulip',       name: 'Tulip' },
+    { flImg: 'fl-3.png', label: '🌼 Gerbera',     name: 'Gerbera' },
+    { flImg: 'fl-4.png', label: '🌺 Carnation',   name: 'Carnation' },
+    { flImg: 'fl-5.png', label: '💜 Purple Rose', name: 'Purple Rose' },
   ];
 
   var NS        = 'http://www.w3.org/2000/svg';
-  var FILL_DIST = 150;   // px drag = 100% fill
+  var FILL_DIST = 450;   // px drag = 100% fill
   var HIT_PAD   = 60;    // px padding around flower hit zone
 
   // ── Composed bouquet layout (master SVG viewBox 0 0 320 200) ─────
@@ -691,6 +691,7 @@ var bouquetGame = (function () {
   var _canDown       = null;
   var _onCanMove     = null;
   var _onCanUp       = null;
+  var _lastSparkTime = 0;
 
   // ── SVG element helper ────────────────────────────────────────
   function svgEl(tag, attrs) {
@@ -1008,6 +1009,49 @@ var bouquetGame = (function () {
     return tl;
   }
 
+  // ── Watering sparkle burst ────────────────────────────────────
+  function spawnWaterSparks(flEl) {
+    if (!flEl) return;
+    var r  = flEl.getBoundingClientRect();
+    var cx = r.left + r.width  * 0.50;
+    var cy = r.top  + r.height * 0.38;
+    var colors = ['#7DDFFF','#FFB3E6','#FFD700','#C084FC','#FF9FE5','#80FFD4','#FFFFFF'];
+    for (var i = 0; i < 5; i++) {
+      (function (i) {
+        var sp  = document.createElement('div');
+        sp.className = 'water-spark';
+        var ang = Math.random() * Math.PI * 2;
+        var d   = 16 + Math.random() * 24;
+        sp.style.cssText = [
+          'left:'       + (cx - 3) + 'px',
+          'top:'        + (cy - 3) + 'px',
+          'background:' + colors[Math.floor(Math.random() * colors.length)],
+          '--wx:'       + Math.round(Math.cos(ang) * d) + 'px',
+          '--wy:'       + Math.round(Math.sin(ang) * d) + 'px',
+          'animation-delay:' + (i * 25) + 'ms',
+        ].join(';');
+        document.body.appendChild(sp);
+        setTimeout(function () { sp.parentNode && sp.parentNode.removeChild(sp); }, 650);
+      }(i));
+    }
+  }
+
+  function setFlowerGlow(flEl, pct) {
+    if (!flEl) return;
+    var g1 = Math.round(6  + pct * 0.28);
+    var g2 = Math.round(12 + pct * 0.46);
+    var a1 = (0.40 + pct * 0.006).toFixed(2);
+    var a2 = (0.25 + pct * 0.005).toFixed(2);
+    flEl.style.filter =
+      'drop-shadow(0 0 ' + g1 + 'px rgba(255,210,120,' + a1 + ')) ' +
+      'drop-shadow(0 0 ' + g2 + 'px rgba(200,100,255,' + a2 + '))';
+  }
+
+  function resetFlowerGlow(flEl) {
+    if (!flEl) return;
+    flEl.style.filter = 'drop-shadow(0 10px 26px rgba(160,60,220,0.28))';
+  }
+
   // ── Water ring progress (SVG stroke-dashoffset — reliable on iOS) ──
   function setRing(pct) {
     var fill = document.getElementById('waterRingFill');
@@ -1067,9 +1111,11 @@ var bouquetGame = (function () {
           if (canEl)   canEl.classList.remove('can-held');
           // Animate bouquet wrap, then advance
           playFullWrap(function () {
-            heartStep++;
-            advanceHeart(heartStep);
-            goTo(12);   // → s5/Q5
+            showBouquetReveal(function () {
+              heartStep++;
+              advanceHeart(heartStep);
+              goTo(12);   // → s5/Q5
+            });
           });
         }, 600);
       } else {
@@ -1126,6 +1172,9 @@ var bouquetGame = (function () {
 
     // Store img for animation in _onCanMove / bloomCurrent
     activePetG = img;
+
+    var nameEl = document.getElementById('flowerName');
+    if (nameEl) nameEl.textContent = DEFS[idx].name || '';
 
     var ctr = document.getElementById('flowerCounter');
     if (ctr) ctr.textContent = 'ดอกที่ ' + (idx + 1) + ' / ' + DEFS.length;
@@ -1196,12 +1245,22 @@ var bouquetGame = (function () {
         }
         setRing(fillPct);
 
+        // Glow + sparkle while watering
+        setFlowerGlow(activePetG, fillPct);
+        var nowTs = Date.now();
+        if (dist > 1 && nowTs - _lastSparkTime > 80) {
+          _lastSparkTime = nowTs;
+          spawnWaterSparks(activePetG);
+        }
+
         if (fillPct >= 100) {
           dragging = false;
           if (ghostEl) ghostEl.style.display = 'none';
           if (canEl)   canEl.classList.remove('can-held');
           bloomCurrent();
         }
+      } else {
+        resetFlowerGlow(activePetG);
       }
 
       lastX = e.clientX;
@@ -1213,6 +1272,7 @@ var bouquetGame = (function () {
       dragging = false;
       if (ghostEl) ghostEl.style.display = 'none';
       if (canEl)   canEl.classList.remove('can-held');
+      resetFlowerGlow(activePetG);
     };
 
     _canDown = function (e) {
@@ -1374,6 +1434,48 @@ var bouquetGame = (function () {
     if (canEl)   canEl.classList.remove('can-held');
     // Clean up any in-flight burst particles left over from rapid navigation
     document.querySelectorAll('.bq-heart, .bq-spark').forEach(function (el) { el.parentNode && el.parentNode.removeChild(el); });
+  }
+
+  function showBouquetReveal(callback) {
+    var overlay = document.getElementById('bqRevealOverlay');
+    var btn     = document.getElementById('bqRevealBtn');
+    var floats  = document.getElementById('bqRevealFloats');
+    if (!overlay) { if (callback) callback(); return; }
+
+    var hearts  = ['💕','💗','🌸','✨','💐','🩷','⭐'];
+    var timers  = [];
+    function spawnHeart() {
+      var el = document.createElement('span');
+      el.className = 'bq-float-heart';
+      el.textContent = hearts[Math.floor(Math.random() * hearts.length)];
+      el.style.left   = (8 + Math.random() * 84) + '%';
+      el.style.bottom = (4 + Math.random() * 18) + '%';
+      el.style.animationDuration = (2.4 + Math.random() * 1.8) + 's';
+      el.style.animationDelay    = (Math.random() * 0.4) + 's';
+      el.style.fontSize = (14 + Math.random() * 14) + 'px';
+      if (floats) floats.appendChild(el);
+      timers.push(setTimeout(function () { el.parentNode && el.parentNode.removeChild(el); }, 4500));
+    }
+    var spawnInterval = setInterval(spawnHeart, 550);
+    for (var i = 0; i < 6; i++) spawnHeart();
+
+    overlay.style.display = 'flex';
+    requestAnimationFrame(function () {
+      requestAnimationFrame(function () { overlay.classList.add('active'); });
+    });
+
+    function onBtn() {
+      btn && btn.removeEventListener('click', onBtn);
+      clearInterval(spawnInterval);
+      timers.forEach(clearTimeout);
+      overlay.classList.remove('active');
+      setTimeout(function () {
+        overlay.style.display = 'none';
+        if (floats) floats.innerHTML = '';
+        if (callback) callback();
+      }, 500);
+    }
+    if (btn) btn.addEventListener('click', onBtn);
   }
 
   return { start: start, stop: stop };
