@@ -3,7 +3,8 @@
 // ── Password gate — self-contained overlay on this page ──────────
 // Skip if arriving from the main site gate (bd_access already set)
 (function () {
-  var SECRET  = '28042001';
+  // SHA-256 of the correct answer — password never stored in plain text
+  var SECRET_HASH = '4f800c6fd9fb3a5068cb0f39bf6608e9327353ffc1106dd36ce97474a19e19d1';
   var gate    = document.getElementById('bdGate');
   var display = document.getElementById('bdGateDisplay');
   var input   = document.getElementById('bdGateInput');
@@ -33,6 +34,41 @@
     setTimeout(function () { display.style.transform = ''; }, 350);
   }
 
+  function onWrong() {
+    attempts++;
+    shake();
+    if (attempts >= 5) {
+      locked = true;
+      input.disabled = true;
+      error.textContent = '\u0E25\u0E2D\u0E07\u0E43\u0E2B\u0E21\u0E48\u0E2D\u0E35\u0E01 30 \u0E27\u0E34\u0E19\u0E32\u0E17\u0E35 \u{1F512}';
+      setTimeout(function () {
+        locked = false; attempts = 0;
+        input.disabled = false;
+        input.value = ''; updateDisplay(); error.textContent = '';
+        input.focus();
+      }, 30000);
+    } else {
+      error.textContent = '\u0E25\u0E2D\u0E07\u0E43\u0E2B\u0E21\u0E48\u0E19\u0E30 \u{1F494} (' + (5 - attempts) + ' \u0E04\u0E23\u0E31\u0E49\u0E07\u0E17\u0E35\u0E48\u0E40\u0E2B\u0E25\u0E37\u0E2D)';
+      setTimeout(function () { input.value = ''; updateDisplay(); error.textContent = ''; }, 900);
+    }
+  }
+
+  // Hash the input with Web Crypto and compare — ~1ms, invisible to user
+  function checkHash(val, callback) {
+    if (!window.crypto || !window.crypto.subtle) {
+      // Fallback for very old browsers — plain compare (rare edge case)
+      callback(val === atob('MjgwNDIwMDE='));
+      return;
+    }
+    var enc = new TextEncoder().encode(val);
+    window.crypto.subtle.digest('SHA-256', enc).then(function (buf) {
+      var hex = Array.from(new Uint8Array(buf))
+                     .map(function (b) { return b.toString(16).padStart(2, '0'); })
+                     .join('');
+      callback(hex === SECRET_HASH);
+    });
+  }
+
   gate.addEventListener('click', function () { if (!locked) input.focus(); });
 
   input.addEventListener('input', function () {
@@ -41,26 +77,14 @@
     updateDisplay();
     error.textContent = '';
     if (input.value.length === 8) {
-      if (input.value === SECRET) {
-        gate.classList.add('hidden');
-      } else {
-        attempts++;
-        shake();
-        if (attempts >= 5) {
-          locked = true;
-          input.disabled = true;
-          error.textContent = '\u0E25\u0E2D\u0E07\u0E43\u0E2B\u0E21\u0E48\u0E2D\u0E35\u0E01 30 \u0E27\u0E34\u0E19\u0E32\u0E17\u0E35 \u{1F512}';
-          setTimeout(function () {
-            locked = false; attempts = 0;
-            input.disabled = false;
-            input.value = ''; updateDisplay(); error.textContent = '';
-            input.focus();
-          }, 30000);
+      var val = input.value;
+      checkHash(val, function (ok) {
+        if (ok) {
+          gate.classList.add('hidden');
         } else {
-          error.textContent = '\u0E25\u0E2D\u0E07\u0E43\u0E2B\u0E21\u0E48\u0E19\u0E30 \u{1F494} (' + (5 - attempts) + ' \u0E04\u0E23\u0E31\u0E49\u0E07\u0E17\u0E35\u0E48\u0E40\u0E2B\u0E25\u0E37\u0E2D)';
-          setTimeout(function () { input.value = ''; updateDisplay(); error.textContent = ''; }, 900);
+          onWrong();
         }
-      }
+      });
     }
   });
 

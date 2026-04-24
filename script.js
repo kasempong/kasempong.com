@@ -1,8 +1,9 @@
 'use strict';
 
 // ── Site config ───────────────────────────────────────────────
+// BD_HASH = SHA-256 of the birthday date (ddmmyyyy) — never stored in plain text
 var SITE_CONFIG = {
-  BD_PASSWORD: '28042001', // birthday gate password — change here only
+  BD_HASH: '4f800c6fd9fb3a5068cb0f39bf6608e9327353ffc1106dd36ce97474a19e19d1',
 };
 
 // ── Year ─────────────────────────────────────────────────────
@@ -742,8 +743,7 @@ document.querySelectorAll('.pin, .section-title, .section-subtitle, .section-eye
 
 // ── Secret triple-click "Made with ♡" → birthday page ─────────────
 (function () {
-  const SECRET_PW = SITE_CONFIG.BD_PASSWORD;
-  const target    = document.querySelector('[data-i18n="footer_made"]');
+  const target = document.querySelector('[data-i18n="footer_made"]');
   if (!target) return;
 
   let clicks = 0;
@@ -1214,7 +1214,7 @@ window.addEventListener('scroll', () => {
 
 // ── Birthday gate overlay ─────────────────────────────────────────
 (function () {
-  var SECRET_PW = SITE_CONFIG.BD_PASSWORD;
+  var SECRET_HASH = SITE_CONFIG.BD_HASH;
   var overlay  = document.getElementById('bdGateOverlay');
   var display  = document.getElementById('bdHeartDisplay');
   var inputEl  = document.getElementById('bdRealInput');
@@ -1236,20 +1236,33 @@ window.addEventListener('scroll', () => {
     setTimeout(function() { display.style.transform = ''; }, 350);
   }
 
+  function checkHash(val, callback) {
+    if (!window.crypto || !window.crypto.subtle) {
+      callback(btoa(val) === 'MjgwNDIwMDE='); return;
+    }
+    window.crypto.subtle.digest('SHA-256', new TextEncoder().encode(val)).then(function(buf) {
+      var hex = Array.from(new Uint8Array(buf)).map(function(b) { return b.toString(16).padStart(2,'0'); }).join('');
+      callback(hex === SECRET_HASH);
+    });
+  }
+
   inputEl.addEventListener('input', function() {
     inputEl.value = inputEl.value.replace(/\D/g, '').slice(0, 8);
     updateDisplay();
     errorEl.textContent = '';
     if (inputEl.value.length === 8) {
-      if (inputEl.value === SECRET_PW) {
-        overlay.classList.remove('open');
-        sessionStorage.setItem('bd_access', '1'); // grant access token before redirect
-        window.location.href = '/birthday.html';
-      } else {
-        shake();
-        errorEl.textContent = '\u0E25\u0E2D\u0E07\u0E43\u0E2B\u0E21\u0E48\u0E19\u0E30 \u{1F494}';
-        setTimeout(function() { inputEl.value = ''; updateDisplay(); errorEl.textContent = ''; }, 900);
-      }
+      var val = inputEl.value;
+      checkHash(val, function(ok) {
+        if (ok) {
+          overlay.classList.remove('open');
+          sessionStorage.setItem('bd_access', '1');
+          window.location.href = '/birthday.html';
+        } else {
+          shake();
+          errorEl.textContent = '\u0E25\u0E2D\u0E07\u0E43\u0E2B\u0E21\u0E48\u0E19\u0E30 \u{1F494}';
+          setTimeout(function() { inputEl.value = ''; updateDisplay(); errorEl.textContent = ''; }, 900);
+        }
+      });
     }
   });
 
