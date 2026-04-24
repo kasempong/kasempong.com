@@ -16,6 +16,9 @@
     return;
   }
 
+  var attempts = 0;
+  var locked   = false;
+
   function updateDisplay() {
     var len = input.value.length;
     display.textContent = len === 0 ? '\u{1F497}' : '\u{1F493}'.repeat(len);
@@ -30,9 +33,10 @@
     setTimeout(function () { display.style.transform = ''; }, 350);
   }
 
-  gate.addEventListener('click', function () { input.focus(); });
+  gate.addEventListener('click', function () { if (!locked) input.focus(); });
 
   input.addEventListener('input', function () {
+    if (locked) return;
     input.value = input.value.replace(/\D/g, '').slice(0, 8);
     updateDisplay();
     error.textContent = '';
@@ -40,9 +44,22 @@
       if (input.value === SECRET) {
         gate.classList.add('hidden');
       } else {
+        attempts++;
         shake();
-        error.textContent = '\u0E25\u0E2D\u0E07\u0E43\u0E2B\u0E21\u0E48\u0E19\u0E30 \u{1F494}';
-        setTimeout(function () { input.value = ''; updateDisplay(); error.textContent = ''; }, 900);
+        if (attempts >= 5) {
+          locked = true;
+          input.disabled = true;
+          error.textContent = '\u0E25\u0E2D\u0E07\u0E43\u0E2B\u0E21\u0E48\u0E2D\u0E35\u0E01 30 \u0E27\u0E34\u0E19\u0E32\u0E17\u0E35 \u{1F512}';
+          setTimeout(function () {
+            locked = false; attempts = 0;
+            input.disabled = false;
+            input.value = ''; updateDisplay(); error.textContent = '';
+            input.focus();
+          }, 30000);
+        } else {
+          error.textContent = '\u0E25\u0E2D\u0E07\u0E43\u0E2B\u0E21\u0E48\u0E19\u0E30 \u{1F494} (' + (5 - attempts) + ' \u0E04\u0E23\u0E31\u0E49\u0E07\u0E17\u0E35\u0E48\u0E40\u0E2B\u0E25\u0E37\u0E2D)';
+          setTimeout(function () { input.value = ''; updateDisplay(); error.textContent = ''; }, 900);
+        }
       }
     }
   });
@@ -636,9 +653,7 @@ var feedGame = (function () {
 
 // ── Build the Bouquet (SVG + GSAP) ────────────────────────────────
 var bouquetGame = (function () {
-  // ── Flower shape definitions ─────────────────────────────────
-  // Petal paths are defined at base size 240. scalePath() scales them for other sizes.
-  // p1 = base/rich color, p2 = lighter tip color, outline = cartoon stroke color
+  // ── Flower definitions (watercolor PNG sprites) ──────────────
   var DEFS = [
     { flImg: 'fl-0.png', label: '🌸 Rose',        name: 'Rose' },
     { flImg: 'fl-1.png', label: '🌸 Lily',        name: 'Lily' },
@@ -648,31 +663,8 @@ var bouquetGame = (function () {
     { flImg: 'fl-5.png', label: '💜 Purple Rose', name: 'Purple Rose' },
   ];
 
-  var NS        = 'http://www.w3.org/2000/svg';
   var FILL_DIST = 450;   // px drag = 100% fill
   var HIT_PAD   = 60;    // px padding around flower hit zone
-
-  // ── Composed bouquet layout (master SVG viewBox 0 0 320 200) ─────
-  var BQ_SIZE      = 90;                          // flower SVG size in bouquet
-  var BQ_STEM_BOT  = Math.round(BQ_SIZE * 0.88); // 79 — stem-bottom in flower's local coords
-  var BQ_HEAD_Y    = Math.round(BQ_SIZE * 0.37); // 33 — head center Y in flower's local coords
-  var BQ_RISE      = BQ_STEM_BOT - BQ_HEAD_Y;    // 46 — vertical dist stem→head in local space
-  var BQ_HALF      = BQ_SIZE / 2;                // 45 — half width
-  var BQ_VBW       = 320;                         // master SVG viewBox width
-  var BQ_VBH       = 200;                         // master SVG viewBox height
-  var BQ_PAPER_TOP = 165;                         // y-coord where paper starts (viewBox units)
-  var BQ_PAPER_H   = 35;                          // paper height when fully wrapped
-
-  // Six fan positions. sbx/sby = stem-bottom in viewBox coords, rot = tilt degrees.
-  // DOM order of <g id="bqFn"> in HTML controls z-order (back-to-front: 3,4,1,2,5,0).
-  var BQ_SLOTS = [
-    { sbx: 160, sby: 160, rot:   0 },  // 0 Rose        — center
-    { sbx: 140, sby: 160, rot: -20 },  // 1 Sunflower   — left-center
-    { sbx: 180, sby: 160, rot:  20 },  // 2 Tulip       — right-center
-    { sbx: 112, sby: 164, rot: -42 },  // 3 Daisy       — far left
-    { sbx: 208, sby: 164, rot:  42 },  // 4 Lavender    — far right
-    { sbx: 163, sby: 160, rot:   9 },  // 5 Gerbera     — centre-slight-right
-  ];
 
   var currentFlower  = 0;
   var fillPct        = 0;
@@ -692,322 +684,6 @@ var bouquetGame = (function () {
   var _onCanMove     = null;
   var _onCanUp       = null;
   var _lastSparkTime = 0;
-
-  // ── SVG element helper ────────────────────────────────────────
-  function svgEl(tag, attrs) {
-    var e = document.createElementNS(NS, tag);
-    if (attrs) {
-      Object.keys(attrs).forEach(function (k) { e.setAttribute(k, attrs[k]); });
-    }
-    return e;
-  }
-
-  // Scale all numeric values in an SVG path by factor s
-  function scalePath(d, s) {
-    if (s === 1) return d;
-    return d.replace(/[+-]?(?:\d+\.?\d*|\.\d+)/g, function (n) {
-      return (parseFloat(n) * s).toFixed(2);
-    });
-  }
-
-  // ── Paper.js organic petal path generator ─────────────────────
-  // Lazy-initialised: first call sets up a headless Paper.js scope.
-  var _paperReady = false;
-  function _ensurePaper() {
-    if (_paperReady) return;
-    if (!window.paper) return;
-    try {
-      // Headless mode (no canvas — path math only)
-      window.paper.setup(new window.paper.Size(1000, 1000));
-      _paperReady = true;
-    } catch (e) {
-      try {
-        // Fallback: tiny off-screen canvas (never attached to DOM)
-        var c = document.createElement('canvas');
-        c.width = 200; c.height = 200;
-        window.paper.setup(c);
-        _paperReady = true;
-      } catch (e2) { /* give up — cubic-bezier fallbacks used */ }
-    }
-  }
-
-  // Returns an SVG path d-string for an organic petal.
-  //   pw  = half-width at the widest point (at base-240 units * s)
-  //   ph  = total height (base to tip)
-  //   jitter = 0–0.20 random wobble per key-point
-  // Path is centred at origin (0,0), tip pointing toward negative-Y.
-  function getOrganicPetalPath(pw, ph, jitter) {
-    _ensurePaper();
-    if (!_paperReady || !window.paper) {
-      // Simple cubic-bezier fallback (original shape, no jitter)
-      return 'M0,0 C-' + pw.toFixed(1) + ',0' +
-             ' -' + pw.toFixed(1) + ',-' + (ph * 0.72).toFixed(1) +
-             ' 0,-' + ph.toFixed(1) +
-             ' C' + pw.toFixed(1) + ',-' + (ph * 0.72).toFixed(1) +
-             ' ' + pw.toFixed(1) + ',0 0,0';
-    }
-    var p = window.paper;
-    function j(v) { return v * (1 + (Math.random() - 0.5) * jitter * 2); }
-    // 8 key-points: base → left bulge → tip → right bulge → base
-    var pts = [
-      [0,                    0],
-      [-j(pw * 0.28), -j(ph * 0.13)],
-      [-j(pw * 0.96), -j(ph * 0.43)],
-      [-j(pw * 0.62), -j(ph * 0.71)],
-      [(Math.random() - 0.5) * pw * 0.06, -j(ph)],  // tip: tiny x wobble
-      [ j(pw * 0.62), -j(ph * 0.71)],
-      [ j(pw * 0.96), -j(ph * 0.43)],
-      [ j(pw * 0.28), -j(ph * 0.13)],
-    ];
-    var path = new p.Path(pts.map(function (pt) { return new p.Point(pt[0], pt[1]); }));
-    path.closed = true;
-    path.smooth({ type: 'catmull-rom', factor: 0.6 });
-    var node = path.exportSVG();
-    var d = node ? (node.getAttribute('d') || '') : '';
-    path.remove();
-    return d || ('M0,0 L-' + pw + ',-' + (ph * 0.5) + ' 0,-' + ph + ' ' + pw + ',-' + (ph * 0.5) + 'Z');
-  }
-
-  // ── Build one flower SVG (proportional geometry — works at any size) ──
-  // All measurements scale with `size`. Flower head is at fy = size*0.37,
-  // so petals always fit within the SVG viewBox (no overflow for most types).
-  function buildFlower(def, size, flowerIdx) {
-    var s   = size / 240;        // scale factor vs base design size
-    var cx  = size / 2;
-    var fy  = Math.round(size * 0.37);   // flower-head center Y
-    var stemTop = Math.round(fy  + size * 0.09);
-    var stemBot = Math.round(size * 0.88);
-    var stemW   = Math.max(3, size * 0.022);
-    var gid     = 'fg_' + (flowerIdx || 0) + '_' + (size | 0);
-
-    var svg = svgEl('svg', { viewBox: '0 0 ' + size + ' ' + size });
-    svg.classList.add('flower-svg');
-
-    // ── Gradient: tip (p2) at top, rich color (p1) at base ──────
-    var defs = svgEl('defs');
-    var grad = svgEl('linearGradient', { id: gid, x1: '0%', y1: '100%', x2: '0%', y2: '0%' });
-    var gStop1 = svgEl('stop', { offset: '0%',  'stop-color': def.colors.p1, 'stop-opacity': '1' });
-    var gStop2 = svgEl('stop', { offset: '100%','stop-color': def.colors.p2, 'stop-opacity': '1' });
-    grad.appendChild(gStop1); grad.appendChild(gStop2);
-    defs.appendChild(grad);
-
-    // ── Drop-shadow filter for depth on petals ───────────────────
-    var filtId = gid + '-shd';
-    var filt = svgEl('filter', { id: filtId, x: '-30%', y: '-30%', width: '160%', height: '160%' });
-    var fds  = svgEl('feDropShadow', {
-      dx: '0', dy: (2 * s).toFixed(1),
-      stdDeviation: (3 * s).toFixed(1),
-      'flood-color': 'rgba(0,0,0,0.22)',
-    });
-    filt.appendChild(fds);
-    defs.appendChild(filt);
-
-    svg.appendChild(defs);
-
-    // ── Stem (slight wiggle path for organic feel) ───────────────
-    var sx = cx + size * 0.03;   // slight horizontal offset mid-curve
-    var stemPath = [
-      'M', cx, stemTop,
-      'Q', sx, (stemTop + stemBot) / 2, cx, stemBot,
-    ].join(' ');
-    var stem = svgEl('path', {
-      d: stemPath, fill: 'none',
-      stroke: def.colors.stem,
-      'stroke-width': stemW,
-      'stroke-linecap': 'round',
-    });
-    stem.classList.add('fl-stem');
-    svg.appendChild(stem);
-
-    // ── Leaves (fat rounded ellipses, angled away from stem) ─────
-    var leafH    = size * 0.34;   // distance up the stem
-    var leafOffs = size * 0.06;   // horizontal nudge
-    [
-      { lx: cx - leafOffs, ly: stemBot - leafH * 0.38, rx: size*0.10, ry: size*0.038, ang: -44 },
-      { lx: cx + leafOffs, ly: stemBot - leafH * 0.68, rx: size*0.10, ry: size*0.033, ang:  46 },
-    ].forEach(function (lp, i) {
-      var lf = svgEl('ellipse', {
-        cx: lp.lx.toFixed(1), cy: lp.ly.toFixed(1),
-        rx: lp.rx.toFixed(1), ry: lp.ry.toFixed(1),
-        fill: def.colors.stem, opacity: '0.78',
-        transform: 'rotate(' + lp.ang + ',' + lp.lx.toFixed(1) + ',' + lp.ly.toFixed(1) + ')',
-      });
-      lf.classList.add('fl-leaf', 'fl-leaf-' + i);
-      svg.appendChild(lf);
-    });
-
-    // ── Bud (shows while watering, hidden by petals on full bloom) ──
-    var bR1 = size * 0.054, bR2 = size * 0.030;
-    var budG = svgEl('g');
-    budG.classList.add('fl-bud');
-    budG.appendChild(svgEl('ellipse', {
-      cx: cx, cy: fy + bR1 * 0.7,
-      rx: bR1 * 0.60, ry: bR1 * 1.00,
-      fill: def.colors.p1, opacity: '0.90',
-    }));
-    budG.appendChild(svgEl('ellipse', {
-      cx: cx, cy: fy + bR2 * 0.4,
-      rx: bR2 * 0.60, ry: bR2 * 1.00,
-      fill: def.colors.p2,
-    }));
-    svg.appendChild(budG);
-
-    // ── Petals group (Paper.js organic bezier curves) ────────────
-    // SVG attribute sets position + scale(0) as a hard fallback.
-    // GSAP may override this with CSS transforms; if GSAP fails the
-    // SVG attribute keeps the petals invisible at the correct position.
-    var petG = svgEl('g');
-    petG.classList.add('fl-petals');
-    petG.setAttribute('transform', 'translate(' + cx + ',' + fy + ') scale(0)');
-
-    var pw        = (def.pw || 26) * s;    // petal half-width at this size
-    var ph        = (def.ph || 58) * s;    // petal height at this size
-    var scaledDist = (def.petalDist * s).toFixed(2);
-    var strokeW    = Math.max(0.6, 1.8 * s).toFixed(2);
-
-    // Outer petal group gets the drop-shadow so inner layers don't double-shadow
-    var petalShGroup = svgEl('g', { filter: 'url(#' + filtId + ')' });
-
-    for (var i = 0; i < def.petalCount; i++) {
-      // Organic angle jitter — breaks perfect radial symmetry
-      var baseAng = (360 / def.petalCount) * i;
-      var ang     = baseAng + (i % 3 === 0 ? 3.5 : i % 3 === 1 ? -2.5 : 0.8);
-      // Sine-wave size variation: neighboring petals subtly differ
-      var szMul   = (0.86 + 0.28 * ((Math.sin(i * 2.1 + 1.2) + 1) / 2)).toFixed(3);
-      var xfm     = 'rotate(' + ang.toFixed(1) + ') translate(0,-' + scaledDist + ') scale(' + szMul + ')';
-
-      // ── Main petal: organic catmull-rom bezier ──
-      var mainD = getOrganicPetalPath(pw, ph, 0.10);
-      var mainP = svgEl('path', {
-        d: mainD,
-        fill: 'url(#' + gid + ')',
-        stroke: def.colors.outline,
-        'stroke-width': strokeW,
-        'stroke-linejoin': 'round',
-        opacity: (0.90 + 0.08 * (i % 2)).toFixed(2),
-        transform: xfm,
-      });
-      mainP.classList.add('fl-petal');
-      petalShGroup.appendChild(mainP);
-
-      // ── Inner highlight: smaller petal, lighter fill, no stroke ──
-      var hilD = getOrganicPetalPath(pw * 0.55, ph * 0.62, 0.04);
-      var hilP = svgEl('path', {
-        d: hilD,
-        fill: def.colors.p2,
-        opacity: '0.38',
-        transform: xfm,
-      });
-      petalShGroup.appendChild(hilP);
-
-      // ── Petal vein: thin bezier from base toward tip ──
-      var vx = (pw * 0.07).toFixed(1);
-      var vy = (-ph * 0.48).toFixed(1);
-      var vt = (-ph * 0.88).toFixed(1);
-      var veinD = 'M0,0 Q' + vx + ',' + vy + ' 0,' + vt;
-      petalShGroup.appendChild(svgEl('path', {
-        d: veinD,
-        fill: 'none',
-        stroke: def.colors.outline,
-        'stroke-width': (Math.max(0.4, strokeW * 0.35)).toFixed(2),
-        'stroke-linecap': 'round',
-        opacity: '0.32',
-        transform: xfm,
-      }));
-    }
-
-    petG.appendChild(petalShGroup);
-    svg.appendChild(petG);
-
-    // ── Centre (tiered circles + dot ring — cel-shade style) ─────
-    var cR = def.centerR * s;
-    // Outer shadow halo
-    svg.appendChild(svgEl('circle', {
-      cx: cx, cy: fy, r: (cR * 1.30).toFixed(1),
-      fill: 'rgba(0,0,0,0.18)',
-    }));
-    // Main center disc
-    var cir = svgEl('circle', {
-      cx: cx, cy: fy, r: cR.toFixed(1),
-      fill: def.colors.center,
-      stroke: 'rgba(255,255,255,0.30)',
-      'stroke-width': Math.max(1, 2 * s).toFixed(1),
-    });
-    cir.classList.add('fl-center');
-    svg.appendChild(cir);
-    // Inner lighter tier (cel-shade highlight)
-    svg.appendChild(svgEl('circle', {
-      cx: cx, cy: fy, r: (cR * 0.54).toFixed(1),
-      fill: 'rgba(255,255,255,0.28)',
-    }));
-
-    // Dot ring around center edge — replaces scattered pollen
-    var polG = svgEl('g');
-    polG.classList.add('fl-pollen');
-    var dotCount = Math.min(8, Math.max(5, Math.round(cR * 1.1)));
-    var dotR     = cR * 0.82;
-    var dotSize  = (cR * 0.17).toFixed(1);
-    for (var di = 0; di < dotCount; di++) {
-      var da = (2 * Math.PI / dotCount) * di;
-      polG.appendChild(svgEl('circle', {
-        cx: (cx + Math.cos(da) * dotR).toFixed(1),
-        cy: (fy + Math.sin(da) * dotR).toFixed(1),
-        r:  dotSize,
-        fill: 'rgba(255,255,255,0.75)',
-      }));
-    }
-    svg.appendChild(polG);
-
-    return svg;
-  }
-
-  // ── GSAP timeline (scrub 0→1 via drag) ───────────────────────
-  // Returns null if GSAP isn't loaded; caller falls back to direct SVG attrs.
-  function buildTimeline(svg, size) {
-    if (typeof gsap === 'undefined') return null;
-    // Use same proportional coords as buildFlower
-    var cx      = size / 2;
-    var fy      = Math.round(size * 0.37);
-    var stemBot = Math.round(size * 0.88);
-
-    var stem   = svg.querySelector('.fl-stem');
-    var leaf0  = svg.querySelector('.fl-leaf-0');
-    var leaf1  = svg.querySelector('.fl-leaf-1');
-    var bud    = svg.querySelector('.fl-bud');
-    var petG   = svg.querySelector('.fl-petals');
-    var center = svg.querySelector('.fl-center');
-    var pollen = svg.querySelector('.fl-pollen');
-
-    // petG already has the correct initial SVG attribute (translate+scale 0).
-    // We do NOT re-set it here to avoid GSAP CSS vs SVG attribute conflicts.
-    // GSAP animates scale via the 'scale' shorthand which should cascade correctly.
-    gsap.set(stem,   { scaleY: 0.06, svgOrigin: cx + ' ' + stemBot });
-    gsap.set(leaf0,  { scale: 0, opacity: 0, svgOrigin: cx + ' ' + stemBot });
-    gsap.set(leaf1,  { scale: 0, opacity: 0, svgOrigin: cx + ' ' + stemBot });
-    gsap.set(bud,    { scale: 1, opacity: 1 });
-    gsap.set(center, { scale: 0, svgOrigin: cx + ' ' + fy });
-    gsap.set(pollen, { scale: 0, opacity: 0, svgOrigin: cx + ' ' + fy });
-
-    var tl = gsap.timeline({ paused: true });
-    tl
-      // 0–32%: stem grows up from base
-      .to(stem,   { scaleY: 1, duration: 0.32, ease: 'power2.inOut' }, 0)
-      // 12–40%: leaves unfurl
-      .to(leaf0,  { scale: 1, opacity: 1, rotation: -40, duration: 0.28, ease: 'back.out(2)' }, 0.12)
-      .to(leaf1,  { scale: 1, opacity: 1, rotation:  40, duration: 0.28, ease: 'back.out(2)' }, 0.20)
-      // 28–48%: bud folds away
-      .to(bud,    { scale: 0, opacity: 0, duration: 0.20, ease: 'power2.in' }, 0.28)
-      // 34–72%: whole petal group blooms open
-      .to(petG,   { scale: 1, duration: 0.38, ease: 'back.out(1.8)' }, 0.34)
-      // 63–78%: centre pops in
-      .to(center, { scale: 1, duration: 0.22, ease: 'back.out(2.8)' }, 0.63)
-      // 73–84%: pollen sparkles
-      .to(pollen, { scale: 1, opacity: 1, duration: 0.18, ease: 'back.out(3)' }, 0.73)
-      // 84–100%: whole group sways gently — fully open
-      .to(petG,   { rotation: '+=4', yoyo: true, repeat: 1, duration: 0.16, ease: 'sine.inOut' }, 0.84);
-
-    return tl;
-  }
 
   // ── Watering sparkle burst ────────────────────────────────────
   function spawnWaterSparks(flEl) {
@@ -1337,19 +1013,30 @@ var bouquetGame = (function () {
     var cont     = document.getElementById('bwContainer');
 
     // 1. Ensure final bouquet stage is shown
+    // Guard: if bq-stage-5 is already displayed, skip the crossfade and just bounce
+    var alreadyFinal = stageImg && stageImg.src && stageImg.src.endsWith('bq-stage-5.png');
     if (stageImg) {
       if (typeof gsap !== 'undefined') {
-        gsap.to(stageImg, {
-          opacity: 0, scale: 0.94, duration: 0.18, ease: 'power2.in',
-          onComplete: function () {
-            stageImg.src = 'bq-stage-5.png';
-            gsap.to(stageImg, { opacity: 1, scale: 1.06, duration: 0.35, ease: 'back.out(1.8)',
-              onComplete: function () {
-                gsap.to(stageImg, { scale: 1, duration: 0.25, ease: 'power2.out' });
-              },
-            });
-          },
-        });
+        if (alreadyFinal) {
+          // Already showing final — just do a scale bounce, no dark flash
+          gsap.to(stageImg, { scale: 1.06, duration: 0.35, ease: 'back.out(1.8)',
+            onComplete: function () {
+              gsap.to(stageImg, { scale: 1, duration: 0.25, ease: 'power2.out' });
+            },
+          });
+        } else {
+          gsap.to(stageImg, {
+            opacity: 0, scale: 0.94, duration: 0.18, ease: 'power2.in',
+            onComplete: function () {
+              stageImg.src = 'bq-stage-5.png';
+              gsap.to(stageImg, { opacity: 1, scale: 1.06, duration: 0.35, ease: 'back.out(1.8)',
+                onComplete: function () {
+                  gsap.to(stageImg, { scale: 1, duration: 0.25, ease: 'power2.out' });
+                },
+              });
+            },
+          });
+        }
       } else {
         stageImg.src = 'bq-stage-5.png';
         stageImg.style.opacity = '1';
