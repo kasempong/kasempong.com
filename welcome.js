@@ -257,9 +257,17 @@ resizeCanvas();
 initPars();
 requestAnimationFrame(mainLoop);
 
-setTimeout(revealName,    500);
-setTimeout(revealTooth,  1400);
-setTimeout(typeSubtitle, 1900);
-setTimeout(showEnterBtn, 3500);
+var _t1 = setTimeout(revealName,    500);
+var _t2 = setTimeout(revealTooth,  1400);
+var _t3 = setTimeout(typeSubtitle, 1900);
+var _t4 = setTimeout(showEnterBtn, 3500);
 
 window.addEventListener('resize', resizeCanvas);
+
+// Cancel pending timers if the page is unloaded (BFCache / tab close)
+window.addEventListener('pagehide', function () {
+  clearTimeout(_t1);
+  clearTimeout(_t2);
+  clearTimeout(_t3);
+  clearTimeout(_t4);
+});

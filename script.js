@@ -909,11 +909,19 @@ document.querySelectorAll('.pin, .section-title, .section-subtitle, .section-eye
 
 // ── Status bar ────────────────────────────────────────────────
 (function () {
-  const STATUS_KEY  = 'ksp_status';
-  const COLOR_KEY   = 'ksp_status_color';
-  const PW_KEY      = 'ksp_pw';
-  const DEFAULT_PW  = 'vibecheck';   // ← fallback password if none saved
-  const DEFAULT_CLR = '#48c78e';
+  const STATUS_KEY    = 'ksp_status';
+  const COLOR_KEY     = 'ksp_status_color';
+  const PW_KEY        = 'ksp_pw';
+  // SHA-256 of 'vibecheck' — password never stored in plain text
+  const DEFAULT_HASH  = '63a55e87a056aff67a8a2b8d740d0d23f82ebdff343d9524128640f8f3f0ea3b';
+  const DEFAULT_CLR   = '#48c78e';
+
+  async function hashSHA256(str) {
+    try {
+      const buf = await crypto.subtle.digest('SHA-256', new TextEncoder().encode(str));
+      return Array.from(new Uint8Array(buf)).map(b => b.toString(16).padStart(2, '0')).join('');
+    } catch (_) { return null; }
+  }
 
   const statusBar   = document.getElementById('statusBar');
   const statusDot   = statusBar.querySelector('.status-dot');
@@ -931,7 +939,7 @@ document.querySelectorAll('.pin, .section-title, .section-subtitle, .section-eye
   const newPwInput     = document.getElementById('statusNewPw');
   const confirmPwInput = document.getElementById('statusConfirmPw');
 
-  function getPassword() { return localStorage.getItem(PW_KEY) || DEFAULT_PW; }
+  function getPasswordHash() { return localStorage.getItem(PW_KEY) || DEFAULT_HASH; }
 
   // Apply color to bar
   function applyColor(c) {
@@ -997,9 +1005,10 @@ document.querySelectorAll('.pin, .section-title, .section-subtitle, .section-eye
 
   let step = 'pw';
 
-  saveBtn.addEventListener('click', () => {
+  saveBtn.addEventListener('click', async () => {
     if (step === 'pw' || stepEdit.style.display === 'none') {
-      if (pwInput.value !== getPassword()) {
+      const inputHash = await hashSHA256(pwInput.value);
+      if (!inputHash || inputHash !== getPasswordHash()) {
         pwInput.style.borderColor = '#e05c5c';
         setTimeout(() => pwInput.style.borderColor = '', 800);
         return;
@@ -1019,7 +1028,11 @@ document.querySelectorAll('.pin, .section-title, .section-subtitle, .section-eye
           setTimeout(() => confirmPwInput.style.borderColor = '', 800);
           return;
         }
-        if (np) localStorage.setItem(PW_KEY, np);
+        if (np) {
+          // Store hash, never plain text
+          const npHash = await hashSHA256(np);
+          if (npHash) localStorage.setItem(PW_KEY, npHash);
+        }
       }
       // Save status + color
       const val = newTextInput.value.trim();
@@ -1384,7 +1397,7 @@ window.addEventListener('scroll', () => {
   // Waits for env panel's fetchAll to store data, then applies hue
   function applyWeatherHue() {
     try {
-      var raw = localStorage.getItem('kasempong_env_cache');
+      var raw = localStorage.getItem('ksp_env_cache');
       if (!raw) return;
       var cache = JSON.parse(raw);
       var aqi  = cache.data && cache.data.aqi;

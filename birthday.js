@@ -19,6 +19,7 @@
 
   var attempts = 0;
   var locked   = false;
+  var checking = false;   // prevent double async callback on rapid input
 
   function updateDisplay() {
     var len = input.value.length;
@@ -77,8 +78,11 @@
     updateDisplay();
     error.textContent = '';
     if (input.value.length === 8) {
+      if (checking) return;
+      checking = true;
       var val = input.value;
       checkHash(val, function (ok) {
+        checking = false;
         if (ok) {
           gate.classList.add('hidden');
         } else {
@@ -355,8 +359,14 @@ var catchGame = (function () {
 
   function resize() {
     if (!canvas) return;
-    canvas.width  = canvas.offsetWidth  || 300;
-    canvas.height = canvas.offsetHeight || 300;
+    var dpr = window.devicePixelRatio || 1;
+    var w   = canvas.offsetWidth  || 300;
+    var h   = canvas.offsetHeight || 300;
+    canvas.width        = Math.round(w * dpr);
+    canvas.height       = Math.round(h * dpr);
+    canvas.style.width  = w + 'px';
+    canvas.style.height = h + 'px';
+    ctx.scale(dpr, dpr);   // draw in CSS pixels — hit detection stays correct
   }
 
   var HEART_EMOJIS = ['💗','💖','💕','🩷','❤️'];
@@ -1311,17 +1321,23 @@ function tickConfetti() {
   }
 }
 
+var MAX_PARTICLES = 150;  // global cap — safe on low-end/mobile
+
 function launchConfetti() {
-  // Spawn 100 particles (capped for performance on older/low-end devices)
-  for (var i = 0; i < 100; i++) {
+  // Clear stale particles from any previous launch before adding new ones
+  particles = particles.filter(function (p) { return p.alpha > 0; });
+  var slots = Math.max(0, MAX_PARTICLES - particles.length);
+  var wave1 = Math.min(100, slots);
+  for (var i = 0; i < wave1; i++) {
     particles.push(createParticle());
   }
   if (rafId) cancelAnimationFrame(rafId);
   tickConfetti();
 
-  // Second wave
+  // Second wave — only if room under cap
   setTimeout(function () {
-    for (var i = 0; i < 50; i++) {
+    var remaining = Math.max(0, MAX_PARTICLES - particles.length);
+    for (var i = 0; i < Math.min(50, remaining); i++) {
       var p = createParticle();
       p.y = -(Math.random() * 80);
       particles.push(p);
@@ -1427,11 +1443,15 @@ function initScratch() {
     maskC.width = w; maskC.height = h;
     var mc = maskC.getContext('2d');
     mc.drawImage(imgEl, drawX, drawY, drawW, drawH);
-    var md = mc.getImageData(0, 0, w, h);
-    for (var k = 3; k < md.data.length; k += 4) {
-      md.data[k] = md.data[k] >= 128 ? 255 : 0;  // match reveal-count threshold
+    try {
+      var md = mc.getImageData(0, 0, w, h);
+      for (var k = 3; k < md.data.length; k += 4) {
+        md.data[k] = md.data[k] >= 128 ? 255 : 0;  // match reveal-count threshold
+      }
+      mc.putImageData(md, 0, 0);
+    } catch (e) {
+      // Canvas tainted (CORS) — skip mask, reveal will still show
     }
-    mc.putImageData(md, 0, 0);
 
     // Apply hard binary mask — scratch layer now exactly matches image
     sctx.globalCompositeOperation = 'destination-in';
@@ -1439,10 +1459,14 @@ function initScratch() {
     sctx.globalCompositeOperation = 'source-over';
 
     // Count opaque pixels for accurate reveal threshold
-    var px = sctx.getImageData(0, 0, w, h).data;
-    opaquePixels = 0;
-    for (var j = 3; j < px.length; j += 4) {
-      if (px[j] >= 128) opaquePixels++;
+    try {
+      var px = sctx.getImageData(0, 0, w, h).data;
+      opaquePixels = 0;
+      for (var j = 3; j < px.length; j += 4) {
+        if (px[j] >= 128) opaquePixels++;
+      }
+    } catch (e) {
+      opaquePixels = 0;  // fallback: auto-reveal after 60% area scratched
     }
 
     // Wait one frame so the browser paints the canvas before showing image
@@ -1498,13 +1522,18 @@ function initScratch() {
 
   function checkReveal() {
     if (!opaquePixels) return;
-    var pixels    = sctx.getImageData(0, 0, w, h).data;
-    var remaining = 0;
-    for (var i = 3; i < pixels.length; i += 4) {
-      if (pixels[i] >= 128) remaining++;
-    }
-    // Trigger when 60% of the image's own opaque pixels are scratched
-    if ((opaquePixels - remaining) / opaquePixels > 0.6) {
+    try {
+      var pixels    = sctx.getImageData(0, 0, w, h).data;
+      var remaining = 0;
+      for (var i = 3; i < pixels.length; i += 4) {
+        if (pixels[i] >= 128) remaining++;
+      }
+      // Trigger when 60% of the image's own opaque pixels are scratched
+      if ((opaquePixels - remaining) / opaquePixels > 0.6) {
+        autoReveal();
+      }
+    } catch (e) {
+      // Canvas tainted — auto-reveal to prevent being stuck
       autoReveal();
     }
   }
