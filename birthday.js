@@ -640,48 +640,12 @@ var bouquetGame = (function () {
   // Petal paths are defined at base size 240. scalePath() scales them for other sizes.
   // p1 = base/rich color, p2 = lighter tip color, outline = cartoon stroke color
   var DEFS = [
-    { // 🌸 Rose — plump rounded petals, romantic warmth
-      petalPath:  'M0,0 C-26,-2 -32,-38 0,-58 C32,-38 26,-2 0,0',
-      pw: 32, ph: 58,
-      petalCount: 9, petalDist: 20,
-      colors: { p1:'#FF6B9D', p2:'#FFCCE0', center:'#FFE566', stem:'#4a9a5a', outline:'rgba(180,30,80,0.30)' },
-      centerR: 13,
-    },
-    { // 🌻 Sunflower — happy bold petals, high-contrast center
-      petalPath:  'M0,0 C-9,-8 -11,-54 0,-72 C11,-54 9,-8 0,0',
-      pw: 11, ph: 72,
-      petalCount: 13, petalDist: 18,
-      colors: { p1:'#FFD600', p2:'#FFAA00', center:'#3E1800', stem:'#4a9a5a', outline:'rgba(140,70,0,0.30)' },
-      centerR: 19,
-    },
-    { // 🌷 Tulip — wide cupped petals, bold shape
-      petalPath:  'M0,0 C-30,0 -34,-32 0,-52 C34,-32 30,0 0,0',
-      pw: 34, ph: 52,
-      petalCount: 6, petalDist: 12,
-      colors: { p1:'#F44794', p2:'#FFA8C8', center:'#FFE566', stem:'#4a9a5a', outline:'rgba(160,10,60,0.28)' },
-      centerR: 9,
-    },
-    { // 🌼 Daisy — cheerful thin petals, bright center
-      petalPath:  'M0,0 C-7,-10 -9,-44 0,-60 C9,-44 7,-10 0,0',
-      pw: 9, ph: 60,
-      petalCount: 14, petalDist: 14,
-      colors: { p1:'#FFFFFF', p2:'#E4EEFF', center:'#FFD600', stem:'#4a9a5a', outline:'rgba(100,120,200,0.22)' },
-      centerR: 14,
-    },
-    { // 💜 Lavender — small oval petals clustered tight
-      petalPath:  'M0,0 C-11,-2 -14,-22 0,-34 C14,-22 11,-2 0,0',
-      pw: 14, ph: 34,
-      petalCount: 16, petalDist: 6,
-      colors: { p1:'#B47FFF', p2:'#E5C8FF', center:'#6D28D9', stem:'#6a9a7a', outline:'rgba(80,10,160,0.25)' },
-      centerR: 8,
-    },
-    { // 🧡 Gerbera — many bold petals, vivid warm tone
-      petalPath:  'M0,0 C-20,-4 -24,-50 0,-66 C24,-50 20,-4 0,0',
-      pw: 24, ph: 66,
-      petalCount: 14, petalDist: 18,
-      colors: { p1:'#FF5722', p2:'#FFC07A', center:'#B71C1C', stem:'#4a9a5a', outline:'rgba(160,40,0,0.28)' },
-      centerR: 16,
-    },
+    { flImg: 'fl-0.png', label: '🌸 Rose' },
+    { flImg: 'fl-1.png', label: '🌸 Lily' },
+    { flImg: 'fl-2.png', label: '🌷 Tulip' },
+    { flImg: 'fl-3.png', label: '🌼 Gerbera' },
+    { flImg: 'fl-4.png', label: '🌺 Carnation' },
+    { flImg: 'fl-5.png', label: '💜 Purple Rose' },
   ];
 
   var NS        = 'http://www.w3.org/2000/svg';
@@ -1060,37 +1024,32 @@ var bouquetGame = (function () {
     var wrap = document.getElementById('activeFlowerWrap');
     if (!wrap) return;
 
-    // Complete bloom instantly
-    if (activeTimeline) {
+    // Snap to full bloom
+    if (activePetG) {
       if (typeof gsap !== 'undefined') {
-        gsap.to(activeTimeline, { progress: 1, duration: 0.22, ease: 'power2.out' });
+        gsap.set(activePetG, { scale: 1, opacity: 1 });
       } else {
-        activeTimeline.progress(1);
+        activePetG.style.transform = 'scale(1)';
+        activePetG.style.opacity   = '1';
       }
-    } else if (activePetG) {
-      // GSAP-free fallback: snap petals to full scale
-      activePetG.setAttribute('transform',
-        'translate(' + activeCX + ',' + activeFY + ') scale(1)'
-      );
     }
 
-    // Bounce pop
-    var svg = wrap.querySelector('.flower-svg');
-    if (svg) {
+    // Bounce pop on the flower image
+    var flEl = wrap.querySelector('.active-flower-img, .flower-svg');
+    if (flEl) {
       if (typeof gsap !== 'undefined') {
-        gsap.to(svg, {
+        gsap.to(flEl, {
           scale: 1.22, duration: 0.16, ease: 'power2.out',
           onComplete: function () {
-            gsap.to(svg, { scale: 1, duration: 0.30, ease: 'elastic.out(1, 0.5)' });
+            gsap.to(flEl, { scale: 1, duration: 0.30, ease: 'elastic.out(1, 0.5)' });
           },
         });
       } else {
-        // CSS fallback bounce
-        svg.style.transition = 'transform 0.16s ease-out';
-        svg.style.transform  = 'scale(1.18)';
+        flEl.style.transition = 'transform 0.16s ease-out';
+        flEl.style.transform  = 'scale(1.18)';
         setTimeout(function () {
-          svg.style.transition = 'transform 0.35s cubic-bezier(0.34,1.56,0.64,1)';
-          svg.style.transform  = 'scale(1)';
+          flEl.style.transition = 'transform 0.35s cubic-bezier(0.34,1.56,0.64,1)';
+          flEl.style.transform  = 'scale(1)';
         }, 160);
       }
     }
@@ -1123,101 +1082,63 @@ var bouquetGame = (function () {
     }, 480);
   }
 
-  // ── Add a flower to the composed bouquet SVG ─────────────────
+  // ── Reveal next bouquet stage when a flower is watered ───────
   function addToBouquet(idx) {
-    var slotG = document.getElementById('bqF' + idx);
-    if (!slotG) return;
+    var stageImg = document.getElementById('bqStageImg');
+    if (!stageImg) return;
 
-    var slot = BQ_SLOTS[idx];
-
-    // Build flower at BQ_SIZE. Use a unique gid suffix to avoid id collision
-    // with the large active-stage flower (which uses idx without suffix).
-    var mini   = buildFlower(DEFS[idx], BQ_SIZE, idx + 100);
-    var miniTl = buildTimeline(mini, BQ_SIZE);
-    if (miniTl) {
-      miniTl.progress(1);  // instantly fully bloomed
-      miniTl.kill();
-    } else {
-      var miniPetG = mini.querySelector('.fl-petals');
-      if (miniPetG) {
-        miniPetG.setAttribute('transform',
-          'translate(' + BQ_HALF + ',' + BQ_HEAD_Y + ') scale(1)'
-        );
-      }
-    }
-
-    // ── Transform: stem-bottom lands at (sbx, sby), flower rotated by rot ──
-    // Equivalent steps (right-to-left application):
-    //   1. translate(-BQ_HALF, -BQ_STEM_BOT) — bring stem-bottom to local origin
-    //   2. rotate(rot)                        — tilt around that point
-    //   3. translate(sbx, sby)               — move to final global position
-    slotG.setAttribute('transform',
-      'translate(' + slot.sbx + ',' + slot.sby + ')' +
-      ' rotate(' + slot.rot + ')' +
-      ' translate(' + (-BQ_HALF) + ',' + (-BQ_STEM_BOT) + ')'
-    );
-    slotG.appendChild(mini);
-
-    // Entrance: pop in from flower-head position
-    var rotRad = slot.rot * Math.PI / 180;
-    var headVbX = (slot.sbx + BQ_RISE * Math.sin(rotRad)).toFixed(1);
-    var headVbY = (slot.sby - BQ_RISE * Math.cos(rotRad)).toFixed(1);
+    var stageN = Math.min(idx, 5);  // bq-stage-0 … bq-stage-5
     if (typeof gsap !== 'undefined') {
-      gsap.fromTo(slotG,
-        { scale: 0, opacity: 0, svgOrigin: headVbX + ' ' + headVbY },
-        { scale: 1, opacity: 1, duration: 0.55, ease: 'back.out(2.2)' }
-      );
+      // Crossfade: dip then reveal new stage
+      gsap.to(stageImg, {
+        opacity: 0, scale: 0.94, duration: 0.18, ease: 'power2.in',
+        onComplete: function () {
+          stageImg.src = 'bq-stage-' + stageN + '.png';
+          gsap.to(stageImg, { opacity: 1, scale: 1, duration: 0.40, ease: 'back.out(1.6)' });
+        },
+      });
     } else {
-      slotG.style.opacity = '0';
-      slotG.style.transition = 'opacity 0.4s ease';
-      requestAnimationFrame(function () { slotG.style.opacity = '1'; });
+      stageImg.src     = 'bq-stage-' + stageN + '.png';
+      stageImg.style.opacity = '1';
     }
 
     burstHearts(idx);
-    updateWrap(idx + 1);
   }
 
-  // ── Load flower onto center stage ─────────────────────────────
+  // ── Load flower onto center stage (PNG sprite) ───────────────
   function loadFlower(idx) {
     var wrap = document.getElementById('activeFlowerWrap');
     if (!wrap) return;
 
     if (activeTimeline) { activeTimeline.kill(); activeTimeline = null; }
-    activePetG = null;
+    activePetG     = null;
+    activeTimeline = null;
     wrap.innerHTML = '';
     fillPct = 0;
     setRing(0);
 
-    var size = 240;
-    var svg  = buildFlower(DEFS[idx], size, idx);
-    wrap.appendChild(svg);
+    var img = document.createElement('img');
+    img.src       = DEFS[idx].flImg;
+    img.className = 'active-flower-img';
+    img.draggable = false;
+    img.alt       = DEFS[idx].label || '';
+    wrap.appendChild(img);
 
-    // Store petG reference for GSAP-free fallback animation
-    activePetG = svg.querySelector('.fl-petals');
-    activeCX   = size / 2;
-    activeFY   = Math.round(size * 0.37);   // matches buildFlower's fy formula
-
-    // petG already has scale(0) via SVG attribute (set in buildFlower).
-    // buildTimeline returns null if GSAP not loaded — that's fine.
-    activeTimeline = buildTimeline(svg, size);
+    // Store img for animation in _onCanMove / bloomCurrent
+    activePetG = img;
 
     var ctr = document.getElementById('flowerCounter');
     if (ctr) ctr.textContent = 'ดอกที่ ' + (idx + 1) + ' / ' + DEFS.length;
 
+    // Entrance: fade + slight scale-up
     if (typeof gsap !== 'undefined') {
-      gsap.fromTo(svg,
-        { scale: 0.6, opacity: 0 },
-        { scale: 1, opacity: 1, duration: 0.40, ease: 'back.out(1.8)' }
+      gsap.fromTo(img,
+        { scale: 0.52, opacity: 0 },
+        { scale: 0.55, opacity: 1, duration: 0.40, ease: 'back.out(1.8)' }
       );
     } else {
-      // Fallback: simple CSS transition entrance
-      svg.style.transition = 'opacity 0.4s ease, transform 0.4s ease';
-      svg.style.opacity    = '0';
-      svg.style.transform  = 'scale(0.6)';
-      requestAnimationFrame(function () {
-        svg.style.opacity   = '1';
-        svg.style.transform = 'scale(1)';
-      });
+      img.style.transform = 'scale(0.55)';
+      img.style.opacity   = '1';
     }
   }
 
@@ -1265,10 +1186,13 @@ var bouquetGame = (function () {
           // GSAP scrub (full multi-element animation)
           activeTimeline.progress(fillPct / 100);
         } else if (activePetG) {
-          // GSAP-free fallback: scale petals via SVG attribute directly
-          activePetG.setAttribute('transform',
-            'translate(' + activeCX + ',' + activeFY + ') scale(' + (fillPct / 100).toFixed(4) + ')'
-          );
+          // PNG mode: scale img from 0.55 (bud) → 1.0 (full bloom)
+          var sc = 0.55 + (fillPct / 100) * 0.45;
+          if (typeof gsap !== 'undefined') {
+            gsap.set(activePetG, { scale: sc });
+          } else {
+            activePetG.style.transform = 'scale(' + sc.toFixed(3) + ')';
+          }
         }
         setRing(fillPct);
 
@@ -1319,36 +1243,16 @@ var bouquetGame = (function () {
   // All wrap elements live inside #bqMasterSvg as SVG rects/groups.
   // Heights are in viewBox units (320×200 viewport).
 
-  function updateWrap(count) {
-    var paper  = document.getElementById('bqPaperRect');
-    var ribbon = document.getElementById('bqRibRect');
-    if (!paper) return;
-    // Grow paper progressively: 0 → 75% of BQ_PAPER_H while watering
-    var h = Math.round((count / DEFS.length) * BQ_PAPER_H * 0.78);
-    var y = BQ_VBH - h;
-    paper.setAttribute('y', y);
-    paper.setAttribute('height', h);
-    if (count >= 4 && ribbon) {
-      ribbon.setAttribute('y', y);
-      ribbon.setAttribute('height', h);
-      ribbon.setAttribute('opacity', '0.88');
-    }
-  }
+  function updateWrap(count) { /* paper wrap is baked into bouquet stage images */ }
 
   function burstHearts(slotIdx) {
-    // Compute flower-head screen position from master SVG viewBox coords
-    var masterSvg = document.getElementById('bqMasterSvg');
-    if (!masterSvg) return;
-    var r = masterSvg.getBoundingClientRect();
-    var slot    = BQ_SLOTS[slotIdx];
-    var rotRad  = slot.rot * Math.PI / 180;
-    var vbX     = slot.sbx + BQ_RISE * Math.sin(rotRad);
-    var vbY     = slot.sby - BQ_RISE * Math.cos(rotRad);
-    var scaleX  = r.width  / BQ_VBW;
-    var scaleY  = r.height / BQ_VBH;
-    var cx      = r.left + vbX * scaleX;
-    var cy      = r.top  + vbY * scaleY;
-    var colors  = ['#FF4D8B','#FF90C0','#FFD600','#C084FC','#7DDFFF'];
+    // Burst from centre of bouquet stage image
+    var stageImg = document.getElementById('bqStageImg');
+    if (!stageImg) return;
+    var r  = stageImg.getBoundingClientRect();
+    var cx = r.left + r.width  * 0.50;
+    var cy = r.top  + r.height * 0.38;  // upper area = flower heads
+    var colors = ['#FF4D8B','#FF90C0','#FFD600','#C084FC','#7DDFFF'];
     for (var i = 0; i < 6; i++) {
       (function (i) {
         var dot   = document.createElement('div');
@@ -1369,77 +1273,68 @@ var bouquetGame = (function () {
   }
 
   function playFullWrap(callback) {
-    var paper  = document.getElementById('bqPaperRect');
-    var ribbon = document.getElementById('bqRibRect');
-    var bow    = document.getElementById('bqBowG');
-    var cont   = document.getElementById('bwContainer');
+    var stageImg = document.getElementById('bqStageImg');
+    var cont     = document.getElementById('bwContainer');
 
-    if (!paper) { if (callback) callback(); return; }
-
-    // 1. Paper shoots up to full height with bounce
-    var finalY = BQ_VBH - BQ_PAPER_H;  // = 165
-    if (typeof gsap !== 'undefined') {
-      gsap.to(paper,  { attr: { y: finalY, height: BQ_PAPER_H }, duration: 0.42, ease: 'back.out(1.6)' });
-      if (ribbon) gsap.to(ribbon, { attr: { y: finalY, height: BQ_PAPER_H }, opacity: 0.9, duration: 0.42, ease: 'back.out(1.6)' });
-    } else {
-      paper.setAttribute('y', finalY);
-      paper.setAttribute('height', BQ_PAPER_H);
-      if (ribbon) { ribbon.setAttribute('y', finalY); ribbon.setAttribute('height', BQ_PAPER_H); ribbon.setAttribute('opacity', '0.9'); }
+    // 1. Ensure final bouquet stage is shown
+    if (stageImg) {
+      if (typeof gsap !== 'undefined') {
+        gsap.to(stageImg, {
+          opacity: 0, scale: 0.94, duration: 0.18, ease: 'power2.in',
+          onComplete: function () {
+            stageImg.src = 'bq-stage-5.png';
+            gsap.to(stageImg, { opacity: 1, scale: 1.06, duration: 0.35, ease: 'back.out(1.8)',
+              onComplete: function () {
+                gsap.to(stageImg, { scale: 1, duration: 0.25, ease: 'power2.out' });
+              },
+            });
+          },
+        });
+      } else {
+        stageImg.src = 'bq-stage-5.png';
+        stageImg.style.opacity = '1';
+      }
     }
 
-    // 2. Bow pops in at BQ_PAPER_TOP
+    // 2. Sparkle burst from bouquet centre
     setTimeout(function () {
-      if (!bow) return;
-      if (typeof gsap !== 'undefined') {
-        gsap.fromTo(bow,
-          { scale: 0, opacity: 0, svgOrigin: '160 ' + finalY },
-          { scale: 1, opacity: 1, duration: 0.45, ease: 'back.out(2.8)' }
-        );
-      } else {
-        bow.setAttribute('opacity', '1');
-      }
-    }, 440);
-
-    // 3. Sparkle burst from centre of bouquet
-    setTimeout(function () {
-      var masterSvg = document.getElementById('bqMasterSvg');
-      var base = masterSvg ? masterSvg.getBoundingClientRect()
-                           : (cont ? cont.getBoundingClientRect() : null);
+      var base = stageImg ? stageImg.getBoundingClientRect()
+                          : (cont ? cont.getBoundingClientRect() : null);
       if (!base) return;
       var cx     = base.left + base.width  * 0.50;
-      var cy     = base.top  + base.height * 0.38;
+      var cy     = base.top  + base.height * 0.35;
       var sparks = ['#FF4D8B','#FFD600','#C084FC','#7DDFFF','#FF9800','#4CAF60','#FF5FAE','#FFE566'];
-      for (var i = 0; i < 14; i++) {
+      for (var i = 0; i < 16; i++) {
         (function (i) {
           var sp  = document.createElement('div');
           sp.className = 'bq-spark';
-          var ang = (i / 14) * Math.PI * 2;
-          var d   = 24 + Math.random() * 28;
+          var ang = (i / 16) * Math.PI * 2;
+          var d   = 26 + Math.random() * 32;
           sp.style.cssText = [
             'left:' + (cx - 4.5) + 'px',
             'top:'  + (cy - 4.5) + 'px',
             'background:' + sparks[i % sparks.length],
             '--sx:' + Math.round(Math.cos(ang) * d) + 'px',
             '--sy:' + Math.round(Math.sin(ang) * d) + 'px',
-            'animation-delay:' + (i * 30) + 'ms',
+            'animation-delay:' + (i * 28) + 'ms',
           ].join(';');
           document.body.appendChild(sp);
-          setTimeout(function () { sp.parentNode && sp.parentNode.removeChild(sp); }, 1200);
+          setTimeout(function () { sp.parentNode && sp.parentNode.removeChild(sp); }, 1300);
         }(i));
       }
-    }, 580);
+    }, 400);
 
-    // 4. Callback after animation settles
+    // 3. Callback after animation settles
     setTimeout(function () { if (callback) callback(); }, 1700);
   }
 
   function resetWrap() {
-    var paper  = document.getElementById('bqPaperRect');
-    var ribbon = document.getElementById('bqRibRect');
-    var bow    = document.getElementById('bqBowG');
-    if (paper)  { paper.setAttribute('y', BQ_VBH);  paper.setAttribute('height', '0'); }
-    if (ribbon) { ribbon.setAttribute('y', BQ_VBH); ribbon.setAttribute('height', '0'); ribbon.setAttribute('opacity', '0'); }
-    if (bow)    { bow.setAttribute('opacity', '0');  if (typeof gsap !== 'undefined') gsap.set(bow, { scale: 0 }); }
+    var stageImg = document.getElementById('bqStageImg');
+    if (stageImg) {
+      stageImg.src     = '';
+      stageImg.style.opacity = '0';
+      if (typeof gsap !== 'undefined') gsap.set(stageImg, { scale: 1, opacity: 0, clearProps: 'transform' });
+    }
   }
 
   // ── Public ────────────────────────────────────────────────────
@@ -1452,14 +1347,6 @@ var bouquetGame = (function () {
     activePetG     = null;
     ghostEl        = document.getElementById('waterDragGhost');
     if (ghostEl) ghostEl.style.display = 'none';
-    // Clear all flower slots in the master bouquet SVG
-    [0, 1, 2, 3, 4, 5].forEach(function (i) {
-      var g = document.getElementById('bqF' + i);
-      if (!g) return;
-      g.innerHTML = '';
-      g.removeAttribute('transform');
-      if (typeof gsap !== 'undefined') gsap.set(g, { clearProps: 'all' });
-    });
     resetWrap();
     loadFlower(0);
     bindCan();   // attaches all listeners to canEl with pointer capture
