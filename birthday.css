@@ -1487,3 +1487,74 @@ h1 {
   80%  { opacity: 0.4; }
   100% { opacity: 0;   transform: translateY(-130px) scale(1.1); }
 }
+
+/* ── Responsive: small phones (≤390px wide) ────────────────────── */
+@media (max-width: 390px) {
+  /* Shrink progress bar so it doesn't eat too much vertical space */
+  .progress-wrap { height: 52px; }
+  .screens-container { inset: 52px 0 0 0; }
+  .prog-start { width: 16px; height: 16px; }
+  .plat       { width: 14px; height: 14px; }
+  .prog-goal  { font-size: 18px; }
+  .heart-sprite { font-size: 16px; }
+
+  /* Welcome screen */
+  .cake-anim  { font-size: 60px; }
+  .btn-go     { padding: 14px 36px; font-size: 16px; }
+  .welcome-sub { font-size: 14px; }
+
+  /* Question screens */
+  .q-icon   { font-size: 52px; }
+  .q-text   { font-size: clamp(18px, 5.5vw, 24px); }
+  .choices  { max-width: 260px; gap: 10px; }
+  .choice   { padding: 14px 8px; font-size: 17px; border-radius: 14px; }
+
+  /* Screen padding */
+  .screen   { padding: 16px 18px; gap: 12px; }
+  .popup    { max-width: 260px; padding: 14px 18px 12px; font-size: 14px; }
+
+  /* Bouquet game */
+  .bq-stage-wrap { max-height: 38vw; }
+  .active-flower-zone { gap: 4px; }
+  .flower-name   { font-size: 14px; }
+  .flower-counter { font-size: 12px; }
+
+  /* Feed pet */
+  .feed-bar-wrap { height: 24px; }
+  .feed-pet-zone { max-height: 120px; }
+
+  /* Catch game */
+  .game-title { font-size: 15px; }
+  .catch-counter { font-size: 22px; }
+}
+
+/* ── Responsive: short phones (≤680px tall) — landscape / SE ───── */
+@media (max-height: 680px) {
+  .progress-wrap { height: 48px; }
+  .screens-container { inset: 48px 0 0 0; }
+  .screen { padding: 12px 20px; gap: 8px; }
+  .cake-anim { font-size: 48px; }
+  .q-icon    { font-size: 44px; }
+  .choices   { gap: 8px; }
+  .choice    { padding: 12px 8px; font-size: 16px; }
+  .btn-go    { padding: 12px 32px; font-size: 15px; }
+
+  /* Bouquet / feed — compress vertical space */
+  .bq-stage-wrap { max-height: 32vw; }
+  .active-flower-zone { gap: 2px; }
+  .watering-shelf { padding: 6px 0 0; }
+  .feed-pet-zone  { max-height: 100px; }
+}
+
+/* ── Responsive: wide screens (≥600px) — tablet / desktop ─────── */
+@media (min-width: 600px) {
+  .screen    { padding: 32px 48px; max-width: 560px; margin: 0 auto; }
+  .choices   { max-width: 380px; }
+  .choices-col { max-width: 300px; }
+  .choice    { font-size: 22px; padding: 20px 14px; }
+  .btn-go    { font-size: 20px; padding: 20px 56px; }
+  .popup     { max-width: 380px; font-size: 16px; }
+  .q-icon    { font-size: 80px; }
+  .cake-anim { font-size: 96px; }
+  h1         { font-size: clamp(32px, 6vw, 44px); }
+}

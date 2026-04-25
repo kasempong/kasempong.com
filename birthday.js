@@ -2166,6 +2166,12 @@ function _drawShareCard(bgImg, revealImg, finalMsgText) {
   document.addEventListener('click',      onFirstInteraction);
   document.addEventListener('touchstart', onFirstInteraction, { passive: true });
 
+  // ── Cleanup: stop scheduler when page is hidden / unloaded ───
+  window.addEventListener('pagehide', function () {
+    if (schedTimer) { clearTimeout(schedTimer); schedTimer = null; }
+    if (audioCtx)   { audioCtx.close().catch(function () {}); }
+  });
+
   // ── Music toggle button ───────────────────────────────────────
   musicBtn.addEventListener('click', function (e) {
     e.stopPropagation();
