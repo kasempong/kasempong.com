@@ -1159,6 +1159,23 @@ h1 {
   z-index: 9998;
 }
 
+/* ── Growing flower stage-up emoji burst ─────────────────────────── */
+@keyframes growBurstEmoji {
+  0%   { transform: translate(0, 0) scale(0.5); opacity: 0; }
+  20%  { opacity: 1; }
+  80%  { opacity: 0.85; }
+  100% { transform: translate(var(--ex), var(--ey)) scale(1.2); opacity: 0; }
+}
+
+.grow-burst-emoji {
+  position: fixed;
+  pointer-events: none;
+  z-index: 9999;
+  user-select: none;
+  animation: growBurstEmoji 1.0s cubic-bezier(0.22, 0.68, 0, 1.2) forwards;
+  filter: drop-shadow(0 0 4px rgba(255,200,255,0.7));
+}
+
 /* ── Full bouquet sparkle burst ───────────────────────────────────── */
 @keyframes bqSparkle {
   0%   { transform: translate(0, 0) scale(1); opacity: 1; }

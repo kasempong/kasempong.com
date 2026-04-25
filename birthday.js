@@ -687,15 +687,18 @@ var feedGame = (function () {
 
 // ── Build the Bouquet (SVG + GSAP) ────────────────────────────────
 var bouquetGame = (function () {
-  // ── Flower definitions (watercolor PNG sprites) ──────────────
+  // ── Flower definitions — each has 4 growth stages ────────────
   var DEFS = [
-    { flImg: 'fl-0.png', label: '🌸 Rose',        name: 'Rose' },
-    { flImg: 'fl-1.png', label: '🌸 Lily',        name: 'Lily' },
-    { flImg: 'fl-2.png', label: '🌷 Tulip',       name: 'Tulip' },
-    { flImg: 'fl-3.png', label: '🌼 Gerbera',     name: 'Gerbera' },
-    { flImg: 'fl-4.png', label: '🌺 Carnation',   name: 'Carnation' },
-    { flImg: 'fl-5.png', label: '💜 Purple Rose', name: 'Purple Rose' },
+    { stages: ['fl-0-s0.webp','fl-0-s1.webp','fl-0-s2.webp','fl-0-s3.webp'], label: '🌸 Rose',           name: 'Rose' },
+    { stages: ['fl-1-s0.webp','fl-1-s1.webp','fl-1-s2.webp','fl-1-s3.webp'], label: '🌸 Spray Rose',     name: 'Spray Rose' },
+    { stages: ['fl-2-s0.webp','fl-2-s1.webp','fl-2-s2.webp','fl-2-s3.webp'], label: '🌷 Carnation',      name: 'Carnation' },
+    { stages: ['fl-3-s0.webp','fl-3-s1.webp','fl-3-s2.webp','fl-3-s3.webp'], label: '🌺 Lisianthus',     name: 'Lisianthus' },
+    { stages: ['fl-4-s0.webp','fl-4-s1.webp','fl-4-s2.webp','fl-4-s3.webp'], label: '💜 Stock Flower',   name: 'Stock Flower' },
+    { stages: ['fl-5-s0.webp','fl-5-s1.webp','fl-5-s2.webp','fl-5-s3.webp'], label: '🌿 Wax Flower',     name: 'Wax Flower' },
   ];
+
+  // Stage thresholds: switch image when fillPct crosses each boundary
+  var STAGE_BREAKS = [0, 33, 66, 99]; // pct at which each stage image shows
 
   var FILL_DIST = 450;   // px drag = 100% fill
   var HIT_PAD   = 60;    // px padding around flower hit zone
@@ -718,30 +721,66 @@ var bouquetGame = (function () {
   var _onCanMove     = null;
   var _onCanUp       = null;
   var _lastSparkTime = 0;
+  var _currentStage  = 0;   // which stage image is currently shown (0-3)
 
   // ── Watering sparkle burst ────────────────────────────────────
-  function spawnWaterSparks(flEl) {
+  function spawnWaterSparks(flEl, intensity) {
     if (!flEl) return;
+    intensity = intensity || 1;
     var r  = flEl.getBoundingClientRect();
     var cx = r.left + r.width  * 0.50;
     var cy = r.top  + r.height * 0.38;
-    var colors = ['#7DDFFF','#FFB3E6','#FFD700','#C084FC','#FF9FE5','#80FFD4','#FFFFFF'];
-    for (var i = 0; i < 5; i++) {
+    var colors = ['#7DDFFF','#FFB3E6','#FFD700','#C084FC','#FF9FE5','#80FFD4','#FFFFFF','#FFA5C8'];
+    var count = Math.round(5 * intensity);
+    for (var i = 0; i < count; i++) {
       (function (i) {
         var sp  = document.createElement('div');
         sp.className = 'water-spark';
         var ang = Math.random() * Math.PI * 2;
-        var d   = 16 + Math.random() * 24;
+        var d   = (18 + Math.random() * 32) * intensity;
         sp.style.cssText = [
-          'left:'       + (cx - 3) + 'px',
-          'top:'        + (cy - 3) + 'px',
+          'left:'       + (cx + (Math.random()-0.5)*r.width*0.5 - 3) + 'px',
+          'top:'        + (cy + (Math.random()-0.5)*r.height*0.3 - 3) + 'px',
           'background:' + colors[Math.floor(Math.random() * colors.length)],
           '--wx:'       + Math.round(Math.cos(ang) * d) + 'px',
           '--wy:'       + Math.round(Math.sin(ang) * d) + 'px',
-          'animation-delay:' + (i * 25) + 'ms',
+          'animation-delay:' + (i * 20) + 'ms',
+          'width:'      + (4 + Math.random()*5) + 'px',
+          'height:'     + (4 + Math.random()*5) + 'px',
         ].join(';');
         document.body.appendChild(sp);
-        setTimeout(function () { sp.parentNode && sp.parentNode.removeChild(sp); }, 650);
+        setTimeout(function () { sp.parentNode && sp.parentNode.removeChild(sp); }, 750);
+      }(i));
+    }
+  }
+
+  // ── Stage-up burst: big pop + emoji floaters when flower grows ──
+  function stageUpBurst(flEl, stage) {
+    if (!flEl) return;
+    var r  = flEl.getBoundingClientRect();
+    var cx = r.left + r.width  * 0.5;
+    var cy = r.top  + r.height * 0.4;
+    var emojis = ['✨','🌸','💧','⭐','💕','🌿','💦'];
+    // Big sparkle shower
+    spawnWaterSparks(flEl, 2.5);
+    // Floating emoji particles
+    for (var i = 0; i < 6; i++) {
+      (function(i) {
+        var em = document.createElement('div');
+        em.className = 'grow-burst-emoji';
+        em.textContent = emojis[Math.floor(Math.random() * emojis.length)];
+        var ox = (Math.random() - 0.5) * r.width * 1.4;
+        var oy = -(50 + Math.random() * 80);
+        em.style.cssText = [
+          'left:'  + (cx - 12 + ox * 0.3) + 'px',
+          'top:'   + (cy - 12) + 'px',
+          '--ex:'  + Math.round(ox) + 'px',
+          '--ey:'  + Math.round(oy) + 'px',
+          'animation-delay:' + (i * 55) + 'ms',
+          'font-size:' + (16 + Math.random() * 10) + 'px',
+        ].join(';');
+        document.body.appendChild(em);
+        setTimeout(function() { em.parentNode && em.parentNode.removeChild(em); }, 1200);
       }(i));
     }
   }
@@ -778,8 +817,12 @@ var bouquetGame = (function () {
     var wrap = document.getElementById('activeFlowerWrap');
     if (!wrap) return;
 
-    // Snap to full bloom
+    // Snap to full bloom (stage 3)
     if (activePetG) {
+      var finalStages = DEFS[currentFlower] && DEFS[currentFlower].stages;
+      if (finalStages && finalStages[3] && activePetG.src.indexOf(finalStages[3]) === -1) {
+        activePetG.src = finalStages[3];
+      }
       if (typeof gsap !== 'undefined') {
         gsap.set(activePetG, { scale: 1, opacity: 1 });
       } else {
@@ -849,12 +892,12 @@ var bouquetGame = (function () {
       gsap.to(stageImg, {
         opacity: 0, scale: 0.94, duration: 0.18, ease: 'power2.in',
         onComplete: function () {
-          stageImg.src = 'bq-stage-' + stageN + '.png';
+          stageImg.src = 'bq-stage-' + stageN + '.webp';
           gsap.to(stageImg, { opacity: 1, scale: 1, duration: 0.40, ease: 'back.out(1.6)' });
         },
       });
     } else {
-      stageImg.src     = 'bq-stage-' + stageN + '.png';
+      stageImg.src     = 'bq-stage-' + stageN + '.webp';
       stageImg.style.opacity = '1';
     }
 
@@ -871,10 +914,13 @@ var bouquetGame = (function () {
     activeTimeline = null;
     wrap.innerHTML = '';
     fillPct = 0;
+    _currentStage  = 0;
     setRing(0);
 
+    _currentStage = 0;
+
     var img = document.createElement('img');
-    img.src       = DEFS[idx].flImg;
+    img.src       = DEFS[idx].stages[0];   // start at seed/bud stage
     img.className = 'active-flower-img';
     img.draggable = false;
     img.alt       = DEFS[idx].label || '';
@@ -945,22 +991,47 @@ var bouquetGame = (function () {
           // GSAP scrub (full multi-element animation)
           activeTimeline.progress(fillPct / 100);
         } else if (activePetG) {
-          // PNG mode: scale img from 0.55 (bud) → 1.0 (full bloom)
-          var sc = 0.55 + (fillPct / 100) * 0.45;
-          if (typeof gsap !== 'undefined') {
-            gsap.set(activePetG, { scale: sc });
-          } else {
-            activePetG.style.transform = 'scale(' + sc.toFixed(3) + ')';
+          // Stage-image mode: advance through growth stages at 33%/66%/99%
+          var newStage = 0;
+          for (var si = STAGE_BREAKS.length - 1; si >= 0; si--) {
+            if (fillPct >= STAGE_BREAKS[si]) { newStage = si; break; }
+          }
+          if (newStage !== _currentStage && activePetG) {
+            var prevStage = _currentStage;
+            _currentStage = newStage;
+            var stages = DEFS[currentFlower].stages;
+            if (stages[newStage]) {
+              var nextSrc = stages[newStage];
+              // Crossfade: fade out → swap src → fade in
+              if (typeof gsap !== 'undefined') {
+                gsap.to(activePetG, {
+                  opacity: 0, scale: 0.72, duration: 0.12, ease: 'power1.in',
+                  onComplete: function() {
+                    activePetG.src = nextSrc;
+                    gsap.to(activePetG, { opacity: 1, scale: 1.05, duration: 0.22, ease: 'back.out(1.6)',
+                      onComplete: function() { gsap.to(activePetG, { scale: 1, duration: 0.15 }); }
+                    });
+                  }
+                });
+              } else {
+                activePetG.src = nextSrc;
+              }
+              // Stage-up burst only when advancing (not going back)
+              if (newStage > prevStage) {
+                stageUpBurst(activePetG, newStage);
+              }
+            }
           }
         }
         setRing(fillPct);
 
-        // Glow + sparkle while watering
+        // Glow + sparkle while watering — intensity scales with progress
         setFlowerGlow(activePetG, fillPct);
+        var sparkInterval = Math.max(45, 90 - fillPct * 0.4);   // faster sparks near full
         var nowTs = Date.now();
-        if (dist > 1 && nowTs - _lastSparkTime > 80) {
+        if (dist > 1 && nowTs - _lastSparkTime > sparkInterval) {
           _lastSparkTime = nowTs;
-          spawnWaterSparks(activePetG);
+          spawnWaterSparks(activePetG, 0.8 + fillPct * 0.012);
         }
 
         if (fillPct >= 100) {
@@ -1048,7 +1119,7 @@ var bouquetGame = (function () {
 
     // 1. Ensure final bouquet stage is shown
     // Guard: if bq-stage-5 is already displayed, skip the crossfade and just bounce
-    var alreadyFinal = stageImg && stageImg.src && stageImg.src.endsWith('bq-stage-5.png');
+    var alreadyFinal = stageImg && stageImg.src && stageImg.src.endsWith('bq-stage-5.webp');
     if (stageImg) {
       if (typeof gsap !== 'undefined') {
         if (alreadyFinal) {
@@ -1062,7 +1133,7 @@ var bouquetGame = (function () {
           gsap.to(stageImg, {
             opacity: 0, scale: 0.94, duration: 0.18, ease: 'power2.in',
             onComplete: function () {
-              stageImg.src = 'bq-stage-5.png';
+              stageImg.src = 'bq-stage-5.webp';
               gsap.to(stageImg, { opacity: 1, scale: 1.06, duration: 0.35, ease: 'back.out(1.8)',
                 onComplete: function () {
                   gsap.to(stageImg, { scale: 1, duration: 0.25, ease: 'power2.out' });
@@ -1072,7 +1143,7 @@ var bouquetGame = (function () {
           });
         }
       } else {
-        stageImg.src = 'bq-stage-5.png';
+        stageImg.src = 'bq-stage-5.webp';
         stageImg.style.opacity = '1';
       }
     }
