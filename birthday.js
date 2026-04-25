@@ -710,8 +710,6 @@ var bouquetGame = (function () {
   var lastX = 0, lastY = 0;
   var activeTimeline = null;
   var activePetG     = null;   // fallback ref when GSAP isn't available
-  var activeCX       = 0;
-  var activeFY       = 0;
   var ghostEl        = null;
   var canEl          = null;
   var _doneTimer     = null;
@@ -756,7 +754,7 @@ var bouquetGame = (function () {
 
   // ── Stage-up burst: big pop + emoji floaters when flower grows ──
   function stageUpBurst(flEl, stage) {
-    if (!flEl) return;
+    if (!flEl || !flEl.parentNode) return;   // guard: element must still be in DOM
     var r  = flEl.getBoundingClientRect();
     var cx = r.left + r.width  * 0.5;
     var cy = r.top  + r.height * 0.4;
@@ -886,7 +884,7 @@ var bouquetGame = (function () {
     var stageImg = document.getElementById('bqStageImg');
     if (!stageImg) return;
 
-    var stageN = Math.min(idx, 5);  // bq-stage-0 … bq-stage-5
+    var stageN = Math.min(idx, DEFS.length - 1);  // bq-stage-0 … bq-stage-(n-1)
     if (typeof gsap !== 'undefined') {
       // Crossfade: dip then reveal new stage
       gsap.to(stageImg, {
@@ -913,11 +911,11 @@ var bouquetGame = (function () {
     activePetG     = null;
     activeTimeline = null;
     wrap.innerHTML = '';
-    fillPct = 0;
-    _currentStage  = 0;
+    fillPct       = 0;
+    _currentStage = 0;
     setRing(0);
 
-    _currentStage = 0;
+    if (!DEFS[idx] || !DEFS[idx].stages) return;   // bounds guard
 
     var img = document.createElement('img');
     img.src       = DEFS[idx].stages[0];   // start at seed/bud stage
@@ -996,25 +994,30 @@ var bouquetGame = (function () {
           for (var si = STAGE_BREAKS.length - 1; si >= 0; si--) {
             if (fillPct >= STAGE_BREAKS[si]) { newStage = si; break; }
           }
-          if (newStage !== _currentStage && activePetG) {
+          // Guard: DEFS[currentFlower] must be valid; fillPct only grows so no backward regression
+          var flDef = DEFS[currentFlower];
+          if (newStage !== _currentStage && activePetG && flDef && flDef.stages) {
             var prevStage = _currentStage;
             _currentStage = newStage;
-            var stages = DEFS[currentFlower].stages;
+            var stages = flDef.stages;
             if (stages[newStage]) {
               var nextSrc = stages[newStage];
+              // Capture refs so GSAP callbacks are safe even if activePetG is later nulled
+              var imgRef = activePetG;
               // Crossfade: fade out → swap src → fade in
               if (typeof gsap !== 'undefined') {
-                gsap.to(activePetG, {
+                gsap.to(imgRef, {
                   opacity: 0, scale: 0.72, duration: 0.12, ease: 'power1.in',
                   onComplete: function() {
-                    activePetG.src = nextSrc;
-                    gsap.to(activePetG, { opacity: 1, scale: 1.05, duration: 0.22, ease: 'back.out(1.6)',
-                      onComplete: function() { gsap.to(activePetG, { scale: 1, duration: 0.15 }); }
+                    if (!imgRef.parentNode) return;   // guard: element may have been removed
+                    imgRef.src = nextSrc;
+                    gsap.to(imgRef, { opacity: 1, scale: 1.05, duration: 0.22, ease: 'back.out(1.6)',
+                      onComplete: function() { if (imgRef.parentNode) gsap.to(imgRef, { scale: 1, duration: 0.15 }); }
                     });
                   }
                 });
               } else {
-                activePetG.src = nextSrc;
+                if (imgRef.parentNode) imgRef.src = nextSrc;
               }
               // Stage-up burst only when advancing (not going back)
               if (newStage > prevStage) {
@@ -1225,7 +1228,7 @@ var bouquetGame = (function () {
     if (ghostEl) ghostEl.style.display = 'none';
     if (canEl)   canEl.classList.remove('can-held');
     // Clean up any in-flight burst particles left over from rapid navigation
-    document.querySelectorAll('.bq-heart, .bq-spark').forEach(function (el) { el.parentNode && el.parentNode.removeChild(el); });
+    document.querySelectorAll('.bq-heart, .bq-spark, .water-spark, .grow-burst-emoji').forEach(function (el) { el.parentNode && el.parentNode.removeChild(el); });
   }
 
   function showBouquetReveal(callback) {
