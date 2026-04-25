@@ -414,10 +414,12 @@ var catchGame = (function () {
 
     hearts.splice(hitIdx, 1);
     caught++;
+    if (window.playHeartPop) window.playHeartPop();
     document.getElementById('catchCounter').textContent = caught + ' / 10';
 
     if (caught >= total) {
       stop();
+      if (window.playGameComplete) window.playGameComplete();
       heartStep++;
       advanceHeart(heartStep);
       setTimeout(function () { goTo(3); }, 600);  // → s-mag2 (momo cheer)
@@ -504,6 +506,7 @@ var feedGame = (function () {
     if (petDone) return;
     petDone  = true;
     dragging = false;
+    if (window.playFeedNom) window.playFeedNom();
 
     var ghost = document.getElementById('feedDragGhost');
     if (ghost) ghost.style.display = 'none';
@@ -533,6 +536,7 @@ var feedGame = (function () {
     if (currentPet < PETS.length) {
       _nextPetTimer = setTimeout(function () { petDone = false; showPet(); }, 800);
     } else {
+      if (window.playGameComplete) window.playGameComplete();
       _nextPetTimer = setTimeout(function () {
         heartStep++;
         advanceHeart(heartStep);
@@ -718,8 +722,9 @@ var bouquetGame = (function () {
   var _canDown       = null;
   var _onCanMove     = null;
   var _onCanUp       = null;
-  var _lastSparkTime = 0;
-  var _currentStage  = 0;   // which stage image is currently shown (0-3)
+  var _lastSparkTime  = 0;
+  var _waterSoundTime = 0;
+  var _currentStage   = 0;   // which stage image is currently shown (0-3)
 
   // ── Watering sparkle burst ────────────────────────────────────
   function spawnWaterSparks(flEl, intensity) {
@@ -761,6 +766,7 @@ var bouquetGame = (function () {
     var emojis = ['✨','🌸','💧','⭐','💕','🌿','💦'];
     // Big sparkle shower
     spawnWaterSparks(flEl, 2.5);
+    if (window.playSparkleChime) window.playSparkleChime();
     // Floating emoji particles
     for (var i = 0; i < 6; i++) {
       (function(i) {
@@ -860,6 +866,7 @@ var bouquetGame = (function () {
           dragging = false;
           if (ghostEl) ghostEl.style.display = 'none';
           if (canEl)   canEl.classList.remove('can-held');
+          if (window.playGameComplete) window.playGameComplete();
           // Animate bouquet wrap, then advance
           playFullWrap(function () {
             showBouquetReveal(function () {
@@ -1035,6 +1042,10 @@ var bouquetGame = (function () {
         if (dist > 1 && nowTs - _lastSparkTime > sparkInterval) {
           _lastSparkTime = nowTs;
           spawnWaterSparks(activePetG, 0.8 + fillPct * 0.012);
+        }
+        if (dist > 1 && nowTs - _waterSoundTime > 150) {
+          _waterSoundTime = nowTs;
+          if (window.playWaterDrip) window.playWaterDrip();
         }
 
         if (fillPct >= 100) {
@@ -2039,6 +2050,101 @@ function _drawShareCard(bgImg, revealImg, finalMsgText) {
       env.connect(audioCtx.destination);
       osc.start(t);
       osc.stop(t + 0.7);
+    });
+  };
+
+  // ── Heart pop (catch hearts — one pip per caught heart) ──────
+  window.playHeartPop = function () {
+    if (!audioCtx || musicMuted) return;
+    var now = audioCtx.currentTime;
+    var osc = audioCtx.createOscillator();
+    var env = audioCtx.createGain();
+    osc.type = 'sine';
+    osc.frequency.setValueAtTime(600, now);
+    osc.frequency.exponentialRampToValueAtTime(1200, now + 0.10);
+    env.gain.setValueAtTime(0.20, now);
+    env.gain.exponentialRampToValueAtTime(0.0001, now + 0.12);
+    osc.connect(env);
+    env.connect(audioCtx.destination);
+    osc.start(now);
+    osc.stop(now + 0.15);
+  };
+
+  // ── Feed nom (feeding pet — two-note bounce per pet satisfied) ─
+  window.playFeedNom = function () {
+    if (!audioCtx || musicMuted) return;
+    var now = audioCtx.currentTime;
+    [[523.25, 0], [392.00, 0.09]].forEach(function (pair) {
+      var t   = now + pair[1];
+      var osc = audioCtx.createOscillator();
+      var env = audioCtx.createGain();
+      osc.type = 'triangle';
+      osc.frequency.value = pair[0];
+      env.gain.setValueAtTime(0.18, t);
+      env.gain.exponentialRampToValueAtTime(0.0001, t + 0.14);
+      osc.connect(env);
+      env.connect(audioCtx.destination);
+      osc.start(t);
+      osc.stop(t + 0.18);
+    });
+  };
+
+  // ── Water drip (bouquet watering — throttled 150 ms, randomised pitch) ──
+  window.playWaterDrip = function () {
+    if (!audioCtx || musicMuted) return;
+    var now  = audioCtx.currentTime;
+    var freq = 400 + Math.random() * 300;   // 400–700 Hz randomised
+    var osc  = audioCtx.createOscillator();
+    var env  = audioCtx.createGain();
+    osc.type = 'sine';
+    osc.frequency.setValueAtTime(freq, now);
+    osc.frequency.exponentialRampToValueAtTime(freq * 0.55, now + 0.18);
+    env.gain.setValueAtTime(0.12, now);
+    env.gain.exponentialRampToValueAtTime(0.0001, now + 0.22);
+    osc.connect(env);
+    env.connect(audioCtx.destination);
+    osc.start(now);
+    osc.stop(now + 0.25);
+  };
+
+  // ── Sparkle chime (flower stage-up: ascending C5→E5→G5→C6) ──
+  window.playSparkleChime = function () {
+    if (!audioCtx || musicMuted) return;
+    var now = audioCtx.currentTime;
+    [523.25, 659.25, 783.99, 1046.50].forEach(function (freq, i) {
+      var t   = now + i * 0.10;
+      var osc = audioCtx.createOscillator();
+      var env = audioCtx.createGain();
+      osc.type = 'sine';
+      osc.frequency.value = freq;
+      env.gain.setValueAtTime(0.0001, t);
+      env.gain.linearRampToValueAtTime(0.22, t + 0.01);
+      env.gain.exponentialRampToValueAtTime(0.0001, t + 0.45);
+      osc.connect(env);
+      env.connect(audioCtx.destination);
+      osc.start(t);
+      osc.stop(t + 0.55);
+    });
+  };
+
+  // ── Game complete fanfare (short triumphant melody, end of each mini-game) ──
+  window.playGameComplete = function () {
+    if (!audioCtx || musicMuted) return;
+    var now = audioCtx.currentTime;
+    [[523.25, 0, 0.18], [659.25, 0.16, 0.18], [783.99, 0.30, 0.22],
+     [659.25, 0.50, 0.14], [1046.5, 0.62, 0.40]].forEach(function (note) {
+      var t   = now + note[1];
+      var osc = audioCtx.createOscillator();
+      var env = audioCtx.createGain();
+      osc.type = 'triangle';
+      osc.frequency.value = note[0];
+      env.gain.setValueAtTime(0.0001, t);
+      env.gain.linearRampToValueAtTime(0.26, t + 0.012);
+      env.gain.exponentialRampToValueAtTime(0.0001, t + note[2]);
+      osc.connect(env);
+      env.connect(audioCtx.destination);
+      osc.start(t);
+      osc.stop(t + note[2] + 0.1);
     });
   };
 
