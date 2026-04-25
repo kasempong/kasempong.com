@@ -1,0 +1,6 @@
+# Exclude build tooling — never deploy these as static assets
+node_modules/
+.claude/
+*.log
+.env
+.env.*
