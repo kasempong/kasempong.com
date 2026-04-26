@@ -3,31 +3,27 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
-  <title>3D Bouquet Test v2</title>
+  <title>3D Bouquet Test v3</title>
   <style>
     * { margin: 0; padding: 0; box-sizing: border-box; }
-    html, body { width: 100%; height: 100%; overflow: hidden; }
-    body {
-      background: radial-gradient(ellipse 120% 80% at 40% 35%,
-        #fce4ec 0%, #f3b8da 22%, #e1bee7 50%, #ffe0b2 80%, #ffd6e8 100%);
-    }
-    canvas { position: fixed; inset: 0; display: block; z-index: 1; }
+    html, body { width: 100%; height: 100%; overflow: hidden; background: #f2c8e4; }
+    canvas { position: fixed; top: 0; left: 0; width: 100%; height: 100%; display: block; }
     #hint {
       position: fixed; bottom: 28px; left: 50%; transform: translateX(-50%);
       font-family: -apple-system, BlinkMacSystemFont, sans-serif;
-      color: rgba(140, 45, 120, 0.9); font-size: 15px;
-      background: rgba(255,255,255,0.60);
+      color: rgba(140, 45, 120, 0.95); font-size: 15px;
+      background: rgba(255,255,255,0.72);
       backdrop-filter: blur(12px); -webkit-backdrop-filter: blur(12px);
       padding: 10px 22px; border-radius: 24px;
       pointer-events: none; white-space: nowrap;
-      box-shadow: 0 2px 16px rgba(180,80,160,0.15);
+      box-shadow: 0 2px 16px rgba(180,80,160,0.18);
       z-index: 10;
     }
     #bloomed {
       position: fixed; top: 18px; left: 50%; transform: translateX(-50%);
       font-family: -apple-system, sans-serif; font-size: 13px;
-      color: rgba(140,45,120,0.85);
-      background: rgba(255,255,255,0.55);
+      color: rgba(110,30,100,0.9);
+      background: rgba(255,255,255,0.68);
       backdrop-filter: blur(10px); -webkit-backdrop-filter: blur(10px);
       padding: 7px 18px; border-radius: 18px; pointer-events: none;
       z-index: 10;
@@ -35,9 +31,9 @@
     #errmsg {
       display: none;
       position: fixed; top: 50%; left: 50%; transform: translate(-50%,-50%);
-      font-family: -apple-system, sans-serif; font-size: 13px; color: #c00;
-      background: rgba(255,255,255,0.92); padding: 16px 20px; border-radius: 14px;
-      text-align: center; z-index: 20; max-width: 280px; line-height: 1.5;
+      font-family: -apple-system, sans-serif; font-size: 13px; color: #a00;
+      background: rgba(255,255,255,0.95); padding: 16px 20px; border-radius: 14px;
+      text-align: center; z-index: 20; max-width: 290px; line-height: 1.6;
     }
   </style>
 </head>
@@ -48,64 +44,65 @@
 <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
 <script>
 function showErr(msg) {
-  const el = document.getElementById('errmsg');
+  var el = document.getElementById('errmsg');
   el.textContent = '⚠️ ' + msg;
   el.style.display = 'block';
 }
 
 if (typeof THREE === 'undefined') {
   showErr('Three.js failed to load. Check connection and reload.');
-} else { try {
+} else {
 
-// ── Renderer ──────────────────────────────────────────────────────
-const renderer = new THREE.WebGLRenderer({
-  antialias: true,
-  alpha: true,
-  premultipliedAlpha: false   // fix iOS Safari alpha compositing
-});
+try {
+
+// ── Renderer — NO alpha, solid background (iOS Safari compositing fix) ──
+var renderer = new THREE.WebGLRenderer({ antialias: true });
 renderer.setPixelRatio(Math.min(window.devicePixelRatio, 2));
 renderer.setSize(window.innerWidth, window.innerHeight);
-renderer.setClearColor(0x000000, 0);
+renderer.setClearColor(0xf2c8e4, 1);   // warm pink, matches body bg
 document.body.appendChild(renderer.domElement);
 
 // ── Scene & Camera ────────────────────────────────────────────────
-const scene  = new THREE.Scene();
-const camera = new THREE.PerspectiveCamera(50, window.innerWidth / window.innerHeight, 0.1, 80);
-camera.position.set(0, 2, 8);   // closer (was z=10)
+var scene  = new THREE.Scene();
+var camera = new THREE.PerspectiveCamera(50, window.innerWidth / window.innerHeight, 0.1, 80);
+camera.position.set(0, 2, 8);
 camera.lookAt(0, 1.5, 0);
 
 // ── Lights ────────────────────────────────────────────────────────
-scene.add(new THREE.AmbientLight(0xfff0f8, 2.2));   // bright so petals never go dark
+scene.add(new THREE.AmbientLight(0xfff0f8, 2.2));
 
-const keyLight = new THREE.DirectionalLight(0xffe8f8, 1.2);
+var keyLight = new THREE.DirectionalLight(0xffe8f8, 1.2);
 keyLight.position.set(-3, 6, 5);
 scene.add(keyLight);
 
-const rimLight = new THREE.DirectionalLight(0xc8a0ff, 0.6);
+var rimLight = new THREE.DirectionalLight(0xc8a0ff, 0.6);
 rimLight.position.set(4, 2, -4);
 scene.add(rimLight);
 
-const sunLight = new THREE.PointLight(0xffee88, 9, 14);
+var sunLight = new THREE.PointLight(0xffee88, 9, 14);
 sunLight.position.set(2, 5, 4);
 scene.add(sunLight);
 
 // ── Sun visual ────────────────────────────────────────────────────
-const sunGroup = new THREE.Group();
+var sunGroup = new THREE.Group();
 scene.add(sunGroup);
+
 sunGroup.add(new THREE.Mesh(
   new THREE.SphereGeometry(0.22, 16, 16),
   new THREE.MeshBasicMaterial({ color: 0xffee22 })
 ));
-[{ r: 0.38, o: 0.18 }, { r: 0.62, o: 0.09 }, { r: 0.96, o: 0.04 }].forEach(({ r, o }) =>
+
+var glowDefs = [{ r: 0.38, o: 0.25 }, { r: 0.62, o: 0.12 }, { r: 0.96, o: 0.05 }];
+for (var gi = 0; gi < glowDefs.length; gi++) {
   sunGroup.add(new THREE.Mesh(
-    new THREE.SphereGeometry(r, 10, 10),
-    new THREE.MeshBasicMaterial({ color: 0xffee44, transparent: true, opacity: o })
-  ))
-);
+    new THREE.SphereGeometry(glowDefs[gi].r, 10, 10),
+    new THREE.MeshBasicMaterial({ color: 0xffee44, transparent: true, opacity: glowDefs[gi].o })
+  ));
+}
 sunGroup.position.copy(sunLight.position);
 
 // ── Flower definitions ────────────────────────────────────────────
-const FLOWER_DEFS = [
+var FLOWER_DEFS = [
   [0xf8a8c4, 0xffd8a8,  6, 0.60, 0.24],
   [0xe0a0dc, 0xffeec0,  5, 0.52, 0.21],
   [0xffc8d8, 0xffe8c0,  7, 0.44, 0.18],
@@ -114,7 +111,7 @@ const FLOWER_DEFS = [
   [0xffbac4, 0xfff4c0,  8, 0.38, 0.16],
 ];
 
-const HEADS = [
+var HEADS = [
   [ 0.00, 4.30,  0.00],
   [-0.80, 3.80, -0.15],
   [ 0.80, 3.80, -0.15],
@@ -124,74 +121,69 @@ const HEADS = [
 ];
 
 // ── Build bouquet ─────────────────────────────────────────────────
-const bouquet = new THREE.Group();
+var bouquet = new THREE.Group();
 bouquet.position.set(0, -2.0, 0);
 scene.add(bouquet);
 
-const stemMat = new THREE.MeshPhongMaterial({ color: 0x5a9848 });
-const leafMat = new THREE.MeshPhongMaterial({ color: 0x6aaa52, side: THREE.DoubleSide });
-// PlaneGeometry for leaves — iOS-safe (no bezier)
-const lGeo = new THREE.PlaneGeometry(0.24, 0.42);
+var stemMat = new THREE.MeshPhongMaterial({ color: 0x5a9848 });
+var leafMat = new THREE.MeshPhongMaterial({ color: 0x6aaa52, side: THREE.DoubleSide });
+var lGeo    = new THREE.PlaneGeometry(0.24, 0.42);
 
-const flowers = [];
+var flowers = [];
 
-HEADS.forEach(([hx, hy, hz], i) => {
-  const [pCol, cCol, nP, pLen, pWid] = FLOWER_DEFS[i];
+for (var fi = 0; fi < HEADS.length; fi++) {
+  var hx = HEADS[fi][0], hy = HEADS[fi][1], hz = HEADS[fi][2];
+  var pCol = FLOWER_DEFS[fi][0], cCol = FLOWER_DEFS[fi][1];
+  var nP   = FLOWER_DEFS[fi][2], pLen = FLOWER_DEFS[fi][3], pWid = FLOWER_DEFS[fi][4];
 
-  // Stem — slightly thicker so it reads at distance
-  const stemMesh = new THREE.Mesh(
-    new THREE.CylinderGeometry(0.028, 0.048, hy, 7), stemMat);
-  stemMesh.position.set(hx, hy / 2, hz);
-  bouquet.add(stemMesh);
+  // Stem
+  var stem = new THREE.Mesh(new THREE.CylinderGeometry(0.028, 0.048, hy, 7), stemMat);
+  stem.position.set(hx, hy / 2, hz);
+  bouquet.add(stem);
 
-  // 2 leaves per stem
-  for (let l = 0; l < 2; l++) {
-    const leaf = new THREE.Mesh(lGeo, leafMat);
-    const side = l % 2 ? 1 : -1;
-    leaf.position.set(hx + side * 0.08, hy * (0.30 + l * 0.26), hz);
+  // Leaves
+  for (var li = 0; li < 2; li++) {
+    var leaf = new THREE.Mesh(lGeo, leafMat);
+    var side = li % 2 ? 1 : -1;
+    leaf.position.set(hx + side * 0.08, hy * (0.30 + li * 0.26), hz);
     leaf.rotation.z = side * 0.65;
-    leaf.rotation.y = l % 2 ? 0 : Math.PI;
+    leaf.rotation.y = li % 2 ? 0 : Math.PI;
     bouquet.add(leaf);
   }
 
-  // Flower head group
-  const head = new THREE.Group();
+  // Flower head
+  var head = new THREE.Group();
   head.position.set(hx, hy, hz);
   bouquet.add(head);
 
-  // Petals: PlaneGeometry (iOS-safe); pivot at base via mesh y-offset
-  const pMat = new THREE.MeshPhongMaterial({
-    color: pCol, side: THREE.DoubleSide, shininess: 35
-  });
-  const pivots = [];
+  var pMat   = new THREE.MeshPhongMaterial({ color: pCol, side: THREE.DoubleSide, shininess: 35 });
+  var pivots = [];
 
-  for (let p = 0; p < nP; p++) {
-    const outer = new THREE.Group();
-    outer.rotation.y = (p / nP) * Math.PI * 2;
+  for (var pi = 0; pi < nP; pi++) {
+    var outer = new THREE.Group();
+    outer.rotation.y = (pi / nP) * Math.PI * 2;
 
-    const inner = new THREE.Group();
-    inner.rotation.x = 0;   // 0 = bud, PI/2 = full bloom
+    var inner = new THREE.Group();
+    inner.rotation.x = 0;
 
-    const petMesh = new THREE.Mesh(
-      new THREE.PlaneGeometry(pWid * 2.2, pLen), pMat);
-    petMesh.position.y = pLen / 2;  // pivot at base
+    var petMesh = new THREE.Mesh(new THREE.PlaneGeometry(pWid * 2.2, pLen), pMat);
+    petMesh.position.y = pLen / 2;
     inner.add(petMesh);
     outer.add(inner);
     head.add(outer);
     pivots.push(inner);
   }
 
-  // Pistil sphere
   head.add(new THREE.Mesh(
     new THREE.SphereGeometry(pWid * 0.55, 10, 10),
     new THREE.MeshPhongMaterial({ color: cCol, shininess: 90 })
   ));
 
-  flowers.push({ pivots, bloom: 0 });
-});
+  flowers.push({ pivots: pivots, bloom: 0 });
+}
 
 // Wrap paper cone
-const wrapMesh = new THREE.Mesh(
+var wrapMesh = new THREE.Mesh(
   new THREE.ConeGeometry(1.10, 2.20, 20, 1, true),
   new THREE.MeshPhongMaterial({
     color: 0xf0dece, side: THREE.DoubleSide,
@@ -202,51 +194,53 @@ wrapMesh.position.set(0, 0.80, 0);
 bouquet.add(wrapMesh);
 
 // Ribbon bow
-const bowMat = new THREE.MeshPhongMaterial({ color: 0xc088a8, shininess: 55 });
-[-1, 1].forEach(side => {
-  const loop = new THREE.Mesh(new THREE.TorusGeometry(0.26, 0.055, 8, 20), bowMat);
-  loop.rotation.z = side * 0.52;
-  loop.position.set(side * 0.16, 0.16, 0.08);
+var bowMat = new THREE.MeshPhongMaterial({ color: 0xc088a8, shininess: 55 });
+var sides = [-1, 1];
+for (var bi = 0; bi < sides.length; bi++) {
+  var loop = new THREE.Mesh(new THREE.TorusGeometry(0.26, 0.055, 8, 20), bowMat);
+  loop.rotation.z = sides[bi] * 0.52;
+  loop.position.set(sides[bi] * 0.16, 0.16, 0.08);
   bouquet.add(loop);
-});
-const knotMesh = new THREE.Mesh(
+}
+
+var knot = new THREE.Mesh(
   new THREE.SphereGeometry(0.080, 8, 8),
   new THREE.MeshPhongMaterial({ color: 0xae7898, shininess: 55 })
 );
-knotMesh.position.set(0, 0.16, 0.12);
-bouquet.add(knotMesh);
+knot.position.set(0, 0.16, 0.12);
+bouquet.add(knot);
 
 // ── Floating particles ────────────────────────────────────────────
-const PCNT = 120;
-const pArr = new Float32Array(PCNT * 3);
-const pVel = [];
-for (let i = 0; i < PCNT; i++) {
+var PCNT = 100;
+var pArr = new Float32Array(PCNT * 3);
+var pVel = [];
+for (var i = 0; i < PCNT; i++) {
   pArr[i*3]   = (Math.random() - 0.5) * 14;
   pArr[i*3+1] = Math.random() * 12 - 2;
   pArr[i*3+2] = (Math.random() - 0.5) * 8;
   pVel.push([(Math.random()-0.5)*0.010, Math.random()*0.013+0.005, (Math.random()-0.5)*0.006]);
 }
-const partGeo = new THREE.BufferGeometry();
+var partGeo = new THREE.BufferGeometry();
 partGeo.setAttribute('position', new THREE.BufferAttribute(pArr, 3));
 scene.add(new THREE.Points(partGeo,
-  new THREE.PointsMaterial({ color: 0xffaadd, size: 0.09, transparent: true, opacity: 0.65 })));
+  new THREE.PointsMaterial({ color: 0xff88cc, size: 0.10, transparent: true, opacity: 0.7 })));
 
 // ── Pointer → sun ─────────────────────────────────────────────────
-let sunTX = 2, sunTY = 5;
-const raycaster = new THREE.Raycaster();
-const ptr = new THREE.Vector2();
-const hitPlane = new THREE.Plane(new THREE.Vector3(0, 0, 1), -4);
+var sunTX = 2, sunTY = 5;
+var raycaster = new THREE.Raycaster();
+var ptr = new THREE.Vector2();
+var hitPlane = new THREE.Plane(new THREE.Vector3(0, 0, 1), -4);
 
 function onPtr(e) {
-  const cx = e.touches ? e.touches[0].clientX : e.clientX;
-  const cy = e.touches ? e.touches[0].clientY : e.clientY;
+  var cx = e.touches ? e.touches[0].clientX : e.clientX;
+  var cy = e.touches ? e.touches[0].clientY : e.clientY;
   ptr.x =  (cx / window.innerWidth)  * 2 - 1;
   ptr.y = -(cy / window.innerHeight) * 2 + 1;
   raycaster.setFromCamera(ptr, camera);
-  const hit = new THREE.Vector3();
+  var hit = new THREE.Vector3();
   if (raycaster.ray.intersectPlane(hitPlane, hit)) {
-    sunTX = THREE.MathUtils.clamp(hit.x, -6, 6);
-    sunTY = THREE.MathUtils.clamp(hit.y, -2, 9);
+    sunTX = Math.max(-6, Math.min(6, hit.x));
+    sunTY = Math.max(-2, Math.min(9, hit.y));
   }
 }
 window.addEventListener('mousemove',  onPtr, { passive: true });
@@ -254,14 +248,14 @@ window.addEventListener('touchmove',  onPtr, { passive: true });
 window.addEventListener('touchstart', onPtr, { passive: true });
 
 // ── Animation loop ────────────────────────────────────────────────
-const clock = new THREE.Clock();
-const bloomedEl = document.getElementById('bloomed');
-const EMOJIS = ['🌱','🌿','🌸','🌸','🌺','🌺','💐'];
+var clock     = new THREE.Clock();
+var bloomedEl = document.getElementById('bloomed');
+var EMOJIS    = ['🌱','🌿','🌸','🌸','🌺','🌺','💐'];
 
 function animate() {
   requestAnimationFrame(animate);
-  const dt = Math.min(clock.getDelta(), 0.05);
-  const t  = clock.getElapsedTime();
+  var dt = Math.min(clock.getDelta(), 0.05);
+  var t  = clock.getElapsedTime();
 
   sunLight.position.x += (sunTX - sunLight.position.x) * 0.10;
   sunLight.position.y += (sunTY - sunLight.position.y) * 0.10;
@@ -272,34 +266,38 @@ function animate() {
   bouquet.rotation.y = Math.sin(t * 0.20) * 0.22;
   bouquet.rotation.z = Math.sin(t * 0.13) * 0.025;
 
-  let count = 0;
-  flowers.forEach((fl, i) => {
-    const [hx, hy, hz] = HEADS[i];
-    const wx = hx + bouquet.position.x;
-    const wy = hy + bouquet.position.y;
-    const wz = hz + bouquet.position.z;
+  var count = 0;
+  for (var fi = 0; fi < flowers.length; fi++) {
+    var fl = flowers[fi];
+    var hx = HEADS[fi][0], hy = HEADS[fi][1], hz = HEADS[fi][2];
+    var wx = hx + bouquet.position.x;
+    var wy = hy + bouquet.position.y;
+    var wz = hz + bouquet.position.z;
 
-    const dx = sunLight.position.x - wx;
-    const dy = sunLight.position.y - wy;
-    const dz = sunLight.position.z - wz;
-    const dist = Math.sqrt(dx*dx + dy*dy + dz*dz);
+    var dx = sunLight.position.x - wx;
+    var dy = sunLight.position.y - wy;
+    var dz = sunLight.position.z - wz;
+    var dist = Math.sqrt(dx*dx + dy*dy + dz*dz);
 
-    const R = 4.5;
-    const target = dist < R ? Math.pow(1 - dist / R, 0.6) : 0;
-    fl.bloom += (target - fl.bloom) * Math.min(dt * (target > fl.bloom ? 3.0 : 0.8), 1);
-    fl.bloom  = Math.max(0, Math.min(1, fl.bloom));
+    var R = 4.5;
+    var target = dist < R ? Math.pow(1 - dist / R, 0.6) : 0;
+    var rate   = target > fl.bloom ? 3.0 : 0.8;
+    fl.bloom  += (target - fl.bloom) * Math.min(dt * rate, 1);
+    fl.bloom   = Math.max(0, Math.min(1, fl.bloom));
 
-    const flutter = Math.sin(t * 2.2 + i * 1.4) * 0.035 * fl.bloom;
-    const angle   = fl.bloom * (Math.PI * 0.52 + 0.15) + flutter;
-    fl.pivots.forEach(p => { p.rotation.x = angle; });
+    var flutter = Math.sin(t * 2.2 + fi * 1.4) * 0.035 * fl.bloom;
+    var angle   = fl.bloom * (Math.PI * 0.52 + 0.15) + flutter;
+    for (var pi = 0; pi < fl.pivots.length; pi++) {
+      fl.pivots[pi].rotation.x = angle;
+    }
 
     if (fl.bloom > 0.75) count++;
-  });
+  }
 
   bloomedEl.textContent = EMOJIS[count] + ' ' + count + ' / 6 bloomed';
 
-  const pa = partGeo.attributes.position;
-  for (let i = 0; i < PCNT; i++) {
+  var pa = partGeo.attributes.position;
+  for (var i = 0; i < PCNT; i++) {
     pa.array[i*3]   += pVel[i][0];
     pa.array[i*3+1] += pVel[i][1];
     pa.array[i*3+2] += pVel[i][2];
@@ -314,15 +312,17 @@ function animate() {
 }
 animate();
 
-window.addEventListener('resize', () => {
+window.addEventListener('resize', function() {
   camera.aspect = window.innerWidth / window.innerHeight;
   camera.updateProjectionMatrix();
   renderer.setSize(window.innerWidth, window.innerHeight);
 });
 
 } catch(err) {
-  showErr('WebGL error: ' + err.message);
-}}
+  showErr('Error: ' + err.message + '\n' + err.stack);
+}
+
+}
 </script>
 </body>
 </html>
