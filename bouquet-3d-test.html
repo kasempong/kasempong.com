@@ -1,0 +1,349 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
+  <title>3D Bouquet Test</title>
+  <style>
+    * { margin: 0; padding: 0; box-sizing: border-box; }
+    html, body { width: 100%; height: 100%; overflow: hidden; }
+    body {
+      background: radial-gradient(ellipse at 35% 40%, #fce4ec 0%, #f3b8da 25%, #e1bee7 55%, #ffe0b2 100%);
+    }
+    canvas { display: block; }
+    #hint {
+      position: fixed; bottom: 28px; left: 50%; transform: translateX(-50%);
+      font-family: -apple-system, BlinkMacSystemFont, sans-serif;
+      color: rgba(150, 50, 130, 0.9); font-size: 15px;
+      background: rgba(255,255,255,0.55);
+      backdrop-filter: blur(10px); -webkit-backdrop-filter: blur(10px);
+      padding: 10px 22px; border-radius: 24px;
+      pointer-events: none; white-space: nowrap;
+      box-shadow: 0 2px 14px rgba(200,100,180,0.18);
+    }
+    #bloom-bar {
+      position: fixed; top: 20px; left: 50%; transform: translateX(-50%);
+      font-family: -apple-system, sans-serif; font-size: 13px;
+      color: rgba(150,50,130,0.8);
+      background: rgba(255,255,255,0.5);
+      backdrop-filter: blur(8px); -webkit-backdrop-filter: blur(8px);
+      padding: 8px 18px; border-radius: 18px;
+      pointer-events: none;
+    }
+  </style>
+</head>
+<body>
+<div id="hint">☀️ drag the sun to make the flowers bloom</div>
+<div id="bloom-bar">🌸 0 / 6 bloomed</div>
+
+<script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
+<script>
+// ── Renderer ──────────────────────────────────────────────────────
+const renderer = new THREE.WebGLRenderer({ antialias: true, alpha: true });
+renderer.setPixelRatio(Math.min(devicePixelRatio, 2));
+renderer.setSize(innerWidth, innerHeight);
+renderer.shadowMap.enabled = true;
+renderer.shadowMap.type = THREE.PCFSoftShadowMap;
+document.body.appendChild(renderer.domElement);
+
+// ── Scene & Camera ────────────────────────────────────────────────
+const scene = new THREE.Scene();
+scene.fog = new THREE.FogExp2(0xfce4ec, 0.032);
+
+const camera = new THREE.PerspectiveCamera(52, innerWidth / innerHeight, 0.1, 60);
+camera.position.set(0, 3.5, 10);
+camera.lookAt(0, 2.5, 0);
+
+// ── Lights ────────────────────────────────────────────────────────
+scene.add(new THREE.AmbientLight(0xfff0f8, 1.4));
+
+const fill = new THREE.DirectionalLight(0xffe8f8, 0.8);
+fill.position.set(-4, 6, 4);
+scene.add(fill);
+
+const rim = new THREE.DirectionalLight(0xd0aaff, 0.5);
+rim.position.set(4, 2, -5);
+scene.add(rim);
+
+// Sun point light — follows pointer
+const sunLight = new THREE.PointLight(0xffee88, 6, 14);
+sunLight.position.set(0, 6.5, 5);
+scene.add(sunLight);
+
+// ── Sun Visual ────────────────────────────────────────────────────
+const sunGroup = new THREE.Group();
+scene.add(sunGroup);
+
+const sunCore = new THREE.Mesh(
+  new THREE.SphereGeometry(0.20, 16, 16),
+  new THREE.MeshBasicMaterial({ color: 0xffee22 })
+);
+sunGroup.add(sunCore);
+
+[{ r: 0.34, o: 0.18 }, { r: 0.54, o: 0.08 }, { r: 0.80, o: 0.04 }].forEach(({ r, o }) => {
+  sunGroup.add(new THREE.Mesh(
+    new THREE.SphereGeometry(r, 12, 12),
+    new THREE.MeshBasicMaterial({ color: 0xffee44, transparent: true, opacity: o })
+  ));
+});
+sunGroup.position.copy(sunLight.position);
+
+// ── Petal helper ──────────────────────────────────────────────────
+function makePetalGeo(len, wid) {
+  const s = new THREE.Shape();
+  s.moveTo(0, 0);
+  s.bezierCurveTo(-wid * 0.75, len * 0.22, -wid * 0.88, len * 0.72, 0, len);
+  s.bezierCurveTo( wid * 0.88, len * 0.72,  wid * 0.75, len * 0.22, 0, 0);
+  return new THREE.ShapeGeometry(s, 10);
+}
+
+function makePetalMat(hex) {
+  return new THREE.MeshPhongMaterial({ color: hex, side: THREE.DoubleSide, shininess: 35, specular: 0xffffff });
+}
+
+// ── Flower definitions ────────────────────────────────────────────
+// [color, centerColor, petalCount, petalLen, petalWid]
+const DEFS = [
+  [0xf8a8c4, 0xffd8a8,  6, 0.62, 0.25],  // main pink rose
+  [0xe8a0dc, 0xffeec0,  5, 0.54, 0.22],  // lavender
+  [0xffccd8, 0xffe8c0,  7, 0.45, 0.19],  // light pink
+  [0xf4b0cc, 0xffd4b0,  6, 0.56, 0.22],  // mid rose
+  [0xc8a8e8, 0xfffbd0,  5, 0.50, 0.21],  // purple
+  [0xffb8c4, 0xfff4c0,  8, 0.40, 0.17],  // peach
+];
+
+// [x, y (flower head height in local space), z]
+const HEADS = [
+  [ 0.00, 4.50,  0.00],
+  [-0.82, 3.95, -0.18],
+  [ 0.82, 3.95, -0.18],
+  [-0.44, 3.35,  0.18],
+  [ 0.44, 3.35,  0.18],
+  [ 0.00, 2.90,  0.28],
+];
+
+const bouquetRoot = new THREE.Group();
+bouquetRoot.position.set(0, -1.8, 0);
+scene.add(bouquetRoot);
+
+const flowerData = []; // { pivots[], bloom }
+
+// ── Build bouquet ─────────────────────────────────────────────────
+const stemMat  = new THREE.MeshPhongMaterial({ color: 0x5a9848 });
+const leafMat  = new THREE.MeshPhongMaterial({ color: 0x6aaa52, side: THREE.DoubleSide });
+
+function makeLeafGeo() {
+  const s = new THREE.Shape();
+  s.moveTo(0, 0);
+  s.bezierCurveTo(-0.14, 0.10, -0.11, 0.34, 0, 0.44);
+  s.bezierCurveTo( 0.11, 0.34,  0.14, 0.10, 0, 0);
+  return new THREE.ShapeGeometry(s, 6);
+}
+const leafGeo = makeLeafGeo();
+
+HEADS.forEach(([hx, hy, hz], fi) => {
+  const [col, cCol, nP, pLen, pWid] = DEFS[fi];
+
+  // Stem
+  const stem = new THREE.Mesh(
+    new THREE.CylinderGeometry(0.022, 0.042, hy, 8),
+    stemMat
+  );
+  stem.position.set(hx, hy / 2, hz);
+  bouquetRoot.add(stem);
+
+  // Two leaves per stem
+  for (let l = 0; l < 2; l++) {
+    const leaf = new THREE.Mesh(leafGeo, leafMat);
+    const lh = hy * (0.32 + l * 0.26);
+    const side = l % 2 ? 1 : -1;
+    leaf.position.set(hx + side * 0.07, lh, hz);
+    leaf.rotation.z = side * 0.65;
+    leaf.rotation.y = l % 2 ? 0 : Math.PI;
+    bouquetRoot.add(leaf);
+  }
+
+  // Flower head group
+  const flHead = new THREE.Group();
+  flHead.position.set(hx, hy, hz);
+  bouquetRoot.add(flHead);
+
+  const petalGeo = makePetalGeo(pLen, pWid);
+  const petalMat = makePetalMat(col);
+  const pivots = [];
+
+  for (let p = 0; p < nP; p++) {
+    // outerPivot: rotates petal around center (spread)
+    const outer = new THREE.Group();
+    outer.rotation.y = (p / nP) * Math.PI * 2;
+
+    // innerPivot: controls open/close
+    // rotation.x = 0  → petal points straight up (bud)
+    // rotation.x = PI/2 + small → petal spreads flat + slight droop (full bloom)
+    const inner = new THREE.Group();
+    inner.rotation.x = 0; // start closed
+
+    const petalMesh = new THREE.Mesh(petalGeo, petalMat);
+    inner.add(petalMesh);
+    outer.add(inner);
+    flHead.add(outer);
+    pivots.push(inner);
+  }
+
+  // Pistil / center
+  flHead.add(new THREE.Mesh(
+    new THREE.SphereGeometry(pWid * 0.45, 10, 10),
+    new THREE.MeshPhongMaterial({ color: cCol, shininess: 80 })
+  ));
+
+  flowerData.push({ pivots, bloom: 0 });
+});
+
+// Wrap paper cone
+bouquetRoot.add(Object.assign(
+  new THREE.Mesh(
+    new THREE.ConeGeometry(1.12, 2.3, 20, 1, true),
+    new THREE.MeshPhongMaterial({ color: 0xf0dece, side: THREE.DoubleSide, transparent: true, opacity: 0.86, shininess: 12 })
+  ),
+  { position: new THREE.Vector3(0, 0.85, 0) }
+));
+
+// Ribbon bow loops
+const bowMat = new THREE.MeshPhongMaterial({ color: 0xc08aaa, shininess: 55 });
+[-1, 1].forEach(side => {
+  const loop = new THREE.Mesh(new THREE.TorusGeometry(0.26, 0.052, 8, 20), bowMat);
+  loop.rotation.z = side * 0.55;
+  loop.position.set(side * 0.17, 0.18, 0.08);
+  bouquetRoot.add(loop);
+});
+const knot = new THREE.Mesh(new THREE.SphereGeometry(0.075, 8, 8),
+  new THREE.MeshPhongMaterial({ color: 0xae7898, shininess: 55 }));
+knot.position.set(0, 0.18, 0.12);
+bouquetRoot.add(knot);
+
+// ── Floating particles ────────────────────────────────────────────
+const PCNT = 160;
+const pArr = new Float32Array(PCNT * 3);
+const pVel = [];
+for (let i = 0; i < PCNT; i++) {
+  pArr[i*3]   = (Math.random() - 0.5) * 12;
+  pArr[i*3+1] = Math.random() * 12 - 2;
+  pArr[i*3+2] = (Math.random() - 0.5) * 7;
+  pVel.push([(Math.random()-0.5)*0.009, Math.random()*0.013+0.005, (Math.random()-0.5)*0.006]);
+}
+const pGeo = new THREE.BufferGeometry();
+pGeo.setAttribute('position', new THREE.BufferAttribute(pArr, 3));
+const pMesh = new THREE.Points(pGeo,
+  new THREE.PointsMaterial({ color: 0xffaadd, size: 0.07, transparent: true, opacity: 0.70 }));
+scene.add(pMesh);
+
+// ── Pointer → sun position ────────────────────────────────────────
+let sunTX = 0, sunTY = 6.5;
+const raycaster = new THREE.Raycaster();
+const ptr2 = new THREE.Vector2();
+const sunPlane = new THREE.Plane(new THREE.Vector3(0, 0, 1), -5);
+
+function onPtr(e) {
+  const cx = e.touches ? e.touches[0].clientX : e.clientX;
+  const cy = e.touches ? e.touches[0].clientY : e.clientY;
+  ptr2.x =  (cx / innerWidth)  * 2 - 1;
+  ptr2.y = -(cy / innerHeight) * 2 + 1;
+  raycaster.setFromCamera(ptr2, camera);
+  const hit = new THREE.Vector3();
+  if (raycaster.ray.intersectPlane(sunPlane, hit)) {
+    sunTX = THREE.MathUtils.clamp(hit.x, -6, 6);
+    sunTY = THREE.MathUtils.clamp(hit.y, -1, 10);
+  }
+}
+window.addEventListener('mousemove', onPtr);
+window.addEventListener('touchmove',  onPtr, { passive: true });
+window.addEventListener('touchstart', onPtr, { passive: true });
+
+// ── Bloom counter UI ──────────────────────────────────────────────
+const bloomBar = document.getElementById('bloom-bar');
+const bloomEmojis = ['🌱','🌿','🌸','🌸','🌺','💐'];
+
+// ── Animate ───────────────────────────────────────────────────────
+const clock = new THREE.Clock();
+
+function animate() {
+  requestAnimationFrame(animate);
+  const dt = Math.min(clock.getDelta(), 0.05);
+  const t  = clock.getElapsedTime();
+
+  // Smooth sun movement
+  sunLight.position.x += (sunTX - sunLight.position.x) * 0.10;
+  sunLight.position.y += (sunTY - sunLight.position.y) * 0.10;
+  sunLight.position.z  = 5;
+  sunGroup.position.copy(sunLight.position);
+
+  // Sun glow pulse
+  const pulse = 1 + Math.sin(t * 3.5) * 0.06;
+  sunGroup.scale.setScalar(pulse);
+
+  // Bouquet gentle sway
+  bouquetRoot.rotation.y = Math.sin(t * 0.20) * 0.22;
+  bouquetRoot.rotation.z = Math.sin(t * 0.14) * 0.028;
+
+  // Bloom each flower
+  let bloomedCount = 0;
+  flowerData.forEach((fl, i) => {
+    const [hx, hy, hz] = HEADS[i];
+    // World pos of flower head (approx, ignores Y rotation for simplicity)
+    const wx = hx + bouquetRoot.position.x;
+    const wy = hy + bouquetRoot.position.y;
+    const wz = hz + bouquetRoot.position.z;
+
+    const dx = sunLight.position.x - wx;
+    const dy = sunLight.position.y - wy;
+    const dz = sunLight.position.z - wz;
+    const dist = Math.sqrt(dx*dx + dy*dy + dz*dz);
+
+    const RADIUS = 4.0;
+    const targetBloom = dist < RADIUS ? Math.pow(1 - dist / RADIUS, 0.6) : 0;
+
+    // Bloom accumulates fast, recedes slowly
+    const speed = targetBloom > fl.bloom ? 3.0 : 0.8;
+    fl.bloom += (targetBloom - fl.bloom) * Math.min(dt * speed, 1);
+    fl.bloom  = THREE.MathUtils.clamp(fl.bloom, 0, 1);
+
+    // Petal flutter
+    const flutter = Math.sin(t * 2.2 + i * 1.3) * 0.035 * fl.bloom;
+    const openAngle = fl.bloom * (Math.PI * 0.52 + 0.18); // slight droop past 90°
+
+    fl.pivots.forEach(pivot => {
+      pivot.rotation.x = openAngle + flutter;
+    });
+
+    if (fl.bloom > 0.8) bloomedCount++;
+  });
+
+  // Update bloom counter
+  bloomBar.textContent = bloomEmojis[bloomedCount] + ' ' + bloomedCount + ' / 6 bloomed';
+
+  // Particles float upward
+  const pa = pGeo.attributes.position;
+  for (let i = 0; i < PCNT; i++) {
+    pa.array[i*3]   += pVel[i][0];
+    pa.array[i*3+1] += pVel[i][1];
+    pa.array[i*3+2] += pVel[i][2];
+    if (pa.array[i*3+1] > 9) {
+      pa.array[i*3+1] = -2;
+      pa.array[i*3]   = (Math.random()-0.5) * 12;
+    }
+  }
+  pa.needsUpdate = true;
+
+  renderer.render(scene, camera);
+}
+animate();
+
+// ── Resize ────────────────────────────────────────────────────────
+window.addEventListener('resize', () => {
+  camera.aspect = innerWidth / innerHeight;
+  camera.updateProjectionMatrix();
+  renderer.setSize(innerWidth, innerHeight);
+});
+</script>
+</body>
+</html>
