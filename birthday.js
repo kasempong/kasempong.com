@@ -705,7 +705,7 @@ var bouquetGame = (function () {
   // Stage thresholds: switch image when fillPct crosses each boundary
   var STAGE_BREAKS = [0, 33, 66, 99]; // pct at which each stage image shows
 
-  var FILL_DIST = 450;   // px drag = 100% fill
+  var FILL_DIST = 1000;  // px drag = 100% fill (slower, more satisfying)
   var HIT_PAD   = 60;    // px padding around flower hit zone
 
   var currentFlower  = 0;
