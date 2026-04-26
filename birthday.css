@@ -1544,6 +1544,15 @@ h1 {
   .active-flower-zone { gap: 2px; }
   .watering-shelf { padding: 6px 0 0; }
   .feed-pet-zone  { max-height: 100px; }
+
+  /* Password gate — trim on short screens */
+  .bd-gate-box { padding: 20px 22px 18px; }
+  .bd-gate-lock { font-size: 28px; margin-bottom: 6px; }
+  .bd-gate-hint { font-size: 13px; margin-bottom: 12px; line-height: 1.5; }
+  .bd-gate-display { font-size: 22px; min-height: 40px; padding: 7px 10px; margin-bottom: 10px; }
+
+  /* Catch game counter */
+  .catch-counter { font-size: 18px; }
 }
 
 /* ── Responsive: wide screens (≥600px) — tablet / desktop ─────── */
