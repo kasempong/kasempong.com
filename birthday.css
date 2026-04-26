@@ -1043,7 +1043,6 @@ h1 {
   width: auto;
   max-width: 100%;
   object-fit: contain;
-  filter: drop-shadow(0 6px 22px rgba(180, 60, 160, 0.22));
   transform-origin: center bottom;
 }
 

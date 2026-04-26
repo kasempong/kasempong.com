@@ -803,7 +803,7 @@ var bouquetGame = (function () {
 
   function resetFlowerGlow(flEl) {
     if (!flEl) return;
-    flEl.style.filter = 'drop-shadow(0 10px 26px rgba(160,60,220,0.28))';
+    flEl.style.filter = 'none';
   }
 
   // ── Water ring progress (SVG stroke-dashoffset — reliable on iOS) ──
@@ -829,7 +829,7 @@ var bouquetGame = (function () {
         activePetG.src = finalStages[3];
       }
       if (typeof gsap !== 'undefined') {
-        gsap.set(activePetG, { scale: 1, opacity: 1 });
+        gsap.set(activePetG, { scale: 0.65, opacity: 1 });
       } else {
         activePetG.style.transform = 'scale(1)';
         activePetG.style.opacity   = '1';
@@ -841,17 +841,17 @@ var bouquetGame = (function () {
     if (flEl) {
       if (typeof gsap !== 'undefined') {
         gsap.to(flEl, {
-          scale: 1.22, duration: 0.16, ease: 'power2.out',
+          scale: 0.78, duration: 0.16, ease: 'power2.out',
           onComplete: function () {
-            gsap.to(flEl, { scale: 1, duration: 0.30, ease: 'elastic.out(1, 0.5)' });
+            gsap.to(flEl, { scale: 0.65, duration: 0.30, ease: 'elastic.out(1, 0.5)' });
           },
         });
       } else {
         flEl.style.transition = 'transform 0.16s ease-out';
-        flEl.style.transform  = 'scale(1.18)';
+        flEl.style.transform  = 'scale(0.78)';
         setTimeout(function () {
           flEl.style.transition = 'transform 0.35s cubic-bezier(0.34,1.56,0.64,1)';
-          flEl.style.transform  = 'scale(1)';
+          flEl.style.transform  = 'scale(0.65)';
         }, 160);
       }
     }
@@ -944,11 +944,11 @@ var bouquetGame = (function () {
     // Entrance: fade + slight scale-up
     if (typeof gsap !== 'undefined') {
       gsap.fromTo(img,
-        { scale: 0.52, opacity: 0 },
-        { scale: 0.55, opacity: 1, duration: 0.40, ease: 'back.out(1.8)' }
+        { scale: 0.30, opacity: 0 },
+        { scale: 0.40, opacity: 1, duration: 0.40, ease: 'back.out(1.8)' }
       );
     } else {
-      img.style.transform = 'scale(0.55)';
+      img.style.transform = 'scale(0.40)';
       img.style.opacity   = '1';
     }
   }
@@ -1019,8 +1019,8 @@ var bouquetGame = (function () {
                   onComplete: function() {
                     if (!imgRef.parentNode) return;   // guard: element may have been removed
                     imgRef.src = nextSrc;
-                    gsap.to(imgRef, { opacity: 1, scale: 1.05, duration: 0.22, ease: 'back.out(1.6)',
-                      onComplete: function() { if (imgRef.parentNode) gsap.to(imgRef, { scale: 1, duration: 0.15 }); }
+                    gsap.to(imgRef, { opacity: 1, scale: 0.68, duration: 0.22, ease: 'back.out(1.6)',
+                      onComplete: function() { if (imgRef.parentNode) gsap.to(imgRef, { scale: 0.65, duration: 0.15 }); }
                     });
                   }
                 });
