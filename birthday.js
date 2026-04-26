@@ -341,7 +341,7 @@ document.querySelectorAll('.choice').forEach(function (btn) {
 
 // ── Catch the Hearts mini-game ────────────────────────────────────
 var catchGame = (function () {
-  var canvas, ctx, hearts, caught, total, rafId, active;
+  var canvas, ctx, hearts, caught, total, rafId, active, cssW, cssH;
 
   function init() {
     canvas = document.getElementById('catchCanvas');
@@ -349,10 +349,9 @@ var catchGame = (function () {
     canvas.addEventListener('pointerdown', function (e) {
       if (!active) return;
       var rect = canvas.getBoundingClientRect();
-      var scaleX = canvas.width / rect.width;
-      var scaleY = canvas.height / rect.height;
-      var x = (e.clientX - rect.left) * scaleX;
-      var y = (e.clientY - rect.top)  * scaleY;
+      // Use raw CSS-pixel coords — ctx is already scaled via setTransform
+      var x = e.clientX - rect.left;
+      var y = e.clientY - rect.top;
       onTap(x, y);
     }, { passive: true });
   }
@@ -366,14 +365,16 @@ var catchGame = (function () {
     canvas.height       = Math.round(h * dpr);
     canvas.style.width  = w + 'px';
     canvas.style.height = h + 'px';
-    ctx.scale(dpr, dpr);   // draw in CSS pixels — hit detection stays correct
+    cssW = w;
+    cssH = h;
+    ctx.setTransform(dpr, 0, 0, dpr, 0, 0);  // reset+set — avoids accumulation on restart
   }
 
   var HEART_EMOJIS = ['💗','💖','💕','🩷','❤️'];
 
   function spawnHeart(offsetY) {
     return {
-      x:     Math.random() * (canvas.width - 80) + 40,
+      x:     Math.random() * ((cssW || 300) - 80) + 40,  // CSS px
       y:     -(offsetY || 0) - 40,
       vy:    Math.random() * 1.8 + 1.4,
       emoji: HEART_EMOJIS[Math.floor(Math.random() * HEART_EMOJIS.length)],
@@ -382,7 +383,7 @@ var catchGame = (function () {
 
   function tick() {
     if (!active) return;
-    ctx.clearRect(0, 0, canvas.width, canvas.height);
+    ctx.clearRect(0, 0, cssW || 300, cssH || 300);  // CSS px (matches setTransform scale)
 
     hearts = hearts.filter(function (h) {
       h.y += h.vy;
@@ -390,7 +391,7 @@ var catchGame = (function () {
       ctx.textAlign = 'center';
       ctx.textBaseline = 'middle';
       ctx.fillText(h.emoji, h.x, h.y);
-      return h.y < canvas.height + 60;
+      return h.y < (cssH || 300) + 60;  // CSS px boundary
     });
 
     // Keep 3–4 hearts falling at a time (up to remaining uncaught)
