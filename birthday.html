@@ -192,33 +192,33 @@
       </div>
     </div>
 
-    <!-- Screen 11: Build the Bouquet -->
+    <!-- Screen 11: Flower Pot Game -->
     <div class="screen" id="s-bouquet">
-      <p class="game-title">💐 สร้างช่อดอกไม้!</p>
-      <!-- Bouquet stage image — swaps to next stage as each flower is watered -->
-      <div class="bq-stage-wrap" id="bwContainer" aria-hidden="true">
-        <img class="bq-stage-img" id="bqStageImg" src="" alt="bouquet" draggable="false">
-      </div>
-      <div class="active-flower-zone">
-        <div class="flower-stage" id="flowerStage">
-          <div class="active-flower-wrap" id="activeFlowerWrap"></div>
-          <!-- SVG ring — stroke-dasharray approach works on all iOS versions -->
-          <svg class="water-ring" id="waterRing" viewBox="0 0 100 100" aria-hidden="true">
-            <circle cx="50" cy="50" r="43" fill="none" stroke="rgba(180,215,255,0.20)" stroke-width="6"/>
-            <circle id="waterRingFill" cx="50" cy="50" r="43" fill="none"
-                    stroke="rgba(70,185,255,0.88)" stroke-width="6"
-                    stroke-linecap="round"
-                    stroke-dasharray="270.18" stroke-dashoffset="270.18"
-                    transform="rotate(-90 50 50)"/>
-          </svg>
+      <p class="game-title">🌺 ปลูกดอกไม้กันเถอะ</p>
+      <!-- Canvas renders here -->
+      <div class="fp-scene-wrap" id="fpSceneWrap"></div>
+      <!-- Water / Sun progress meters — bar only, no % text -->
+      <div class="fp-meters">
+        <div class="fp-meter-row">
+          <span class="fp-meter-icon">💧</span>
+          <div class="fp-meter-track">
+            <div class="fp-meter-fill fp-water-fill" id="fpWaterBar"></div>
+          </div>
         </div>
-        <p class="flower-name" id="flowerName"></p>
-        <p class="flower-counter" id="flowerCounter">ดอกที่ 1 / 6</p>
+        <div class="fp-meter-row">
+          <span class="fp-meter-icon">☀️</span>
+          <div class="fp-meter-track">
+            <div class="fp-meter-fill fp-sun-fill" id="fpSunBar"></div>
+          </div>
+        </div>
       </div>
-      <div class="watering-shelf" id="wateringShelf">
-        <span class="water-can-item" id="waterCanItem">☀️</span>
-        <span class="water-shelf-hint">ลากแสงแดดมาให้ดอกไม้ 🌸</span>
+      <!-- Tool picker — emoji only, no labels -->
+      <div class="fp-toolbar">
+        <button class="fp-tool-btn" id="fpWaterTool">🪣</button>
+        <button class="fp-tool-btn" id="fpSunTool">☀️</button>
       </div>
+      <!-- Shown only when flowers fully bloom -->
+      <button class="fp-next-btn" id="fpNextBtn" style="display:none">🌱 ›</button>
     </div>
 
     <!-- Screen 12: Q5 -->
@@ -255,6 +255,9 @@
   <!-- Water-can drag ghost: lives outside .screens-container so position:fixed is viewport-relative (not trapped inside CSS transform) -->
   <span class="water-drag-ghost" id="waterDragGhost">☀️</span>
 
+  <!-- Flower-pot tool drag ghost -->
+  <span class="fp-drag-ghost" id="fpDragGhost"></span>
+
   <!-- Bouquet reveal popup -->
   <div id="bqRevealOverlay" class="bq-reveal-overlay" aria-modal="true" role="dialog">
     <div class="bq-reveal-inner">
@@ -278,6 +281,7 @@
   <script src="https://cdn.jsdelivr.net/npm/gsap@3.12.5/dist/gsap.min.js"
           integrity="sha384-OLBgp1GsljhM2TJ+sbHjaiH9txEUvgdDTAzHv2P24donTt6/529l+9Ua0vFImLlb"
           crossorigin="anonymous"></script>
-  <script src="birthday.js?v=6"></script>
+  <script src="https://cdn.jsdelivr.net/npm/roughjs@4.6.6/bundled/rough.js"></script>
+  <script src="birthday.js?v=15"></script>
 </body>
 </html>

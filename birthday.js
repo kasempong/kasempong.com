@@ -139,7 +139,7 @@ function goTo(nextIdx) {
   // Stop game when leaving a game screen
   if (cur.id === 's-catch')   catchGame.stop();
   if (cur.id === 's-feed')    feedGame.stop();
-  if (cur.id === 's-bouquet') bouquetGame.stop();
+  if (cur.id === 's-bouquet') flowerPotGame.stop();
 
   cur.classList.add('exit');
   cur.classList.remove('active');
@@ -152,7 +152,7 @@ function goTo(nextIdx) {
     // Start game when entering a game screen
     if (next.id === 's-catch')   catchGame.start();
     if (next.id === 's-feed')    feedGame.start();
-    if (next.id === 's-bouquet') bouquetGame.start();
+    if (next.id === 's-bouquet') flowerPotGame.start();
   }, 380);
 }
 
@@ -168,7 +168,7 @@ function jumpBackTo(targetIdx) {
   var curScr = allScreens[currentIdx];
   if (curScr && curScr.id === 's-catch')   catchGame.stop();
   if (curScr && curScr.id === 's-feed')    feedGame.stop();
-  if (curScr && curScr.id === 's-bouquet') bouquetGame.stop();
+  if (curScr && curScr.id === 's-bouquet') flowerPotGame.stop();
 
   // ── Reset final screen if we're jumping from it ─────────────────
   if (currentIdx === 13) {
@@ -233,7 +233,7 @@ function jumpBackTo(targetIdx) {
     var tgtScr = allScreens[targetIdx];
     if (tgtScr && tgtScr.id === 's-catch')   catchGame.start();
     if (tgtScr && tgtScr.id === 's-feed')    feedGame.start();
-    if (tgtScr && tgtScr.id === 's-bouquet') bouquetGame.start();
+    if (tgtScr && tgtScr.id === 's-bouquet') flowerPotGame.start();
 
     setTimeout(function () {
       screensContainer.classList.remove('going-back');
@@ -690,599 +690,854 @@ var feedGame = (function () {
   return { start: start, stop: stop };
 }());
 
-// ── Build the Bouquet (SVG + GSAP) ────────────────────────────────
-var bouquetGame = (function () {
-  // ── Flower definitions — each has 4 growth stages ────────────
-  var DEFS = [
-    { stages: ['fl-0-s0.webp','fl-0-s1.webp','fl-0-s2.webp','fl-0-s3.webp'], label: '🌸 Rose',           name: 'Rose' },
-    { stages: ['fl-1-s0.webp','fl-1-s1.webp','fl-1-s2.webp','fl-1-s3.webp'], label: '🌸 Spray Rose',     name: 'Spray Rose' },
-    { stages: ['fl-2-s0.webp','fl-2-s1.webp','fl-2-s2.webp','fl-2-s3.webp'], label: '🌷 Carnation',      name: 'Carnation' },
-    { stages: ['fl-3-s0.webp','fl-3-s1.webp','fl-3-s2.webp','fl-3-s3.webp'], label: '🌺 Lisianthus',     name: 'Lisianthus' },
-    { stages: ['fl-4-s0.webp','fl-4-s1.webp','fl-4-s2.webp','fl-4-s3.webp'], label: '💜 Stock Flower',   name: 'Stock Flower' },
-    { stages: ['fl-5-s0.webp','fl-5-s1.webp','fl-5-s2.webp','fl-5-s3.webp'], label: '🌿 Wax Flower',     name: 'Wax Flower' },
+// ── Bouquet Reveal Popup ──────────────────────────────────────────
+function showBouquetReveal(callback) {
+  var overlay = document.getElementById('bqRevealOverlay');
+  var btn     = document.getElementById('bqRevealBtn');
+  var floats  = document.getElementById('bqRevealFloats');
+  if (!overlay) { if (callback) callback(); return; }
+  var hearts  = ['💕','💗','🌸','✨','💐','🩷','⭐'];
+  var timers  = [];
+  function spawnHeart() {
+    var el = document.createElement('span');
+    el.className = 'bq-float-heart';
+    el.textContent = hearts[Math.floor(Math.random() * hearts.length)];
+    el.style.left   = (8 + Math.random() * 84) + '%';
+    el.style.bottom = (4 + Math.random() * 18) + '%';
+    el.style.animationDuration = (2.4 + Math.random() * 1.8) + 's';
+    el.style.animationDelay    = (Math.random() * 0.4) + 's';
+    el.style.fontSize = (14 + Math.random() * 14) + 'px';
+    if (floats) floats.appendChild(el);
+    timers.push(setTimeout(function () { el.parentNode && el.parentNode.removeChild(el); }, 4500));
+  }
+  var spawnInterval = setInterval(spawnHeart, 550);
+  for (var i = 0; i < 6; i++) spawnHeart();
+  overlay.style.display = 'flex';
+  requestAnimationFrame(function () {
+    requestAnimationFrame(function () { overlay.classList.add('active'); });
+  });
+  function onBtn() {
+    btn && btn.removeEventListener('click', onBtn);
+    clearInterval(spawnInterval);
+    timers.forEach(clearTimeout);
+    overlay.classList.remove('active');
+    setTimeout(function () {
+      overlay.style.display = 'none';
+      if (floats) floats.innerHTML = '';
+      if (callback) callback();
+    }, 500);
+  }
+  if (btn) btn.addEventListener('click', onBtn);
+}
+
+// ── Flower Pot Game (rough.js sketchy 2D) ───────────────────────
+var flowerPotGame = (function () {
+
+  // ── Constants ──────────────────────────────────────────────────
+  var WATER_RATE = 0.28;
+  var SUN_RATE   = 0.28;
+
+  //  rx      = stem base x  (close together near pot centre)
+  //  headRx  = flower head x (fanned outward at the top)
+  var FLOWERS = [
+    { rx: 0.46, headRx: 0.33, pCol: '#e82828', cCol: '#ffd080', nP: 7,  r: 0.056, sH: 0.48 },
+    { rx: 0.50, headRx: 0.52, pCol: '#8830e8', cCol: '#f0d8ff', nP: 6,  r: 0.062, sH: 0.68 },
+    { rx: 0.54, headRx: 0.72, pCol: '#e8c020', cCol: '#6b3a08', nP: 12, r: 0.058, sH: 0.57 },
   ];
 
-  // Stage thresholds: switch image when fillPct crosses each boundary
-  var STAGE_BREAKS = [0, 33, 66, 99]; // pct at which each stage image shows
+  var SEEDS     = [101, 202, 303];
+  var BFLY_COLS = ['#ff90cc', '#b090ff', '#90d8ff', '#ffd090'];
 
-  var FILL_DIST = 1000;  // px drag = 100% fill (slower, more satisfying)
-  var HIT_PAD   = 60;    // px padding around flower hit zone
+  // ── State ──────────────────────────────────────────────────────
+  var wMeter = 0, sMeter = 0, growthT = 0;
+  var tool = null, dragging = false, done = false;
+  var ghostX = 0, ghostY = 0, trailTick = 0;
+  var wDrops = [], sSparkles = [];
+  var flowerLeans = [0, 0, 0];
+  var bloomedFlags = [false, false, false];
+  var tapBounce   = [{s:1,v:0},{s:1,v:0},{s:1,v:0}];
+  var soilRipples = [];
+  var fallingPetals = [];
+  var flashAlpha = 0;
+  var birdTimer  = 5;
+  var dripTimer  = 0;
+  var W = 0, H = 0;
+  var canvas, ctx, rc;
+  var animId;
+  var clock = { then: 0, t: 0, started: false };
 
-  var currentFlower  = 0;
-  var fillPct        = 0;
-  var dragging       = false;
-  var blooming       = false;
-  var lastX = 0, lastY = 0;
-  var activeTimeline = null;
-  var activePetG     = null;   // fallback ref when GSAP isn't available
-  var ghostEl        = null;
-  var canEl          = null;
-  var _doneTimer     = null;
-  var _bloomTimer    = null;
-  var _nextFlowTimer = null;
-  var _canDown       = null;
-  var _onCanMove     = null;
-  var _onCanUp       = null;
-  var _lastSparkTime  = 0;
-  var _waterSoundTime = 0;
-  var _currentStage   = 0;   // which stage image is currently shown (0-3)
+  // ── DOM refs ───────────────────────────────────────────────────
+  var wrap, wBar, sBar, wVal, sVal, wBtn, sBtn, ghost;
+  var _onWBtnPD, _onSBtnPD, _onDocPM, _onDocPU, _onResize, _onCanvasTap;
 
-  // ── Watering sparkle burst ────────────────────────────────────
-  function spawnWaterSparks(flEl, intensity) {
-    if (!flEl) return;
-    intensity = intensity || 1;
-    var r  = flEl.getBoundingClientRect();
-    var cx = r.left + r.width  * 0.50;
-    var cy = r.top  + r.height * 0.38;
-    var colors = ['#7DDFFF','#FFB3E6','#FFD700','#C084FC','#FF9FE5','#80FFD4','#FFFFFF','#FFA5C8'];
-    var count = Math.round(5 * intensity);
-    for (var i = 0; i < count; i++) {
-      (function (i) {
-        var sp  = document.createElement('div');
-        sp.className = 'water-spark';
-        var ang = Math.random() * Math.PI * 2;
-        var d   = (18 + Math.random() * 32) * intensity;
-        sp.style.cssText = [
-          'left:'       + (cx + (Math.random()-0.5)*r.width*0.5 - 3) + 'px',
-          'top:'        + (cy + (Math.random()-0.5)*r.height*0.3 - 3) + 'px',
-          'background:' + colors[Math.floor(Math.random() * colors.length)],
-          '--wx:'       + Math.round(Math.cos(ang) * d) + 'px',
-          '--wy:'       + Math.round(Math.sin(ang) * d) + 'px',
-          'animation-delay:' + (i * 20) + 'ms',
-          'width:'      + (4 + Math.random()*5) + 'px',
-          'height:'     + (4 + Math.random()*5) + 'px',
-        ].join(';');
-        document.body.appendChild(sp);
-        setTimeout(function () { sp.parentNode && sp.parentNode.removeChild(sp); }, 750);
-      }(i));
-    }
+  // ── Helpers ────────────────────────────────────────────────────
+  function lerp(a, b, t) { return a + (b - a) * t; }
+  function clamp(v, lo, hi) { return Math.max(lo, Math.min(hi, v)); }
+  function smooth(t) { return t * t * (3 - 2 * t); }
+
+  function darkenHex(hex, amt) {
+    amt = amt || 35;
+    var n = parseInt(hex.replace('#',''), 16);
+    var r = Math.max(0, (n >> 16)        - amt);
+    var g = Math.max(0, ((n >> 8) & 0xff) - amt);
+    var b = Math.max(0, (n & 0xff)        - amt);
+    return 'rgb(' + r + ',' + g + ',' + b + ')';
   }
 
-  // ── Stage-up burst: big pop + emoji floaters when flower grows ──
-  function stageUpBurst(flEl, stage) {
-    if (!flEl || !flEl.parentNode) return;   // guard: element must still be in DOM
-    var r  = flEl.getBoundingClientRect();
-    var cx = r.left + r.width  * 0.5;
-    var cy = r.top  + r.height * 0.4;
-    var emojis = ['✨','🌸','💧','⭐','💕','🌿','💦'];
-    // Big sparkle shower
-    spawnWaterSparks(flEl, 2.5);
-    if (window.playSparkleChime) window.playSparkleChime();
-    // Floating emoji particles
-    for (var i = 0; i < 6; i++) {
-      (function(i) {
-        var em = document.createElement('div');
-        em.className = 'grow-burst-emoji';
-        em.textContent = emojis[Math.floor(Math.random() * emojis.length)];
-        var ox = (Math.random() - 0.5) * r.width * 1.4;
-        var oy = -(50 + Math.random() * 80);
-        em.style.cssText = [
-          'left:'  + (cx - 12 + ox * 0.3) + 'px',
-          'top:'   + (cy - 12) + 'px',
-          '--ex:'  + Math.round(ox) + 'px',
-          '--ey:'  + Math.round(oy) + 'px',
-          'animation-delay:' + (i * 55) + 'ms',
-          'font-size:' + (16 + Math.random() * 10) + 'px',
-        ].join(';');
-        document.body.appendChild(em);
-        setTimeout(function() { em.parentNode && em.parentNode.removeChild(em); }, 1200);
-      }(i));
-    }
+  // Returns true when the drag ghost is positioned over the pot zone
+  function isOverPot() {
+    if (!canvas) return false;
+    var rect = canvas.getBoundingClientRect();
+    var canX = ghostX - rect.left;
+    var canY = ghostY - rect.top;
+    var cx   = W * 0.5;
+    var potT = H * 0.774;
+    var potB = H * 0.935;
+    var rT   = W * 0.161;
+    return canX >= cx - rT && canX <= cx + rT && canY >= potT && canY <= potB;
   }
 
-  function setFlowerGlow(flEl, pct) {
-    if (!flEl) return;
-    var g1 = Math.round(6  + pct * 0.28);
-    var g2 = Math.round(12 + pct * 0.46);
-    var a1 = (0.40 + pct * 0.006).toFixed(2);
-    var a2 = (0.25 + pct * 0.005).toFixed(2);
-    flEl.style.filter =
-      'drop-shadow(0 0 ' + g1 + 'px rgba(255,210,120,' + a1 + ')) ' +
-      'drop-shadow(0 0 ' + g2 + 'px rgba(200,100,255,' + a2 + '))';
-  }
-
-  function resetFlowerGlow(flEl) {
-    if (!flEl) return;
-    flEl.style.filter = 'none';
-  }
-
-  // ── Water ring progress (SVG stroke-dashoffset — reliable on iOS) ──
-  function setRing(pct) {
-    var fill = document.getElementById('waterRingFill');
-    if (!fill) return;
-    var circumference = 270.18;   // 2π × r=43
-    fill.style.strokeDashoffset = (circumference * (1 - pct / 100)).toFixed(2);
-  }
-
-  // ── Bloom and slot into tray ──────────────────────────────────
-  function bloomCurrent() {
-    if (blooming) return;   // guard: prevent double-bloom race
-    blooming = true;
-
-    var wrap = document.getElementById('activeFlowerWrap');
-    if (!wrap) return;
-
-    // Snap to full bloom (stage 3)
-    if (activePetG) {
-      var finalStages = DEFS[currentFlower] && DEFS[currentFlower].stages;
-      if (finalStages && finalStages[3] && activePetG.src.indexOf(finalStages[3]) === -1) {
-        activePetG.src = finalStages[3];
-      }
-      if (typeof gsap !== 'undefined') {
-        gsap.set(activePetG, { scale: 0.65, opacity: 1 });
-      } else {
-        activePetG.style.transform = 'scale(1)';
-        activePetG.style.opacity   = '1';
-      }
-    }
-
-    // Bounce pop on the flower image
-    var flEl = wrap.querySelector('.active-flower-img, .flower-svg');
-    if (flEl) {
-      if (typeof gsap !== 'undefined') {
-        gsap.to(flEl, {
-          scale: 0.78, duration: 0.16, ease: 'power2.out',
-          onComplete: function () {
-            gsap.to(flEl, { scale: 0.65, duration: 0.30, ease: 'elastic.out(1, 0.5)' });
-          },
-        });
-      } else {
-        flEl.style.transition = 'transform 0.16s ease-out';
-        flEl.style.transform  = 'scale(0.78)';
-        setTimeout(function () {
-          flEl.style.transition = 'transform 0.35s cubic-bezier(0.34,1.56,0.64,1)';
-          flEl.style.transform  = 'scale(0.65)';
-        }, 160);
-      }
-    }
-
-    _bloomTimer = setTimeout(function () {
-      _bloomTimer = null;
-      addToBouquet(currentFlower);
-      currentFlower++;
-
-      if (currentFlower >= DEFS.length) {
-        _doneTimer = setTimeout(function () {
-          _doneTimer = null;
-          dragging = false;
-          if (ghostEl) ghostEl.style.display = 'none';
-          if (canEl)   canEl.classList.remove('can-held');
-          if (window.playGameComplete) window.playGameComplete();
-          // Animate bouquet wrap, then advance
-          playFullWrap(function () {
-            showBouquetReveal(function () {
-              heartStep++;
-              advanceHeart(heartStep);
-              goTo(12);   // → s5/Q5
-            });
-          });
-        }, 600);
-      } else {
-        _nextFlowTimer = setTimeout(function () {
-          _nextFlowTimer = null;
-          blooming = false;
-          loadFlower(currentFlower);
-        }, 620);
-      }
-    }, 480);
-  }
-
-  // ── Reveal next bouquet stage when a flower is watered ───────
-  function addToBouquet(idx) {
-    var stageImg = document.getElementById('bqStageImg');
-    if (!stageImg) return;
-
-    var stageN = Math.min(idx, DEFS.length - 1);  // bq-stage-0 … bq-stage-(n-1)
-    if (typeof gsap !== 'undefined') {
-      // Crossfade: dip then reveal new stage
-      gsap.to(stageImg, {
-        opacity: 0, scale: 0.94, duration: 0.18, ease: 'power2.in',
-        onComplete: function () {
-          stageImg.src = 'bq-stage-' + stageN + '.webp';
-          gsap.to(stageImg, { opacity: 1, scale: 1, duration: 0.40, ease: 'back.out(1.6)' });
-        },
+  // ── Audio helpers ──────────────────────────────────────────────
+  function playBloomNote(idx) {
+    try {
+      var ac = new (window.AudioContext || window.webkitAudioContext)();
+      var freqs = [659, 784, 1047];
+      var freq  = freqs[idx] || 880;
+      [[freq, 0.22, 0.8], [freq*2.76, 0.08, 0.38]].forEach(function(p) {
+        var o = ac.createOscillator(), g = ac.createGain();
+        o.connect(g); g.connect(ac.destination);
+        o.type = 'sine'; o.frequency.value = p[0];
+        g.gain.setValueAtTime(0, ac.currentTime);
+        g.gain.linearRampToValueAtTime(p[1], ac.currentTime + 0.02);
+        g.gain.exponentialRampToValueAtTime(0.001, ac.currentTime + p[2]);
+        o.start(); o.stop(ac.currentTime + p[2] + 0.02);
       });
-    } else {
-      stageImg.src     = 'bq-stage-' + stageN + '.webp';
-      stageImg.style.opacity = '1';
-    }
-
-    burstHearts(idx);
+    } catch(e) {}
   }
 
-  // ── Load flower onto center stage (PNG sprite) ───────────────
-  function loadFlower(idx) {
-    var wrap = document.getElementById('activeFlowerWrap');
-    if (!wrap) return;
+  function playWaterDrip() {
+    try {
+      var ac = new (window.AudioContext || window.webkitAudioContext)();
+      var o = ac.createOscillator(), g = ac.createGain();
+      o.connect(g); g.connect(ac.destination);
+      o.type = 'sine';
+      o.frequency.setValueAtTime(820, ac.currentTime);
+      o.frequency.exponentialRampToValueAtTime(260, ac.currentTime + 0.10);
+      g.gain.setValueAtTime(0.12, ac.currentTime);
+      g.gain.exponentialRampToValueAtTime(0.001, ac.currentTime + 0.13);
+      o.start(); o.stop(ac.currentTime + 0.14);
+    } catch(e) {}
+  }
 
-    if (activeTimeline) { activeTimeline.kill(); activeTimeline = null; }
-    activePetG     = null;
-    activeTimeline = null;
-    wrap.innerHTML = '';
-    fillPct       = 0;
-    _currentStage = 0;
-    setRing(0);
+  function playBirdChirp() {
+    try {
+      var ac = new (window.AudioContext || window.webkitAudioContext)();
+      [0, 0.11, 0.22].forEach(function(delay) {
+        var o = ac.createOscillator(), g = ac.createGain();
+        o.connect(g); g.connect(ac.destination);
+        o.type = 'sine';
+        var base = 1900 + Math.random()*700;
+        o.frequency.setValueAtTime(base, ac.currentTime + delay);
+        o.frequency.exponentialRampToValueAtTime(base*1.45, ac.currentTime + delay + 0.07);
+        g.gain.setValueAtTime(0.07, ac.currentTime + delay);
+        g.gain.exponentialRampToValueAtTime(0.001, ac.currentTime + delay + 0.09);
+        o.start(ac.currentTime + delay); o.stop(ac.currentTime + delay + 0.11);
+      });
+    } catch(e) {}
+  }
 
-    if (!DEFS[idx] || !DEFS[idx].stages) return;   // bounds guard
+  // ── Tap sparkles burst ─────────────────────────────────────────
+  function spawnTapSparkles(x, y, col) {
+    for (var i = 0; i < 10; i++) {
+      var ang = (i/10)*Math.PI*2;
+      var spd = 1.8 + Math.random()*2.8;
+      sSparkles.push({
+        x: x, y: y,
+        vx: Math.cos(ang)*spd, vy: Math.sin(ang)*spd - 1.5,
+        sz: 12 + Math.random()*8,
+        em: ['✨','🌟','💫'][Math.floor(Math.random()*3)],
+        life: 1.0
+      });
+    }
+  }
 
-    var img = document.createElement('img');
-    img.src       = DEFS[idx].stages[0];   // start at seed/bud stage
-    img.className = 'active-flower-img';
-    img.draggable = false;
-    img.alt       = DEFS[idx].label || '';
-    wrap.appendChild(img);
+  function spawnTrailParticle() {
+    var el = document.createElement('span');
+    var isWater = tool === 'water';
+    var hue  = isWater ? (175 + Math.random() * 35) : (35 + Math.random() * 35);
+    var size = 5 + Math.random() * 8;
+    el.style.cssText = [
+      'position:fixed','pointer-events:none','z-index:9989','border-radius:50%',
+      'left:' + ghostX + 'px','top:' + ghostY + 'px',
+      'width:' + size + 'px','height:' + size + 'px',
+      'background:hsl(' + hue + ',88%,65%)',
+      'box-shadow:0 0 6px hsl(' + hue + ',88%,65%)',
+      'opacity:0.92',
+      'transition:left 0.55s ease-out,top 0.55s ease-out,opacity 0.55s ease-out,transform 0.55s ease-out',
+    ].join(';');
+    document.body.appendChild(el);
+    var dx = (Math.random() - 0.5) * 64;
+    var dy = -24 - Math.random() * 48;
+    requestAnimationFrame(function () {
+      el.style.left      = (ghostX + dx) + 'px';
+      el.style.top       = (ghostY + dy) + 'px';
+      el.style.opacity   = '0';
+      el.style.transform = 'scale(0.2)';
+    });
+    setTimeout(function () { if (el.parentNode) el.parentNode.removeChild(el); }, 600);
+  }
 
-    // Store img for animation in _onCanMove / bloomCurrent
-    activePetG = img;
+  // ── Finish chime ───────────────────────────────────────────────
+  function playFinishChime() {
+    try {
+      var ac = new (window.AudioContext || window.webkitAudioContext)();
+      // rising arpeggio: C5 E5 G5 C6 with a soft bell timbre
+      [523, 659, 784, 1047].forEach(function(freq, i) {
+        var osc  = ac.createOscillator();
+        var gain = ac.createGain();
+        osc.connect(gain); gain.connect(ac.destination);
+        osc.type = 'sine';
+        osc.frequency.value = freq;
+        var t0 = ac.currentTime + i * 0.18;
+        gain.gain.setValueAtTime(0, t0);
+        gain.gain.linearRampToValueAtTime(0.28, t0 + 0.02);
+        gain.gain.exponentialRampToValueAtTime(0.001, t0 + 0.7);
+        osc.start(t0); osc.stop(t0 + 0.72);
+        // second harmonic (one octave up, quieter) for bell sparkle
+        var osc2  = ac.createOscillator();
+        var gain2 = ac.createGain();
+        osc2.connect(gain2); gain2.connect(ac.destination);
+        osc2.type = 'sine';
+        osc2.frequency.value = freq * 2;
+        gain2.gain.setValueAtTime(0, t0);
+        gain2.gain.linearRampToValueAtTime(0.08, t0 + 0.01);
+        gain2.gain.exponentialRampToValueAtTime(0.001, t0 + 0.4);
+        osc2.start(t0); osc2.stop(t0 + 0.42);
+      });
+    } catch(e) {}
+  }
 
-    var nameEl = document.getElementById('flowerName');
-    if (nameEl) nameEl.textContent = DEFS[idx].name || '';
+  // ── Draw: background ───────────────────────────────────────────
+  // Transparent — let the page CSS gradient show through; just add a
+  // whisper of paper grain for the sketchy feel.
+  function drawBackground() {
+    ctx.save();
+    for (var i = 0; i < 30; i++) {
+      ctx.strokeStyle = 'rgba(120,80,40,' + (Math.random() * 0.012) + ')';
+      ctx.lineWidth = 0.5;
+      ctx.beginPath();
+      ctx.moveTo(Math.random() * W, Math.random() * H);
+      ctx.lineTo(Math.random() * W, Math.random() * H);
+      ctx.stroke();
+    }
+    ctx.restore();
+  }
 
-    var ctr = document.getElementById('flowerCounter');
-    if (ctr) ctr.textContent = 'ดอกที่ ' + (idx + 1) + ' / ' + DEFS.length;
+  // ── Draw: pot (75 % of original size, bottom-anchored) ────────
+  function drawPot() {
+    var cx   = W * 0.5;
+    var potT = H * 0.774;
+    var potB = H * 0.935;
+    var rT   = W * 0.161;
+    var rB   = W * 0.116;
+    var potH = potB - potT;
 
-    // Entrance: fade + slight scale-up
-    if (typeof gsap !== 'undefined') {
-      gsap.fromTo(img,
-        { scale: 0.30, opacity: 0 },
-        { scale: 0.40, opacity: 1, duration: 0.40, ease: 'back.out(1.8)' }
+    rc.path(
+      'M' + (cx-rT) + ',' + potT +
+      ' L' + (cx-rB) + ',' + potB +
+      ' Q' + cx + ',' + (potB+9) + ' ' + (cx+rB) + ',' + potB +
+      ' L' + (cx+rT) + ',' + potT + ' Z',
+      { fill:'#d4724a', fillStyle:'cross-hatch', fillWeight:1.0,
+        hachureGap:5, hachureAngle:45,
+        stroke:'#a04820', strokeWidth:2.2, roughness:2.2, seed:1 }
+    );
+    // highlight
+    ctx.save();
+    ctx.globalAlpha = 0.13;
+    ctx.fillStyle = '#ffffff';
+    ctx.beginPath();
+    ctx.ellipse(cx - rT*0.38, potT + potH*0.22, rT*0.22, potH*0.28, -0.18, 0, Math.PI*2);
+    ctx.fill();
+    ctx.restore();
+    // stripe
+    rc.line(cx-rT+10, potT+potH*0.35, cx+rT-10, potT+potH*0.35,
+      { stroke:'rgba(255,255,255,0.30)', strokeWidth:2, roughness:3, seed:50 });
+    // painted dots
+    rc.circle(cx-rT*0.4, potT+potH*0.56, 7,
+      { fill:'rgba(255,190,170,0.55)', fillStyle:'solid', stroke:'none', roughness:1.5, seed:51 });
+    rc.circle(cx+rT*0.3, potT+potH*0.59, 6,
+      { fill:'rgba(170,220,140,0.55)', fillStyle:'solid', stroke:'none', roughness:1.5, seed:52 });
+    rc.circle(cx, potT+potH*0.66, 5,
+      { fill:'rgba(190,170,255,0.55)', fillStyle:'solid', stroke:'none', roughness:1.5, seed:53 });
+    // rim
+    rc.ellipse(cx, potT, rT*2+12, 20,
+      { fill:'#b85830', fillStyle:'hachure', fillWeight:0.9, hachureGap:4,
+        stroke:'#8a3818', strokeWidth:2, roughness:2.5, seed:2 });
+    // soil
+    rc.ellipse(cx, potT+2, rT*2-6, 15,
+      { fill:'#6b4020', fillStyle:'cross-hatch', fillWeight:0.7, hachureGap:3.5,
+        stroke:'#4a2810', strokeWidth:1.5, roughness:2.5, seed:3 });
+    // wet soil tint — darkens + blue-shifts as water fills
+    if (wMeter > 0) {
+      ctx.save();
+      ctx.globalAlpha = (wMeter / 100) * 0.42;
+      ctx.fillStyle = '#2266bb';
+      ctx.beginPath();
+      ctx.ellipse(cx, potT+2, rT-5, 5, 0, 0, Math.PI*2);
+      ctx.fill();
+      ctx.restore();
+    }
+  }
+
+  // ── Draw: one flower ───────────────────────────────────────────
+  // leanX: extra horizontal pixel offset from sun interaction
+  function drawFlower(idx, t, leanX) {
+    if (t <= 0.005) return;
+    leanX = leanX || 0;
+    // idle wind sway — scales with growth so seedlings don't rock
+    var windLean = Math.sin(clock.t * 0.85 + idx * 2.3) * W * 0.013 * smooth(t);
+    if (!dragging || tool !== 'sun') leanX += windLean;
+    var f      = FLOWERS[idx];
+    var baseX  = f.rx     * W;   // where the stem meets the soil
+    var headX  = (f.headRx !== undefined ? f.headRx : f.rx) * W;  // where the head sits
+    var soilY  = H * 0.776;
+    var r      = f.r * W;
+    var seed   = SEEDS[idx];
+
+    // seed bump (at base)
+    if (t < 0.18) {
+      ctx.globalAlpha = clamp(1 - smooth(clamp((t-0.06)/0.12, 0, 1)), 0, 1);
+      rc.circle(baseX, soilY-4, 7,
+        { fill:'#8a5025', fillStyle:'solid', stroke:'#5a3010', strokeWidth:1.5, roughness:2, seed:seed });
+      ctx.globalAlpha = 1;
+    }
+
+    // stem — arcs from baseX at soil up to headX at tip (fan shape)
+    var stemT    = smooth(clamp((t-0.10)/0.45, 0, 1));
+    var stemTopY = soilY - stemT * H * f.sH * 0.56;
+    // head position slides from base toward its fanned-out target as it grows
+    var stemTopX = lerp(baseX, headX, stemT) + leanX * stemT;
+    if (stemT > 0.01) {
+      var cpx = lerp(baseX, headX, 0.38) + leanX * stemT * 0.45;
+      var cpy = lerp(soilY, stemTopY, 0.52);
+      rc.path(
+        'M' + baseX.toFixed(1) + ',' + soilY.toFixed(1) +
+        ' Q' + cpx.toFixed(1) + ',' + cpy.toFixed(1) +
+        ' ' + stemTopX.toFixed(1) + ',' + stemTopY.toFixed(1),
+        { stroke:'#5a9030', strokeWidth:2.6, roughness:2.8, seed:seed+10 }
       );
-    } else {
-      img.style.transform = 'scale(0.40)';
-      img.style.opacity   = '1';
+    }
+
+    // leaves track the stem arc mid-point
+    var leafT = smooth(clamp((t-0.30)/0.20, 0, 1));
+    if (leafT > 0.01) {
+      ctx.globalAlpha = leafT;
+      var ls   = W * 0.048 * leafT;
+      var lmX  = lerp(baseX, headX, 0.42 * stemT) + leanX * stemT * 0.42;
+      var lmY  = lerp(soilY, stemTopY, 0.42);
+      var lm2X = lerp(baseX, headX, 0.62 * stemT) + leanX * stemT * 0.62;
+      var lmY2 = lerp(soilY, stemTopY, 0.62);
+      rc.path(
+        'M'+lmX+','+lmY+' Q'+(lmX-ls*1.6)+','+(lmY-ls)+' '+(lmX-ls*0.8)+','+(lmY-ls*1.9)+' Z',
+        { fill:'#6ab038', fillStyle:'hachure', fillWeight:0.9, hachureGap:3,
+          stroke:'#4a8020', strokeWidth:1.3, roughness:2.5, seed:seed+20 }
+      );
+      rc.path(
+        'M'+lm2X+','+lmY2+' Q'+(lm2X+ls*1.4)+','+(lmY2-ls*0.8)+' '+(lm2X+ls*0.6)+','+(lmY2-ls*1.7)+' Z',
+        { fill:'#7ac048', fillStyle:'hachure', fillWeight:0.9, hachureGap:3,
+          stroke:'#4a8020', strokeWidth:1.3, roughness:2.5, seed:seed+21 }
+      );
+      ctx.globalAlpha = 1;
+    }
+
+    // bud → petals → glow drawn inside tap-bounce scale transform
+    ctx.save();
+    var bs = tapBounce[idx].s;
+    if (Math.abs(bs - 1) > 0.002) {
+      ctx.translate(stemTopX, stemTopY);
+      ctx.scale(bs, bs);
+      ctx.translate(-stemTopX, -stemTopY);
+    }
+
+    // bud (follows stemTopX)
+    var budIn  = smooth(clamp((t-0.45)/0.15, 0, 1));
+    var budOut = smooth(clamp((t-0.62)/0.10, 0, 1));
+    var budT   = budIn * (1 - budOut);
+    if (budT > 0.01) {
+      ctx.globalAlpha = budT;
+      rc.circle(stemTopX, stemTopY, r*0.88,
+        { fill:f.pCol, fillStyle:'solid', stroke:darkenHex(f.pCol), strokeWidth:1.5, roughness:1.8, seed:seed+30 });
+      ctx.globalAlpha = 1;
+    }
+
+    // petals (centered on stemTopX)
+    var petT = smooth(clamp((t-0.55)/0.30, 0, 1));
+    if (petT > 0.01) {
+      ctx.globalAlpha = Math.min(1, petT * 1.2);
+      for (var pi = 0; pi < f.nP; pi++) {
+        var a  = (pi / f.nP) * Math.PI * 2;
+        var pr = r * lerp(0.25, 1.0, petT);
+        var px = stemTopX + Math.cos(a) * pr * 0.68;
+        var py = stemTopY + Math.sin(a) * pr * 0.68;
+        var pw = r * 0.75 * lerp(0.35, 1, petT);
+        var ph = r * 1.15 * lerp(0.35, 1, petT);
+        rc.ellipse(px, py, pw*2, ph*2, {
+          fill: f.pCol, fillStyle:'hachure', fillWeight:0.85, hachureGap:2.8,
+          hachureAngle: (a * 180 / Math.PI + 30) % 180,
+          stroke: darkenHex(f.pCol, 28), strokeWidth:1.2, roughness:2.0,
+          seed: seed + 40 + pi
+        });
+      }
+      rc.circle(stemTopX, stemTopY, r*0.54,
+        { fill:f.cCol, fillStyle:'solid', stroke:darkenHex(f.cCol, 45), strokeWidth:1.2, roughness:1.8, seed:seed+100 });
+      rc.circle(stemTopX, stemTopY, r*0.54,
+        { fill:'rgba(0,0,0,0)', fillStyle:'cross-hatch', fillWeight:0.45, hachureGap:2.5, stroke:'none', roughness:1.5, seed:seed+101 });
+      ctx.globalAlpha = 1;
+    }
+
+    // glow halo (late stage, follows stemTopX)
+    var glowT = smooth(clamp((t-0.76)/0.18, 0, 1));
+    if (glowT > 0.01) {
+      ctx.globalAlpha = glowT * 0.36;
+      var grd = ctx.createRadialGradient(stemTopX, stemTopY, r*0.4, stemTopX, stemTopY, r*2.4);
+      grd.addColorStop(0, f.pCol);
+      grd.addColorStop(1, 'rgba(255,255,255,0)');
+      ctx.fillStyle = grd;
+      ctx.beginPath();
+      ctx.arc(stemTopX, stemTopY, r*2.4, 0, Math.PI*2);
+      ctx.fill();
+    }
+
+    ctx.restore();
+  }
+
+  // ── Draw: butterflies ──────────────────────────────────────────
+  function drawButterflies(t, bflyT) {
+    for (var bi = 0; bi < 4; bi++) {
+      var angle = t * (0.55 + bi*0.14) + bi*1.57;
+      var rad   = W * (0.14 + bi*0.04);
+      var bx    = W*0.5 + Math.cos(angle)*rad;
+      var by    = H*(0.20 + bi*0.06) + Math.sin(t*1.9 + bi)*H*0.03;
+      var flapT = (Math.sin(t*9 + bi*1.4) + 1) / 2;
+      var ws    = W * 0.054 * bflyT;
+      ctx.globalAlpha = bflyT * 0.82;
+      rc.path(
+        'M'+bx+','+by+' Q'+(bx-ws*1.1)+','+(by-ws*0.9)+' '+(bx-ws*(0.7+flapT*0.7))+','+(by+ws*0.45)+' Z',
+        { fill:BFLY_COLS[bi], fillStyle:'hachure', fillWeight:0.7, hachureGap:2.5,
+          stroke:darkenHex(BFLY_COLS[bi], 20), strokeWidth:1, roughness:2, seed:900+bi*10 }
+      );
+      rc.path(
+        'M'+bx+','+by+' Q'+(bx+ws*1.1)+','+(by-ws*0.9)+' '+(bx+ws*(0.7+flapT*0.7))+','+(by+ws*0.45)+' Z',
+        { fill:BFLY_COLS[bi], fillStyle:'hachure', fillWeight:0.7, hachureGap:2.5,
+          stroke:darkenHex(BFLY_COLS[bi], 20), strokeWidth:1, roughness:2, seed:900+bi*10+1 }
+      );
+      ctx.globalAlpha = 1;
     }
   }
 
-  // ── Watering can drag (pointer capture + element-level listeners) ──
-  // Using setPointerCapture so that pointermove/pointerup are always
-  // delivered to canEl even when the finger moves off it — works on
-  // iOS Safari, Android Chrome, and desktop browsers uniformly.
-  // Document-level listeners are intentionally NOT used here because
-  // iOS Safari does not reliably bubble captured pointer events to document.
-  function bindCan() {
-    canEl = document.getElementById('waterCanItem');
-    if (!canEl) return;
-
-    // Clean up any listeners from a previous start() call
-    if (_canDown)   canEl.removeEventListener('pointerdown',   _canDown,   { passive: false });
-    if (_onCanMove) canEl.removeEventListener('pointermove',   _onCanMove, { passive: false });
-    if (_onCanUp) {
-      canEl.removeEventListener('pointerup',     _onCanUp);
-      canEl.removeEventListener('pointercancel', _onCanUp);
-    }
-
-    _onCanMove = function (e) {
-      if (!dragging) return;
-      e.preventDefault();   // prevent page scroll during drag
-
-      if (ghostEl) {
-        ghostEl.style.left = e.clientX + 'px';
-        ghostEl.style.top  = e.clientY + 'px';
+  // ── Draw: water drops (💧 emoji) ──────────────────────────────
+  function updateAndDrawDrops(dt) {
+    if (dragging && tool === 'water' && wMeter < 100 && isOverPot()) {
+      var bRect = canvas.getBoundingClientRect();
+      var gCX = ghostX - bRect.left;
+      var gCY = ghostY - bRect.top;
+      for (var n = 0; n < 2; n++) {
+        wDrops.push({
+          x:  gCX + (Math.random()-0.5) * 28,
+          y:  gCY + Math.random() * 16,
+          vy: 3.5 + Math.random() * 3,
+          sz: 15 + Math.random() * 9,
+          life: 1.0
+        });
       }
+    }
+    ctx.textAlign = 'center'; ctx.textBaseline = 'middle';
+    for (var i = wDrops.length-1; i >= 0; i--) {
+      var d = wDrops[i];
+      d.y += d.vy; d.life -= dt * 0.9;
+      // splash into soil
+      if (!d.splashed && d.y >= H * 0.776) {
+        d.splashed = true;
+        soilRipples.push({ x: d.x, r: 0, life: 1.0 });
+        dripTimer -= 0.3; // allow next drip sooner on splash
+      }
+      if (d.life <= 0 || d.y > H * 0.80) { wDrops.splice(i,1); continue; }
+      ctx.save();
+      ctx.globalAlpha = d.life * 0.92;
+      ctx.font = d.sz + 'px serif';
+      ctx.fillText('💧', d.x, d.y);
+      ctx.restore();
+    }
+  }
 
-      var wrap = document.getElementById('activeFlowerWrap');
-      if (!wrap) return;
+  // ── Draw: sun sparkles (✨ / 🌟 emoji) ────────────────────────
+  var SPARK_EMOJIS = ['✨', '🌟', '✨', '💫'];
+  function updateAndDrawSparkles(t, dt) {
+    if (dragging && tool === 'sun' && sMeter < 100) {
+      var bRect = canvas.getBoundingClientRect();
+      var gCX = ghostX - bRect.left;
+      var gCY = ghostY - bRect.top;
+      for (var n = 0; n < 2; n++) {
+        var ang = Math.random() * Math.PI * 2;
+        var rad = W * 0.05 + Math.random() * W * 0.18;
+        sSparkles.push({
+          x:  gCX + Math.cos(ang) * rad,
+          y:  gCY + Math.sin(ang) * rad * 0.6,
+          vx: (Math.random()-0.5) * 2,
+          vy: -1.4 - Math.random() * 2,
+          sz: 14 + Math.random() * 10,
+          em: SPARK_EMOJIS[Math.floor(Math.random() * SPARK_EMOJIS.length)],
+          life: 1.0
+        });
+      }
+    }
+    ctx.textAlign = 'center'; ctx.textBaseline = 'middle';
+    for (var i = sSparkles.length-1; i >= 0; i--) {
+      var s = sSparkles[i];
+      s.x += s.vx; s.y += s.vy; s.life -= dt * 0.9;
+      if (s.life <= 0) { sSparkles.splice(i,1); continue; }
+      ctx.save();
+      ctx.globalAlpha = s.life * 0.92;
+      ctx.font = s.sz + 'px serif';
+      ctx.fillText(s.em, s.x, s.y);
+      ctx.restore();
+    }
+  }
 
-      var r    = wrap.getBoundingClientRect();
-      var over = e.clientX >= r.left - HIT_PAD && e.clientX <= r.right  + HIT_PAD &&
-                 e.clientY >= r.top  - HIT_PAD && e.clientY <= r.bottom + HIT_PAD;
+  // ── Draw: soil ripples ─────────────────────────────────────────
+  function drawSoilRipples(dt) {
+    var soilY = H * 0.776;
+    for (var i = soilRipples.length-1; i >= 0; i--) {
+      var rp = soilRipples[i];
+      rp.r   += dt * W * 0.18;
+      rp.life -= dt * 2.4;
+      if (rp.life <= 0) { soilRipples.splice(i,1); continue; }
+      ctx.save();
+      ctx.globalAlpha = rp.life * 0.32;
+      ctx.strokeStyle = '#70d8ff';
+      ctx.lineWidth   = 1.5;
+      ctx.beginPath();
+      ctx.ellipse(rp.x, soilY, rp.r, rp.r * 0.28, 0, 0, Math.PI*2);
+      ctx.stroke();
+      ctx.restore();
+    }
+  }
 
-      if (over) {
-        var dx   = e.clientX - lastX;
-        var dy   = e.clientY - lastY;
-        var dist = Math.sqrt(dx * dx + dy * dy);
-        fillPct  = Math.min(100, fillPct + (dist / FILL_DIST) * 100);
+  // ── Draw: falling petals (post-bloom) ─────────────────────────
+  function drawFallingPetals(dt) {
+    if (done && fallingPetals.length < 25) {
+      FLOWERS.forEach(function(f, i) {
+        if (Math.random() > 0.12) return;
+        var hx  = (f.headRx !== undefined ? f.headRx : f.rx) * W;
+        var hy  = H*0.776 - H * f.sH * 0.56;
+        fallingPetals.push({
+          x: hx + (Math.random()-0.5) * f.r * W * 2.2,
+          y: hy + (Math.random()-0.5) * f.r * W,
+          vx: (Math.random()-0.5) * 1.4,
+          vy: -0.3 + Math.random() * 0.5,
+          rot: Math.random() * Math.PI * 2,
+          vrot: (Math.random()-0.5) * 0.08,
+          col: f.pCol,
+          rw: f.r * W * 0.30,
+          rh: f.r * W * 0.20,
+          life: 0.85 + Math.random() * 0.15
+        });
+      });
+    }
+    for (var i = fallingPetals.length-1; i >= 0; i--) {
+      var p = fallingPetals[i];
+      p.vy  += dt * 28;
+      p.x   += p.vx; p.y += p.vy * dt * 60;
+      p.rot += p.vrot;
+      p.life -= dt * 0.18;
+      if (p.life <= 0 || p.y > H + 20) { fallingPetals.splice(i,1); continue; }
+      ctx.save();
+      ctx.globalAlpha = p.life * 0.75;
+      ctx.translate(p.x, p.y);
+      ctx.rotate(p.rot);
+      ctx.fillStyle = p.col;
+      ctx.beginPath();
+      ctx.ellipse(0, 0, p.rw, p.rh, 0, 0, Math.PI*2);
+      ctx.fill();
+      ctx.restore();
+    }
+  }
 
-        if (activeTimeline) {
-          // GSAP scrub (full multi-element animation)
-          activeTimeline.progress(fillPct / 100);
-        } else if (activePetG) {
-          // Stage-image mode: advance through growth stages at 33%/66%/99%
-          var newStage = 0;
-          for (var si = STAGE_BREAKS.length - 1; si >= 0; si--) {
-            if (fillPct >= STAGE_BREAKS[si]) { newStage = si; break; }
+  // ── Main draw ──────────────────────────────────────────────────
+  function drawScene(t, dt) {
+    ctx.clearRect(0, 0, W, H);
+    drawBackground();
+    // flowers back-to-front
+    var order = FLOWERS.map(function(f,i){ return i; });
+    order.sort(function(a,b){ return FLOWERS[b].sH - FLOWERS[a].sH; });
+    for (var si = 0; si < order.length; si++) {
+      var idx = order[si];
+      var lag = idx * 0.018;
+      var flT = clamp((growthT - lag) / (1 - lag*0.6 + 0.001), 0, 1);
+      drawFlower(idx, flT, flowerLeans[idx]);
+    }
+    drawSoilRipples(dt);
+    drawPot();
+    var bflyT = clamp((growthT-0.75)/0.18, 0, 1);
+    if (bflyT > 0) drawButterflies(t, bflyT);
+    updateAndDrawDrops(dt);
+    updateAndDrawSparkles(t, dt);
+    drawFallingPetals(dt);
+    // bloom / completion flash
+    if (flashAlpha > 0.002) {
+      ctx.save();
+      ctx.globalAlpha = flashAlpha;
+      ctx.fillStyle = '#fff8d0';
+      ctx.fillRect(0, 0, W, H);
+      ctx.restore();
+    }
+  }
+
+  // ── Animation loop ─────────────────────────────────────────────
+  function loop(now) {
+    animId = requestAnimationFrame(loop);
+    if (!clock.started) { clock.then = now; clock.started = true; }
+    var dt = Math.min((now - clock.then)/1000, 0.05);
+    clock.then = now; clock.t += dt;
+    var t = clock.t;
+
+    // tap bounce spring — always runs
+    for (var tbi = 0; tbi < tapBounce.length; tbi++) {
+      tapBounce[tbi].v += (1 - tapBounce[tbi].s) * 0.32;
+      tapBounce[tbi].v *= 0.62;
+      tapBounce[tbi].s += tapBounce[tbi].v;
+    }
+    // flash decay
+    flashAlpha = Math.max(0, flashAlpha - dt * 1.6);
+    // drip sound throttle
+    dripTimer = Math.max(0, dripTimer - dt);
+
+    if (!done) {
+      if (dragging && tool === 'water' && isOverPot()) wMeter = Math.min(100, wMeter + WATER_RATE);
+      if (dragging && tool === 'sun')                  sMeter = Math.min(100, sMeter + SUN_RATE);
+      // flowers lean toward sun ghost while dragging, spring back otherwise
+      if (canvas) {
+        var rect = canvas.getBoundingClientRect();
+        var gCanX = ghostX - rect.left;
+        for (var li = 0; li < FLOWERS.length; li++) {
+          var targetLean = 0;
+          if (dragging && tool === 'sun') {
+            var headRxL = FLOWERS[li].headRx !== undefined ? FLOWERS[li].headRx : FLOWERS[li].rx;
+            var flowerCanX = headRxL * W;
+            var delta = gCanX - flowerCanX;
+            targetLean = clamp(delta * 0.28, -W * 0.12, W * 0.12);
           }
-          // Guard: DEFS[currentFlower] must be valid; fillPct only grows so no backward regression
-          var flDef = DEFS[currentFlower];
-          if (newStage !== _currentStage && activePetG && flDef && flDef.stages) {
-            var prevStage = _currentStage;
-            _currentStage = newStage;
-            var stages = flDef.stages;
-            if (stages[newStage]) {
-              var nextSrc = stages[newStage];
-              // Capture refs so GSAP callbacks are safe even if activePetG is later nulled
-              var imgRef = activePetG;
-              // Crossfade: fade out → swap src → fade in
-              if (typeof gsap !== 'undefined') {
-                gsap.to(imgRef, {
-                  opacity: 0, scale: 0.72, duration: 0.12, ease: 'power1.in',
-                  onComplete: function() {
-                    if (!imgRef.parentNode) return;   // guard: element may have been removed
-                    imgRef.src = nextSrc;
-                    gsap.to(imgRef, { opacity: 1, scale: 0.68, duration: 0.22, ease: 'back.out(1.6)',
-                      onComplete: function() { if (imgRef.parentNode) gsap.to(imgRef, { scale: 0.65, duration: 0.15 }); }
-                    });
-                  }
-                });
-              } else {
-                if (imgRef.parentNode) imgRef.src = nextSrc;
-              }
-              // Stage-up burst only when advancing (not going back)
-              if (newStage > prevStage) {
-                stageUpBurst(activePetG, newStage);
-              }
-            }
-          }
+          flowerLeans[li] = lerp(flowerLeans[li], targetLean, 0.08);
         }
-        setRing(fillPct);
-
-        // Glow + sparkle while watering — intensity scales with progress
-        setFlowerGlow(activePetG, fillPct);
-        var sparkInterval = Math.max(45, 90 - fillPct * 0.4);   // faster sparks near full
-        var nowTs = Date.now();
-        if (dist > 1 && nowTs - _lastSparkTime > sparkInterval) {
-          _lastSparkTime = nowTs;
-          spawnWaterSparks(activePetG, 0.8 + fillPct * 0.012);
-        }
-        if (dist > 1 && nowTs - _waterSoundTime > 150) {
-          _waterSoundTime = nowTs;
-          if (window.playWaterDrip) window.playWaterDrip();
-        }
-
-        if (fillPct >= 100) {
-          dragging = false;
-          if (ghostEl) ghostEl.style.display = 'none';
-          if (canEl)   canEl.classList.remove('can-held');
-          bloomCurrent();
-        }
-      } else {
-        resetFlowerGlow(activePetG);
       }
+      // per-flower bloom detection
+      for (var bi = 0; bi < FLOWERS.length; bi++) {
+        var blag = bi * 0.018;
+        var bflT = clamp((growthT - blag) / (1 - blag*0.6 + 0.001), 0, 1);
+        if (!bloomedFlags[bi] && smooth(clamp((bflT-0.55)/0.30, 0, 1)) > 0.5) {
+          bloomedFlags[bi] = true;
+          playBloomNote(bi);
+          flashAlpha = Math.max(flashAlpha, 0.28);
+          if (navigator.vibrate) navigator.vibrate(30);
+          var bf = FLOWERS[bi];
+          var bhx = (bf.headRx !== undefined ? bf.headRx : bf.rx) * W;
+          var bstemT = smooth(clamp((bflT-0.10)/0.45, 0, 1));
+          var bhy = H*0.776 - bstemT * H * bf.sH * 0.56;
+          spawnTapSparkles(bhx, bhy, bf.pCol);
+        }
+      }
+      // drip sound on splash
+      if (dripTimer <= 0 && soilRipples.length > 0 && dragging && tool === 'water') {
+        dripTimer = 0.18;
+        playWaterDrip();
+      }
+      // ambient birdsong grows with flowers
+      birdTimer -= dt;
+      if (birdTimer <= 0 && growthT > 0.18) {
+        if (Math.random() < growthT * 0.75) playBirdChirp();
+        birdTimer = 7 + Math.random() * 9;
+      }
+      growthT = clamp((wMeter*0.5 + sMeter*0.5)/100, 0, 1);
+      if (wBar) wBar.style.width = Math.round(wMeter) + '%';
+      if (sBar) sBar.style.width = Math.round(sMeter) + '%';
+      if (wVal) wVal.textContent = Math.round(wMeter) + '%';
+      if (sVal) sVal.textContent = Math.round(sMeter) + '%';
+      // highlight ghost when watering can is over the pot
+      if (ghost && tool === 'water') {
+        ghost.classList.toggle('fp-ghost-active', isOverPot());
+      }
+      if (dragging && t - trailTick > 0.045) {
+        trailTick = t;
+        spawnTrailParticle(); spawnTrailParticle();
+      }
+      if (growthT >= 1.0) {
+        done = true;
+        flashAlpha = 0.55;
+        playFinishChime();
+        // hide tools, show next button
+        var tbEl = document.querySelector('.fp-toolbar');
+        if (tbEl) tbEl.style.display = 'none';
+        var nBtn = document.getElementById('fpNextBtn');
+        if (nBtn) {
+          nBtn.style.display = 'flex';
+          nBtn.onclick = function () {
+            nBtn.style.display = 'none';
+            if (tbEl) tbEl.style.display = '';
+            heartStep++;
+            advanceHeart(heartStep);
+            goTo(12);
+          };
+        }
+      }
+    }
+    drawScene(t, dt);
+  }
 
-      lastX = e.clientX;
-      lastY = e.clientY;
-    };
+  // ── Build canvas ───────────────────────────────────────────────
+  function buildScene() {
+    wrap = document.getElementById('fpSceneWrap');
+    if (!wrap || typeof rough === 'undefined') return;
+    W = wrap.clientWidth  || 360;
+    H = wrap.clientHeight || 420;
+    var dpr = Math.min(window.devicePixelRatio || 1, 2);
+    canvas = document.createElement('canvas');
+    canvas.width  = Math.round(W * dpr);
+    canvas.height = Math.round(H * dpr);
+    canvas.style.width   = W + 'px';
+    canvas.style.height  = H + 'px';
+    canvas.style.display = 'block';
+    wrap.appendChild(canvas);
+    ctx = canvas.getContext('2d');
+    ctx.scale(dpr, dpr);
+    rc = rough.canvas(canvas);
+  }
 
-    _onCanUp = function () {
+  // ── Drag helpers ───────────────────────────────────────────────
+  function startDrag(toolName, e) {
+    e.preventDefault();
+    tool = toolName; dragging = true;
+    ghostX = e.clientX; ghostY = e.clientY;
+    if (ghost) {
+      ghost.textContent  = toolName === 'water' ? '🪣' : '☀️';
+      ghost.className    = 'fp-drag-ghost ' + (toolName === 'water' ? 'fp-ghost-water' : 'fp-ghost-sun');
+      ghost.style.left   = ghostX + 'px';
+      ghost.style.top    = ghostY + 'px';
+      ghost.style.display = 'block';
+    }
+    if (wBtn) wBtn.classList.toggle('fp-active', toolName === 'water');
+    if (sBtn) sBtn.classList.toggle('fp-active', toolName === 'sun');
+  }
+
+  function stopDrag() {
+    dragging = false; tool = null;
+    if (ghost) ghost.style.display = 'none';
+    if (wBtn) wBtn.classList.remove('fp-active');
+    if (sBtn) sBtn.classList.remove('fp-active');
+  }
+
+  // ── Events ─────────────────────────────────────────────────────
+  function bindEvents() {
+    wrap  = document.getElementById('fpSceneWrap');
+    wBar  = document.getElementById('fpWaterBar');
+    sBar  = document.getElementById('fpSunBar');
+    wVal  = document.getElementById('fpWaterVal');
+    sVal  = document.getElementById('fpSunVal');
+    wBtn  = document.getElementById('fpWaterTool');
+    sBtn  = document.getElementById('fpSunTool');
+    ghost = document.getElementById('fpDragGhost');
+    if (!wrap) return;
+    _onWBtnPD = function(e) { startDrag('water', e); };
+    _onSBtnPD = function(e) { startDrag('sun',   e); };
+    _onDocPM  = function(e) {
       if (!dragging) return;
-      dragging = false;
-      if (ghostEl) ghostEl.style.display = 'none';
-      if (canEl)   canEl.classList.remove('can-held');
-      resetFlowerGlow(activePetG);
+      ghostX = e.clientX; ghostY = e.clientY;
+      if (ghost) { ghost.style.left = ghostX+'px'; ghost.style.top = ghostY+'px'; }
     };
-
-    _canDown = function (e) {
-      if (blooming || currentFlower >= DEFS.length) return;
-      e.preventDefault();
-      // Capture pointer so move/up always come to canEl even if finger
-      // moves off the element — the only reliable approach on iOS Safari
-      try { canEl.setPointerCapture(e.pointerId); } catch (_) {}
-      dragging = true;
-      lastX    = e.clientX;
-      lastY    = e.clientY;
-      canEl.classList.add('can-held');
-      ghostEl = document.getElementById('waterDragGhost');
-      if (ghostEl) {
-        ghostEl.style.left    = e.clientX + 'px';
-        ghostEl.style.top     = e.clientY + 'px';
-        ghostEl.style.display = 'block';
-      }
+    _onDocPU = function() { stopDrag(); };
+    if (wBtn) wBtn.addEventListener('pointerdown', _onWBtnPD);
+    if (sBtn) sBtn.addEventListener('pointerdown', _onSBtnPD);
+    document.addEventListener('pointermove',   _onDocPM);
+    document.addEventListener('pointerup',     _onDocPU);
+    document.addEventListener('pointercancel', _onDocPU);
+    _onResize = function() {
+      if (!wrap || !canvas) return;
+      var nW = wrap.clientWidth, nH = wrap.clientHeight;
+      if (!nW || !nH) return;
+      W = nW; H = nH;
+      var dpr = Math.min(window.devicePixelRatio || 1, 2);
+      canvas.width  = Math.round(W*dpr);
+      canvas.height = Math.round(H*dpr);
+      canvas.style.width  = W+'px';
+      canvas.style.height = H+'px';
+      ctx = canvas.getContext('2d');
+      ctx.scale(dpr, dpr);
+      rc = rough.canvas(canvas);
     };
-
-    canEl.addEventListener('pointerdown',   _canDown,   { passive: false });
-    canEl.addEventListener('pointermove',   _onCanMove, { passive: false });
-    canEl.addEventListener('pointerup',     _onCanUp);
-    canEl.addEventListener('pointercancel', _onCanUp);
-  }
-
-  // ── Bouquet SVG wrap helpers ──────────────────────────────────
-  // All wrap elements live inside #bqMasterSvg as SVG rects/groups.
-  // Heights are in viewBox units (320×200 viewport).
-
-  function updateWrap(count) { /* paper wrap is baked into bouquet stage images */ }
-
-  function burstHearts(slotIdx) {
-    // Burst from centre of bouquet stage image
-    var stageImg = document.getElementById('bqStageImg');
-    if (!stageImg) return;
-    var r  = stageImg.getBoundingClientRect();
-    var cx = r.left + r.width  * 0.50;
-    var cy = r.top  + r.height * 0.38;  // upper area = flower heads
-    var colors = ['#FF4D8B','#FF90C0','#FFD600','#C084FC','#7DDFFF'];
-    for (var i = 0; i < 6; i++) {
-      (function (i) {
-        var dot   = document.createElement('div');
-        dot.className = 'bq-heart';
-        var angle = (i / 6) * Math.PI * 2;
-        var hx    = Math.round(Math.cos(angle) * (18 + Math.random() * 12));
-        dot.style.cssText = [
-          'left:' + (cx - 5) + 'px',
-          'top:'  + (cy - 5) + 'px',
-          'background:' + colors[i % colors.length],
-          '--hx:' + hx + 'px',
-          'animation-delay:' + (i * 50) + 'ms',
-        ].join(';');
-        document.body.appendChild(dot);
-        setTimeout(function () { dot.parentNode && dot.parentNode.removeChild(dot); }, 950);
-      }(i));
-    }
-  }
-
-  function playFullWrap(callback) {
-    var stageImg = document.getElementById('bqStageImg');
-    var cont     = document.getElementById('bwContainer');
-
-    // 1. Ensure final bouquet stage is shown
-    // Guard: if bq-stage-5 is already displayed, skip the crossfade and just bounce
-    var alreadyFinal = stageImg && stageImg.src && stageImg.src.endsWith('bq-stage-5.webp');
-    if (stageImg) {
-      if (typeof gsap !== 'undefined') {
-        if (alreadyFinal) {
-          // Already showing final — just do a scale bounce, no dark flash
-          gsap.to(stageImg, { scale: 1.06, duration: 0.35, ease: 'back.out(1.8)',
-            onComplete: function () {
-              gsap.to(stageImg, { scale: 1, duration: 0.25, ease: 'power2.out' });
-            },
-          });
-        } else {
-          gsap.to(stageImg, {
-            opacity: 0, scale: 0.94, duration: 0.18, ease: 'power2.in',
-            onComplete: function () {
-              stageImg.src = 'bq-stage-5.webp';
-              gsap.to(stageImg, { opacity: 1, scale: 1.06, duration: 0.35, ease: 'back.out(1.8)',
-                onComplete: function () {
-                  gsap.to(stageImg, { scale: 1, duration: 0.25, ease: 'power2.out' });
-                },
-              });
-            },
-          });
+    window.addEventListener('resize', _onResize);
+    _onCanvasTap = function(e) {
+      if (!canvas) return;
+      var rect = canvas.getBoundingClientRect();
+      var tx = e.clientX - rect.left, ty = e.clientY - rect.top;
+      FLOWERS.forEach(function(f, i) {
+        var blag = i * 0.018;
+        var flT = clamp((growthT - blag) / (1 - blag*0.6 + 0.001), 0, 1);
+        if (smooth(clamp((flT-0.55)/0.30, 0, 1)) < 0.1) return;
+        var hxL = (f.headRx !== undefined ? f.headRx : f.rx) * W;
+        var stemT = smooth(clamp((flT-0.10)/0.45, 0, 1));
+        var hyL = H*0.776 - stemT * H * f.sH * 0.56;
+        var r = f.r * W * 1.8;
+        var dx = tx - hxL, dy = ty - hyL;
+        if (dx*dx + dy*dy < r*r) {
+          tapBounce[i].v = 0.28;
+          spawnTapSparkles(hxL, hyL, f.pCol);
         }
-      } else {
-        stageImg.src = 'bq-stage-5.webp';
-        stageImg.style.opacity = '1';
-      }
-    }
-
-    // 2. Sparkle burst from bouquet centre
-    setTimeout(function () {
-      var base = stageImg ? stageImg.getBoundingClientRect()
-                          : (cont ? cont.getBoundingClientRect() : null);
-      if (!base) return;
-      var cx     = base.left + base.width  * 0.50;
-      var cy     = base.top  + base.height * 0.35;
-      var sparks = ['#FF4D8B','#FFD600','#C084FC','#7DDFFF','#FF9800','#4CAF60','#FF5FAE','#FFE566'];
-      for (var i = 0; i < 16; i++) {
-        (function (i) {
-          var sp  = document.createElement('div');
-          sp.className = 'bq-spark';
-          var ang = (i / 16) * Math.PI * 2;
-          var d   = 26 + Math.random() * 32;
-          sp.style.cssText = [
-            'left:' + (cx - 4.5) + 'px',
-            'top:'  + (cy - 4.5) + 'px',
-            'background:' + sparks[i % sparks.length],
-            '--sx:' + Math.round(Math.cos(ang) * d) + 'px',
-            '--sy:' + Math.round(Math.sin(ang) * d) + 'px',
-            'animation-delay:' + (i * 28) + 'ms',
-          ].join(';');
-          document.body.appendChild(sp);
-          setTimeout(function () { sp.parentNode && sp.parentNode.removeChild(sp); }, 1300);
-        }(i));
-      }
-    }, 400);
-
-    // 3. Callback after animation settles
-    setTimeout(function () { if (callback) callback(); }, 1700);
+      });
+    };
+    if (canvas) canvas.addEventListener('click', _onCanvasTap);
   }
 
-  function resetWrap() {
-    var stageImg = document.getElementById('bqStageImg');
-    if (stageImg) {
-      stageImg.src     = '';
-      stageImg.style.opacity = '0';
-      if (typeof gsap !== 'undefined') gsap.set(stageImg, { scale: 1, opacity: 0, clearProps: 'transform' });
+  function unbindEvents() {
+    if (wBtn && _onWBtnPD) wBtn.removeEventListener('pointerdown', _onWBtnPD);
+    if (sBtn && _onSBtnPD) sBtn.removeEventListener('pointerdown', _onSBtnPD);
+    if (_onDocPM)  document.removeEventListener('pointermove',   _onDocPM);
+    if (_onDocPU) {
+      document.removeEventListener('pointerup',     _onDocPU);
+      document.removeEventListener('pointercancel', _onDocPU);
     }
+    if (_onResize) window.removeEventListener('resize', _onResize);
+    if (_onCanvasTap && canvas) canvas.removeEventListener('click', _onCanvasTap);
+    _onWBtnPD = _onSBtnPD = _onDocPM = _onDocPU = _onResize = _onCanvasTap = null;
   }
 
-  // ── Public ────────────────────────────────────────────────────
+  // ── Public ─────────────────────────────────────────────────────
   function start() {
-    currentFlower  = 0;
-    fillPct        = 0;
-    dragging       = false;
-    blooming       = false;
-    activeTimeline = null;
-    activePetG     = null;
-    ghostEl        = document.getElementById('waterDragGhost');
-    if (ghostEl) ghostEl.style.display = 'none';
-    resetWrap();
-    loadFlower(0);
-    bindCan();   // attaches all listeners to canEl with pointer capture
+    wMeter = 0; sMeter = 0; growthT = 0;
+    tool = null; dragging = false; done = false;
+    ghostX = 0; ghostY = 0; trailTick = 0;
+    wDrops = []; sSparkles = [];
+    flowerLeans = [0, 0, 0];
+    bloomedFlags = [false,false,false];
+    tapBounce = [{s:1,v:0},{s:1,v:0},{s:1,v:0}];
+    soilRipples = []; fallingPetals = [];
+    flashAlpha = 0; birdTimer = 5; dripTimer = 0;
+    var nBtn = document.getElementById('fpNextBtn');
+    if (nBtn) nBtn.style.display = 'none';
+    var tbEl = document.querySelector('.fp-toolbar');
+    if (tbEl) tbEl.style.display = '';
+    clock = { then:0, t:0, started:false };
+    buildScene();
+    bindEvents();
+    animId = requestAnimationFrame(loop);
   }
 
   function stop() {
-    // Remove all pointer listeners from canEl
-    if (canEl) {
-      if (_canDown)   canEl.removeEventListener('pointerdown',   _canDown,   { passive: false });
-      if (_onCanMove) canEl.removeEventListener('pointermove',   _onCanMove, { passive: false });
-      if (_onCanUp) {
-        canEl.removeEventListener('pointerup',     _onCanUp);
-        canEl.removeEventListener('pointercancel', _onCanUp);
-      }
-    }
-    _canDown = _onCanMove = _onCanUp = null;
-
-    dragging = false;
-    blooming = false;
-    if (_bloomTimer)    { clearTimeout(_bloomTimer);    _bloomTimer    = null; }
-    if (_nextFlowTimer) { clearTimeout(_nextFlowTimer); _nextFlowTimer = null; }
-    if (_doneTimer)     { clearTimeout(_doneTimer);     _doneTimer     = null; }
-    if (activeTimeline) { activeTimeline.kill(); activeTimeline = null; }
-    if (ghostEl) ghostEl.style.display = 'none';
-    if (canEl)   canEl.classList.remove('can-held');
-    // Clean up any in-flight burst particles left over from rapid navigation
-    document.querySelectorAll('.bq-heart, .bq-spark, .water-spark, .grow-burst-emoji').forEach(function (el) { el.parentNode && el.parentNode.removeChild(el); });
-  }
-
-  function showBouquetReveal(callback) {
-    var overlay = document.getElementById('bqRevealOverlay');
-    var btn     = document.getElementById('bqRevealBtn');
-    var floats  = document.getElementById('bqRevealFloats');
-    if (!overlay) { if (callback) callback(); return; }
-
-    var hearts  = ['💕','💗','🌸','✨','💐','🩷','⭐'];
-    var timers  = [];
-    function spawnHeart() {
-      var el = document.createElement('span');
-      el.className = 'bq-float-heart';
-      el.textContent = hearts[Math.floor(Math.random() * hearts.length)];
-      el.style.left   = (8 + Math.random() * 84) + '%';
-      el.style.bottom = (4 + Math.random() * 18) + '%';
-      el.style.animationDuration = (2.4 + Math.random() * 1.8) + 's';
-      el.style.animationDelay    = (Math.random() * 0.4) + 's';
-      el.style.fontSize = (14 + Math.random() * 14) + 'px';
-      if (floats) floats.appendChild(el);
-      timers.push(setTimeout(function () { el.parentNode && el.parentNode.removeChild(el); }, 4500));
-    }
-    var spawnInterval = setInterval(spawnHeart, 550);
-    for (var i = 0; i < 6; i++) spawnHeart();
-
-    overlay.style.display = 'flex';
-    requestAnimationFrame(function () {
-      requestAnimationFrame(function () { overlay.classList.add('active'); });
-    });
-
-    function onBtn() {
-      btn && btn.removeEventListener('click', onBtn);
-      clearInterval(spawnInterval);
-      timers.forEach(clearTimeout);
-      overlay.classList.remove('active');
-      setTimeout(function () {
-        overlay.style.display = 'none';
-        if (floats) floats.innerHTML = '';
-        if (callback) callback();
-      }, 500);
-    }
-    if (btn) btn.addEventListener('click', onBtn);
+    stopDrag();
+    unbindEvents();
+    if (animId) { cancelAnimationFrame(animId); animId = null; }
+    if (wrap)   { wrap.innerHTML = ''; }
+    canvas = ctx = rc = null;
+    wDrops = []; sSparkles = [];
+    soilRipples = []; fallingPetals = [];
   }
 
   return { start: start, stop: stop };

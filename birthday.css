@@ -942,12 +942,195 @@ h1 {
   filter: none;
 }
 /* ── Build the Bouquet (SVG + GSAP) ─────────────────────────────── */
+/* ── Flower Pot Game ──────────────────────────────────────────────── */
 #s-bouquet {
   justify-content: flex-start;
-  padding: 12px 18px 14px;
-  gap: 10px;
+  padding: 8px 0 0;
+  gap: 0;
   touch-action: none;
+  overflow: hidden;
 }
+
+/* Three.js canvas container — fills all space above toolbar */
+.fp-scene-wrap {
+  flex: 1;
+  min-height: 0;
+  width: 100%;
+  position: relative;
+  touch-action: none;
+  cursor: pointer;
+}
+
+.fp-scene-wrap canvas {
+  display: block;
+  width: 100% !important;
+  height: 100% !important;
+  background: transparent;
+}
+
+/* Water + Sun progress meters */
+.fp-meters {
+  width: 100%;
+  max-width: 360px;
+  padding: 6px 18px 4px;
+  display: flex;
+  flex-direction: column;
+  gap: 5px;
+  flex-shrink: 0;
+}
+
+.fp-meter-row {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.fp-meter-icon {
+  font-size: 16px;
+  width: 22px;
+  text-align: center;
+  flex-shrink: 0;
+}
+
+.fp-meter-track {
+  flex: 1;
+  height: 10px;
+  background: rgba(255,255,255,0.20);
+  border-radius: 10px;
+  overflow: hidden;
+  border: 1px solid rgba(255,255,255,0.15);
+}
+
+.fp-meter-fill {
+  height: 100%;
+  width: 0%;
+  border-radius: 10px;
+  transition: width 0.2s ease;
+}
+
+.fp-water-fill {
+  background: linear-gradient(90deg, #7dd8ff, #3aaeff);
+  box-shadow: 0 0 6px rgba(100, 200, 255, 0.6);
+}
+
+.fp-sun-fill {
+  background: linear-gradient(90deg, #ffd840, #ffaa10);
+  box-shadow: 0 0 6px rgba(255, 200, 50, 0.6);
+}
+
+.fp-meter-val {
+  font-size: 11px;
+  color: rgba(255,255,255,0.65);
+  width: 28px;
+  text-align: right;
+  flex-shrink: 0;
+}
+
+/* Finish / next button — appears when flowers fully bloom */
+.fp-next-btn {
+  flex-shrink: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 6px;
+  margin: 0 auto 10px;
+  padding: 13px 36px;
+  font-size: 22px;
+  background: rgba(255,255,255,0.25);
+  border: 2px solid rgba(255,255,255,0.45);
+  border-radius: 50px;
+  cursor: pointer;
+  backdrop-filter: blur(12px);
+  -webkit-backdrop-filter: blur(12px);
+  color: #fff;
+  text-shadow: 0 1px 6px rgba(0,0,0,0.18);
+  box-shadow: 0 4px 20px rgba(120,80,200,0.22);
+  animation: fp-next-pop 0.45s cubic-bezier(0.34,1.56,0.64,1) both;
+  -webkit-tap-highlight-color: transparent;
+}
+.fp-next-btn:active { transform: scale(0.95); }
+
+@keyframes fp-next-pop {
+  from { opacity: 0; transform: scale(0.6) translateY(12px); }
+  to   { opacity: 1; transform: scale(1)   translateY(0); }
+}
+
+/* Tool buttons toolbar */
+.fp-toolbar {
+  flex-shrink: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 18px;
+  padding: 8px 22px 14px;
+  width: 100%;
+}
+
+.fp-tool-btn {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 64px;
+  height: 64px;
+  font-size: 32px;
+  line-height: 1;
+  padding: 0;
+  background: rgba(255,255,255,0.18);
+  border: 2px solid rgba(255,255,255,0.28);
+  border-radius: 50%;
+  cursor: grab;
+  touch-action: none;
+  user-select: none;
+  -webkit-user-select: none;
+  transition: all 0.22s cubic-bezier(0.34, 1.56, 0.64, 1);
+  -webkit-tap-highlight-color: transparent;
+  backdrop-filter: blur(10px);
+  -webkit-backdrop-filter: blur(10px);
+}
+
+.fp-tool-btn:active { cursor: grabbing; }
+
+.fp-tool-btn.fp-active {
+  background: rgba(255,255,255,0.30);
+  border-color: rgba(255,255,255,0.60);
+  box-shadow: 0 0 20px rgba(255,220,255,0.45), 0 4px 16px rgba(0,0,0,0.18);
+  transform: scale(1.06);
+}
+
+/* Draggable tool ghost — follows finger/mouse anywhere on screen */
+.fp-drag-ghost {
+  position: fixed;
+  display: none;
+  pointer-events: none;
+  z-index: 9990;
+  font-size: 2.6rem;
+  line-height: 1;
+  transform: translate(-50%, -60%);
+  will-change: transform, left, top;
+  transition: filter 0.08s;
+}
+.fp-drag-ghost.fp-ghost-water {
+  filter: drop-shadow(0 0 8px #7de8ff) drop-shadow(0 0 18px rgba(80,200,255,0.7));
+  animation: fp-ghost-bob 0.7s ease-in-out infinite alternate;
+}
+/* extra glow when watering can is directly over the pot */
+.fp-drag-ghost.fp-ghost-water.fp-ghost-active {
+  filter: drop-shadow(0 0 14px #7de8ff) drop-shadow(0 0 30px rgba(80,200,255,0.95)) drop-shadow(0 0 6px #fff);
+}
+.fp-drag-ghost.fp-ghost-sun {
+  filter: drop-shadow(0 0 8px #ffe040) drop-shadow(0 0 20px rgba(255,190,30,0.75));
+  animation: fp-ghost-spin 1.8s linear infinite;
+}
+@keyframes fp-ghost-bob {
+  from { transform: translate(-50%, -60%) rotate(-12deg); }
+  to   { transform: translate(-50%, -60%) rotate(8deg) translateY(-4px); }
+}
+@keyframes fp-ghost-spin {
+  from { transform: translate(-50%, -60%) rotate(0deg) scale(1.0); }
+  50%  { transform: translate(-50%, -60%) rotate(180deg) scale(1.12); }
+  to   { transform: translate(-50%, -60%) rotate(360deg) scale(1.0); }
+}
+
 
 /* Tray where bloomed flowers slot in */
 .bouquet-tray {
