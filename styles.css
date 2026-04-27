@@ -953,20 +953,20 @@ a { color: inherit; text-decoration: none; }
   animation: kuromiActivate 0.32s ease forwards;
 }
 @keyframes kuromiActivate {
-  0%   { filter: drop-shadow(0 0 8px #ff88cc);  transform: translate(-50%,-50%) scale(1);    }
-  50%  { filter: drop-shadow(0 0 30px #ff44aa) drop-shadow(0 0 50px #cc00ff); transform: translate(-50%,-50%) scale(1.22); }
-  100% { filter: drop-shadow(0 0 18px #cc44ff); transform: translate(-50%,-50%) scale(1.1);  }
+  0%   { filter: drop-shadow(0 0 8px #d878a8);  transform: translate(-50%,-50%) scale(1);    }
+  50%  { filter: drop-shadow(0 0 26px #b85888) drop-shadow(0 0 42px #8848b8); transform: translate(-50%,-50%) scale(1.22); }
+  100% { filter: drop-shadow(0 0 14px #9868c8); transform: translate(-50%,-50%) scale(1.1);  }
 }
 
 @keyframes ckuromiGlow {
   0%, 100% {
     transform: scale(1);
-    filter: drop-shadow(0 0 5px #ff88cc) drop-shadow(0 0 12px #cc44bb) drop-shadow(0 0 22px #8800cc55);
+    filter: drop-shadow(0 0 5px #d080a8) drop-shadow(0 0 11px #9858883a);
     opacity: 0.92;
   }
   50% {
     transform: scale(1.07);
-    filter: drop-shadow(0 0 9px #ffaadd) drop-shadow(0 0 20px #ee55cc) drop-shadow(0 0 36px #aa00ee66);
+    filter: drop-shadow(0 0 8px #e090b8) drop-shadow(0 0 18px #a06898) drop-shadow(0 0 30px #8050a048);
     opacity: 1;
   }
 }
@@ -1295,6 +1295,12 @@ a { color: inherit; text-decoration: none; }
   font-size: clamp(1rem, 3vw, 1.5rem);
   color: rgba(255, 255, 255, 0.6);
   letter-spacing: 0.06em;
+}
+.lang-wip-dismiss {
+  margin-top: 1.4rem;
+  font-size: clamp(0.75rem, 2.5vw, 1rem);
+  color: rgba(255, 255, 255, 0.35);
+  letter-spacing: 0.08em;
 }
 
 .changelog-panel {

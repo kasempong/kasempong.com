@@ -108,6 +108,7 @@ function applyLang(lang) {
     }
   }
 
+
   // Restart typing with new language roles
   roleIndex = 0; charIndex = 0; deleting = false;
   if (typingTimer) clearTimeout(typingTimer);
@@ -118,6 +119,15 @@ function applyLang(lang) {
 document.querySelectorAll('.lang-btn').forEach(btn => {
   btn.addEventListener('click', () => applyLang(btn.dataset.lang));
 });
+
+// Tap anywhere on the WIP overlay to dismiss and revert to EN
+(function () {
+  var wipOverlay = document.getElementById('langWipOverlay');
+  if (!wipOverlay) return;
+  wipOverlay.addEventListener('click', function () {
+    applyLang('en');
+  });
+}());
 
 // ── Typing effect ─────────────────────────────────────────────
 const roleEl = document.getElementById('typed-role');
@@ -234,8 +244,12 @@ applyLang(currentLang);
   const COUNT = 55;
 
   function resize() {
-    canvas.width  = window.innerWidth;
-    canvas.height = window.innerHeight;
+    const dpr = window.devicePixelRatio || 1;
+    canvas.width  = Math.round(window.innerWidth  * dpr);
+    canvas.height = Math.round(window.innerHeight * dpr);
+    canvas.style.width  = window.innerWidth  + 'px';
+    canvas.style.height = window.innerHeight + 'px';
+    ctx.setTransform(dpr, 0, 0, dpr, 0, 0);  // draw in CSS px — no coordinate changes needed
   }
   resize();
   window.addEventListener('resize', resize, { passive: true });
