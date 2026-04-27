@@ -721,9 +721,8 @@ h1 {
   flex: 1;
   width: 100%;
   min-height: 0;
-  touch-action: none;   /* prevent double-tap zoom on the canvas */
-  border-radius: 20px;
   touch-action: none;
+  border-radius: 20px;
   cursor: crosshair;
   display: block;
 }

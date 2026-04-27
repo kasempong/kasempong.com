@@ -346,14 +346,18 @@ var catchGame = (function () {
   function init() {
     canvas = document.getElementById('catchCanvas');
     ctx = canvas.getContext('2d');
+    // Block pinch-zoom from two-finger taps on iOS Safari
+    canvas.addEventListener('touchstart', function(e) {
+      if (e.touches.length > 1) e.preventDefault();
+    }, { passive: false });
     canvas.addEventListener('pointerdown', function (e) {
       if (!active) return;
+      e.preventDefault();
       var rect = canvas.getBoundingClientRect();
-      // Use raw CSS-pixel coords — ctx is already scaled via setTransform
       var x = e.clientX - rect.left;
       var y = e.clientY - rect.top;
       onTap(x, y);
-    }, { passive: true });
+    }, { passive: false });
   }
 
   function resize() {
@@ -818,17 +822,20 @@ var flowerPotGame = (function () {
   function playWaterDrip() {
     try {
       var ac = new (window.AudioContext || window.webkitAudioContext)();
-      // two quick bubbly pops — high → slightly lower, airy sine
-      [[0, 1480, 1100], [0.07, 1800, 1260]].forEach(function(p) {
+      // three micro-bubble pops in quick succession — soft, round, cute
+      [[0, 1320, 980], [0.055, 1560, 1140], [0.11, 1040, 780]].forEach(function(p) {
         var o = ac.createOscillator(), g = ac.createGain();
-        o.connect(g); g.connect(ac.destination);
+        var f = ac.createBiquadFilter();
+        o.connect(f); f.connect(g); g.connect(ac.destination);
         o.type = 'sine';
+        f.type = 'lowpass'; f.frequency.value = 2200;
         o.frequency.setValueAtTime(p[1], ac.currentTime + p[0]);
-        o.frequency.exponentialRampToValueAtTime(p[2], ac.currentTime + p[0] + 0.06);
-        g.gain.setValueAtTime(0.09, ac.currentTime + p[0]);
-        g.gain.exponentialRampToValueAtTime(0.001, ac.currentTime + p[0] + 0.09);
+        o.frequency.exponentialRampToValueAtTime(p[2], ac.currentTime + p[0] + 0.05);
+        g.gain.setValueAtTime(0, ac.currentTime + p[0]);
+        g.gain.linearRampToValueAtTime(0.11, ac.currentTime + p[0] + 0.008);
+        g.gain.exponentialRampToValueAtTime(0.001, ac.currentTime + p[0] + 0.08);
         o.start(ac.currentTime + p[0]);
-        o.stop(ac.currentTime + p[0] + 0.10);
+        o.stop(ac.currentTime + p[0] + 0.09);
       });
     } catch(e) {}
   }
