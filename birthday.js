@@ -1517,21 +1517,30 @@ document.querySelectorAll('.btn-back').forEach(function (btn) {
 });
 
 // ── Progress bar clicks ────────────────────────────────────────────
-// plat[i] done → clicking goes back to screen i+1 (Q i+1)
+// Build step → first screen index with that heartStep
+var STEP_TO_SCREEN = SCREEN_HEART_STEP.reduce(function(acc, step, idx) {
+  if (!(step in acc)) acc[step] = idx;
+  return acc;
+}, {});
+
+function jumpToScreen(targetScreen) {
+  if (targetScreen === currentIdx) return;
+  if (targetScreen < currentIdx) jumpBackTo(targetScreen);
+  else goTo(targetScreen);
+}
+
 plats.forEach(function (plat, i) {
   plat.addEventListener('click', function () {
-    var targetScreen = i + 1;
-    if (plat.classList.contains('done') && targetScreen < currentIdx) {
-      jumpBackTo(targetScreen);
-    }
+    if (!plat.classList.contains('done')) return;
+    var targetScreen = STEP_TO_SCREEN[i + 1];
+    if (targetScreen !== undefined) jumpToScreen(targetScreen);
   });
 });
 
-// Goal reached → clicking goes back to Q5 (screen 12)
 progGoal.addEventListener('click', function () {
-  if (progGoal.classList.contains('reached') && currentIdx > 12) {
-    jumpBackTo(12);
-  }
+  if (!progGoal.classList.contains('reached')) return;
+  var targetScreen = STEP_TO_SCREEN[8];
+  if (targetScreen !== undefined) jumpToScreen(targetScreen);
 });
 
 // ── Mag screens: tap anywhere to advance ─────────────────────────
