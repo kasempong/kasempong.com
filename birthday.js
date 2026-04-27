@@ -734,8 +734,8 @@ function showBouquetReveal(callback) {
 var flowerPotGame = (function () {
 
   // ── Constants ──────────────────────────────────────────────────
-  var WATER_RATE = 0.28;
-  var SUN_RATE   = 0.28;
+  var WATER_RATE = 0.40;
+  var SUN_RATE   = 0.40;
 
   //  rx      = stem base x  (close together near pot centre)
   //  headRx  = flower head x (fanned outward at the top)
@@ -818,14 +818,18 @@ var flowerPotGame = (function () {
   function playWaterDrip() {
     try {
       var ac = new (window.AudioContext || window.webkitAudioContext)();
-      var o = ac.createOscillator(), g = ac.createGain();
-      o.connect(g); g.connect(ac.destination);
-      o.type = 'sine';
-      o.frequency.setValueAtTime(820, ac.currentTime);
-      o.frequency.exponentialRampToValueAtTime(260, ac.currentTime + 0.10);
-      g.gain.setValueAtTime(0.12, ac.currentTime);
-      g.gain.exponentialRampToValueAtTime(0.001, ac.currentTime + 0.13);
-      o.start(); o.stop(ac.currentTime + 0.14);
+      // two quick bubbly pops — high → slightly lower, airy sine
+      [[0, 1480, 1100], [0.07, 1800, 1260]].forEach(function(p) {
+        var o = ac.createOscillator(), g = ac.createGain();
+        o.connect(g); g.connect(ac.destination);
+        o.type = 'sine';
+        o.frequency.setValueAtTime(p[1], ac.currentTime + p[0]);
+        o.frequency.exponentialRampToValueAtTime(p[2], ac.currentTime + p[0] + 0.06);
+        g.gain.setValueAtTime(0.09, ac.currentTime + p[0]);
+        g.gain.exponentialRampToValueAtTime(0.001, ac.currentTime + p[0] + 0.09);
+        o.start(ac.currentTime + p[0]);
+        o.stop(ac.currentTime + p[0] + 0.10);
+      });
     } catch(e) {}
   }
 
@@ -1173,23 +1177,21 @@ var flowerPotGame = (function () {
   // ── Draw: sun sparkles (✨ / 🌟 emoji) ────────────────────────
   var SPARK_EMOJIS = ['✨', '🌟', '✨', '💫'];
   function updateAndDrawSparkles(t, dt) {
-    if (dragging && tool === 'sun' && sMeter < 100) {
+    if (dragging && tool === 'sun' && sMeter < 100 && sSparkles.length < 12) {
       var bRect = canvas.getBoundingClientRect();
       var gCX = ghostX - bRect.left;
       var gCY = ghostY - bRect.top;
-      for (var n = 0; n < 2; n++) {
-        var ang = Math.random() * Math.PI * 2;
-        var rad = W * 0.05 + Math.random() * W * 0.18;
-        sSparkles.push({
-          x:  gCX + Math.cos(ang) * rad,
-          y:  gCY + Math.sin(ang) * rad * 0.6,
-          vx: (Math.random()-0.5) * 2,
-          vy: -1.4 - Math.random() * 2,
-          sz: 14 + Math.random() * 10,
-          em: SPARK_EMOJIS[Math.floor(Math.random() * SPARK_EMOJIS.length)],
-          life: 1.0
-        });
-      }
+      var ang = Math.random() * Math.PI * 2;
+      var rad = W * 0.04 + Math.random() * W * 0.10;
+      sSparkles.push({
+        x:  gCX + Math.cos(ang) * rad,
+        y:  gCY + Math.sin(ang) * rad * 0.6,
+        vx: (Math.random()-0.5) * 1.5,
+        vy: -1.0 - Math.random() * 1.5,
+        sz: 12 + Math.random() * 8,
+        em: SPARK_EMOJIS[Math.floor(Math.random() * SPARK_EMOJIS.length)],
+        life: 1.0
+      });
     }
     ctx.textAlign = 'center'; ctx.textBaseline = 'middle';
     for (var i = sSparkles.length-1; i >= 0; i--) {
@@ -1223,45 +1225,6 @@ var flowerPotGame = (function () {
     }
   }
 
-  // ── Draw: falling petals (post-bloom) ─────────────────────────
-  function drawFallingPetals(dt) {
-    if (done && fallingPetals.length < 25) {
-      FLOWERS.forEach(function(f, i) {
-        if (Math.random() > 0.12) return;
-        var hx  = (f.headRx !== undefined ? f.headRx : f.rx) * W;
-        var hy  = H*0.776 - H * f.sH * 0.56;
-        fallingPetals.push({
-          x: hx + (Math.random()-0.5) * f.r * W * 2.2,
-          y: hy + (Math.random()-0.5) * f.r * W,
-          vx: (Math.random()-0.5) * 1.4,
-          vy: -0.3 + Math.random() * 0.5,
-          rot: Math.random() * Math.PI * 2,
-          vrot: (Math.random()-0.5) * 0.08,
-          col: f.pCol,
-          rw: f.r * W * 0.30,
-          rh: f.r * W * 0.20,
-          life: 0.85 + Math.random() * 0.15
-        });
-      });
-    }
-    for (var i = fallingPetals.length-1; i >= 0; i--) {
-      var p = fallingPetals[i];
-      p.vy  += dt * 28;
-      p.x   += p.vx; p.y += p.vy * dt * 60;
-      p.rot += p.vrot;
-      p.life -= dt * 0.18;
-      if (p.life <= 0 || p.y > H + 20) { fallingPetals.splice(i,1); continue; }
-      ctx.save();
-      ctx.globalAlpha = p.life * 0.75;
-      ctx.translate(p.x, p.y);
-      ctx.rotate(p.rot);
-      ctx.fillStyle = p.col;
-      ctx.beginPath();
-      ctx.ellipse(0, 0, p.rw, p.rh, 0, 0, Math.PI*2);
-      ctx.fill();
-      ctx.restore();
-    }
-  }
 
   // ── Main draw ──────────────────────────────────────────────────
   function drawScene(t, dt) {
@@ -1282,7 +1245,6 @@ var flowerPotGame = (function () {
     if (bflyT > 0) drawButterflies(t, bflyT);
     updateAndDrawDrops(dt);
     updateAndDrawSparkles(t, dt);
-    drawFallingPetals(dt);
     // bloom / completion flash
     if (flashAlpha > 0.002) {
       ctx.save();
@@ -1890,10 +1852,9 @@ function initScratch() {
     // Magical reveal chime
     if (window.playRevealSound) window.playRevealSound();
 
-    // Show final message + share button after canvas fades
+    // Show final message after canvas fades
     setTimeout(function () {
       if (finalMsg) finalMsg.classList.add('visible');
-      showShareBtn();
     }, 650);
   }
 
@@ -1920,13 +1881,6 @@ function initScratch() {
   sc.addEventListener('pointercancel', onUp);
 }
 
-// ── Share card helpers ─────────────────────────────────────────────
-function showShareBtn() {
-  var btn = document.getElementById('shareBtn');
-  if (!btn) return;
-  btn.style.display = '';
-  btn.addEventListener('click', generateShareCard, { once: true });
-}
 
 function _roundRectPath(c, x, y, w, h, r) {
   c.moveTo(x + r, y);
