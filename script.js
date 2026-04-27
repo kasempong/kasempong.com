@@ -120,13 +120,16 @@ document.querySelectorAll('.lang-btn').forEach(btn => {
   btn.addEventListener('click', () => applyLang(btn.dataset.lang));
 });
 
-// Tap anywhere on the WIP overlay to dismiss and revert to EN
+// Close WIP overlay and revert to EN
 (function () {
-  var wipOverlay = document.getElementById('langWipOverlay');
-  if (!wipOverlay) return;
-  wipOverlay.addEventListener('click', function () {
+  var closeBtn = document.getElementById('langWipClose');
+  if (!closeBtn) return;
+  function dismiss(e) {
+    e.preventDefault();
     applyLang('en');
-  });
+  }
+  closeBtn.addEventListener('touchend', dismiss, { passive: false });
+  closeBtn.addEventListener('click', dismiss);
 }());
 
 // ── Typing effect ─────────────────────────────────────────────

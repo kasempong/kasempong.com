@@ -1296,11 +1296,23 @@ a { color: inherit; text-decoration: none; }
   color: rgba(255, 255, 255, 0.6);
   letter-spacing: 0.06em;
 }
-.lang-wip-dismiss {
-  margin-top: 1.4rem;
-  font-size: clamp(0.75rem, 2.5vw, 1rem);
-  color: rgba(255, 255, 255, 0.35);
-  letter-spacing: 0.08em;
+.lang-wip-close {
+  margin-top: 1.6rem;
+  display: inline-block;
+  background: rgba(255, 255, 255, 0.12);
+  border: 1.5px solid rgba(255, 255, 255, 0.3);
+  border-radius: 50px;
+  color: #fff;
+  font-size: clamp(0.85rem, 3vw, 1.05rem);
+  padding: 0.55rem 1.4rem;
+  cursor: pointer;
+  letter-spacing: 0.06em;
+  transition: background 0.2s, transform 0.15s;
+  touch-action: manipulation;
+}
+.lang-wip-close:active {
+  background: rgba(255, 255, 255, 0.22);
+  transform: scale(0.96);
 }
 
 .changelog-panel {
