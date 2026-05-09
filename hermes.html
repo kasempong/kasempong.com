@@ -356,12 +356,12 @@
       .replace(/"/g, '&quot;');
   }
 
-  // Auto-unlock if token saved
+  // Auto-unlock if a token was previously saved
   TOKEN = getToken();
-  if (TOKEN !== null) {
-    fetch('/api/messages', { headers: TOKEN ? { Authorization: `Bearer ${TOKEN}` } : {} })
+  if (TOKEN) {
+    fetch('/api/messages', { headers: { Authorization: `Bearer ${TOKEN}` } })
       .then(r => {
-        if (r.status === 401) { localStorage.removeItem('hermes_token'); return null; }
+        if (r.status === 401) { localStorage.removeItem('hermes_token'); TOKEN = ''; return null; }
         showDashboard();
         return r.json();
       })

@@ -2,8 +2,7 @@ export async function onRequest(context) {
   const { request, env } = context;
 
   const token = env.DASHBOARD_TOKEN;
-  const auth = request.headers.get('Authorization');
-  if (token && auth !== `Bearer ${token}`) {
+  if (!token || request.headers.get('Authorization') !== `Bearer ${token}`) {
     return new Response('unauthorized', { status: 401 });
   }
 

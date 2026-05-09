@@ -8,6 +8,11 @@
   Cross-Origin-Opener-Policy: same-origin
   Cross-Origin-Resource-Policy: same-origin
 
+# Dashboard — no indexing, no caching
+/hermes.html
+  X-Robots-Tag: noindex, nofollow
+  Cache-Control: no-store
+
 # HTML — always revalidate so users always get the latest page
 /*.html
   Cache-Control: no-cache, must-revalidate
