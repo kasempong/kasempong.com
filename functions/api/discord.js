@@ -1,5 +1,5 @@
 const INTERACTION_TYPE = { PING: 1, APPLICATION_COMMAND: 2 };
-const RESPONSE_TYPE = { PONG: 1, CHANNEL_MESSAGE: 4, DEFERRED_CHANNEL_MESSAGE: 5 };
+const RESPONSE_TYPE = { PONG: 1, CHANNEL_MESSAGE: 4 };
 
 function hexToBytes(hex) {
   return new Uint8Array(hex.match(/.{2}/g).map((b) => parseInt(b, 16)));
@@ -47,6 +47,14 @@ async function askHermes(anthropicKey, userText) {
   return data.content?.[0]?.text ?? null;
 }
 
+async function storeMessage(kv, userText, reply) {
+  if (!kv) return;
+  const ts = Date.now();
+  await kv.put(`msg:${ts}`, JSON.stringify({ source: 'discord', text: userText, reply, ts }), {
+    expirationTtl: 60 * 60 * 24 * 90,
+  });
+}
+
 export async function onRequest(context) {
   const { request, env } = context;
 
@@ -86,6 +94,7 @@ export async function onRequest(context) {
     }
 
     const reply = await askHermes(anthropicKey, userText);
+    await storeMessage(env.HERMES_KV, userText, reply ?? '');
 
     return Response.json({
       type: RESPONSE_TYPE.CHANNEL_MESSAGE,

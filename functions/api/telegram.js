@@ -1,3 +1,12 @@
+async function storeMessage(kv, source, userText, reply) {
+  if (!kv) return;
+  const ts = Date.now();
+  const key = `msg:${ts}`;
+  await kv.put(key, JSON.stringify({ source, text: userText, reply, ts }), {
+    expirationTtl: 60 * 60 * 24 * 90, // keep 90 days
+  });
+}
+
 export async function onRequest(context) {
   const { request, env } = context;
 
@@ -51,11 +60,14 @@ export async function onRequest(context) {
     }
   } catch (_) {}
 
-  await fetch(`https://api.telegram.org/bot${botToken}/sendMessage`, {
-    method: 'POST',
-    headers: { 'content-type': 'application/json' },
-    body: JSON.stringify({ chat_id: chatId, text: reply }),
-  });
+  await Promise.all([
+    fetch(`https://api.telegram.org/bot${botToken}/sendMessage`, {
+      method: 'POST',
+      headers: { 'content-type': 'application/json' },
+      body: JSON.stringify({ chat_id: chatId, text: reply }),
+    }),
+    storeMessage(env.HERMES_KV, 'telegram', userText, reply),
+  ]);
 
   return new Response('ok');
 }
