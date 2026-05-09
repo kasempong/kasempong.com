@@ -244,26 +244,39 @@ const HTML = `<!DOCTYPE html>
   let TOKEN = '';
 
   function getToken() {
-    return localStorage.getItem('hermes_token') || '';
+    try { return localStorage.getItem('hermes_token') || ''; } catch(e) { return ''; }
   }
 
   function saveToken(t) {
-    localStorage.setItem('hermes_token', t);
+    try { localStorage.setItem('hermes_token', t); } catch(e) {}
     TOKEN = t;
+  }
+
+  function clearToken() {
+    try { localStorage.removeItem('hermes_token'); } catch(e) {}
+    TOKEN = '';
   }
 
   async function unlock() {
     const val = document.getElementById('token-input').value.trim();
-    const res = await fetch('/api/messages', {
-      headers: val ? { Authorization: 'Bearer ' + val } : {},
-    });
+    var res;
+    try {
+      res = await fetch('/api/messages', {
+        headers: val ? { Authorization: 'Bearer ' + val } : {},
+      });
+    } catch(e) {
+      document.getElementById('lock-error').textContent = 'Network error. Try again.';
+      document.getElementById('lock-error').style.display = 'block';
+      return;
+    }
     if (res.status === 401) {
+      document.getElementById('lock-error').textContent = 'Invalid token';
       document.getElementById('lock-error').style.display = 'block';
       return;
     }
     saveToken(val);
     showDashboard();
-    const data = await res.json();
+    var data = await res.json();
     renderMessages(data.messages);
   }
 
@@ -341,11 +354,12 @@ const HTML = `<!DOCTYPE html>
   if (TOKEN) {
     fetch('/api/messages', { headers: { Authorization: 'Bearer ' + TOKEN } })
       .then(function(r) {
-        if (r.status === 401) { localStorage.removeItem('hermes_token'); TOKEN = ''; return null; }
+        if (r.status === 401) { clearToken(); return null; }
         showDashboard();
         return r.json();
       })
-      .then(function(data) { if (data) renderMessages(data.messages); });
+      .then(function(data) { if (data) renderMessages(data.messages); })
+      .catch(function() {});
   }
 
   document.getElementById('token-input').addEventListener('keydown', function(e) {
