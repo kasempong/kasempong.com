@@ -589,7 +589,7 @@
         <span class="example-copy" id="ec-2">Copy</span>
       </div>
 
-      <div class="example-card" data-prompt="abandoned Victorian ballroom interior, ornate plaster ceiling partially collapsed, physical details: peeling gold wallpaper, shattered chandelier on floor, thick dust on every surface, pigeons nesting in broken cornice, perfectly still, in decayed New Orleans plantation house, single shaft of pale morning light through boarded window, haunting melancholic American Gothic, Shot on Phase One IQ4, 24mm lens, f/8, deep depth of field, photorealistic --v 6.1 --style raw --ar 4:5 --s 120 --q 2">
+      <div class="example-card" data-prompt="abandoned Victorian ballroom interior, ornate plaster ceiling partially collapsed, physical details: peeling gold wallpaper, shattered chandelier on floor, thick dust on every surface, pigeons nesting in broken cornice, perfectly still, dust motes suspended in single light beam, in decayed New Orleans plantation house, single shaft of pale morning light through boarded window, haunting, melancholic, American Gothic, Shot on Phase One IQ4, 24mm lens, f/8, deep focus, sharp throughout, photorealistic --v 6.1 --style raw --ar 4:5 --s 120 --q 2">
         <div class="example-tag">Architecture — Abandoned Ballroom</div>
         <div class="example-text">abandoned Victorian ballroom, collapsed ceiling, peeling gold wallpaper, shattered chandelier, dust on every surface, in decayed New Orleans plantation house... <span class="param">--v 6.1 --style raw --ar 4:5</span></div>
         <span class="example-copy" id="ec-3">Copy</span>
@@ -615,55 +615,62 @@
         lighting:      'golden hour backlight, soft diffused sunlight',
         camera: 'Sony A7R IV', lens: '85mm', aperture: 'f/2.0',
         mood: 'dreamy, romantic, cinematic still',
+        ar: '9:16', stylize: 150,
       },
       portrait: {
         subject:       '55-year-old fisherman, deep facial wrinkles, weathered skin',
         imperfections: 'visible skin pores, salt-and-pepper beard, sun spots',
         action:        'gazing into the distance',
-        setting:       'foggy harbor dock',
+        setting:       'foggy harbor dock at dawn',
         lighting:      'soft diffused overcast morning light',
         camera: 'Sony A7R IV', lens: '85mm', aperture: 'f/2.8',
         mood: 'melancholic, raw, documentary style',
+        ar: '3:2', stylize: 180,
       },
       landscape: {
         subject:       'abandoned wooden cabin in a wildflower meadow',
-        imperfections: 'worn roof, broken fence, overgrown weeds',
-        action:        'static, peaceful',
-        setting:       'rolling hills, vast open field',
-        lighting:      'dramatic golden hour backlight, lens flare',
+        imperfections: 'worn corrugated roof, broken fence post, overgrown weeds on porch',
+        action:        'tall grass swaying in wind',
+        setting:       'rolling hills under a vast open sky',
+        lighting:      'dramatic golden hour backlight, lens flare through tall grass',
         camera: 'Canon EOS R5', lens: '35mm', aperture: 'f/8',
-        mood: 'nostalgic, serene, cinematic',
+        mood: 'nostalgic, serene, cinematic wide',
+        ar: '16:9', stylize: 120,
       },
       street: {
-        subject:       'night market street vendor cooking over charcoal flame',
-        imperfections: 'sweat-stained apron, calloused hands, chipped bowls, neon reflections on wet pavement',
-        action:        'stirring the wok, smoke rising',
+        subject:       'night market street vendor cooking over open charcoal flame',
+        imperfections: 'sweat-stained apron, calloused hands, chipped ceramic bowls, neon reflections on wet pavement',
+        action:        'stirring the wok hard, smoke and steam rising',
         setting:       'Bangkok Chinatown, Yaowarat Road at 11pm',
         lighting:      'harsh overhead neon mixed with warm orange fire glow, deep shadows under awning',
         camera: 'Leica Q3', lens: '28mm', aperture: 'f/1.7',
         mood: 'gritty, cinematic, high-contrast documentary',
+        ar: '9:16', stylize: 200,
       },
       wildlife: {
         subject:       'male Bengal tiger resting on a rocky outcrop',
-        imperfections: 'scarred left ear, muddy paws, flies near face, visible ribcage',
-        action:        'chest slowly rising with breath, eyes half-closed in heat',
+        imperfections: 'scarred left ear, muddy paws, flies circling near face, visible ribcage',
+        action:        'chest slowly rising with each breath, eyes half-closed in midday heat',
         setting:       'Ranthambore National Park, dry scrubland',
         lighting:      'harsh midday sun with dust haze, long shadows across golden grass',
         camera: 'Nikon Z9', lens: '600mm', aperture: 'f/5.6',
         mood: 'majestic, raw, NatGeo documentary',
+        ar: '16:9', stylize: 160,
       },
       architecture: {
-        subject:       'abandoned Victorian ballroom, ornate ceiling partially collapsed',
-        imperfections: 'peeling gold wallpaper, shattered chandelier on floor, thick dust, pigeons in broken cornice',
-        action:        'perfectly still, dust motes floating in light beam',
+        subject:       'abandoned Victorian ballroom, ornate plaster ceiling partially collapsed',
+        imperfections: 'peeling gold wallpaper, shattered chandelier on floor, thick dust on every surface, pigeons nesting in broken cornice',
+        action:        'perfectly still, dust motes suspended in single light beam',
         setting:       'decayed New Orleans plantation house interior',
         lighting:      'single shaft of pale morning light through boarded window',
         camera: 'Phase One IQ4', lens: '24mm', aperture: 'f/8',
         mood: 'haunting, melancholic, American Gothic',
+        ar: '4:5', stylize: 120,
       },
       custom: {
         subject: '', imperfections: '', action: '', setting: '',
         lighting: '', camera: 'Sony A7R IV', lens: '85mm', aperture: 'f/2.8', mood: '',
+        ar: null, stylize: null,
       },
     };
 
@@ -671,6 +678,13 @@
 
     function getField(key) {
       return document.getElementById('f-' + key).value.trim();
+    }
+
+    function getDOF(aperture) {
+      var m = aperture.match(/f\/(\d+\.?\d*)/i);
+      if (!m) return 'shallow depth of field';
+      var f = parseFloat(m[1]);
+      return f >= 8 ? 'deep focus, sharp throughout' : 'shallow depth of field';
     }
 
     function buildPrompt() {
@@ -696,7 +710,7 @@
         setting && ('in ' + setting),
         lighting,
         mood,
-        'Shot on ' + camera + ', ' + lens + ' lens, ' + aperture + ', shallow depth of field, photorealistic',
+        'Shot on ' + camera + ', ' + lens + ' lens, ' + aperture + ', ' + getDOF(aperture) + ', photorealistic',
       ].filter(Boolean);
 
       const main   = parts.join(', ');
@@ -711,11 +725,23 @@
     }
 
     function applyPreset(key) {
-      const p = PRESETS[key];
+      var p = PRESETS[key];
+      // Fill all text fields
       fieldIds.forEach(function(id) {
         var el = document.getElementById('f-' + id);
         if (el) el.value = p[id] || '';
       });
+      // Update AR dropdown
+      if (p.ar) {
+        document.getElementById('p-ar').value = p.ar;
+      }
+      // Update stylize slider + display
+      if (p.stylize !== null && p.stylize !== undefined) {
+        var stylEl = document.getElementById('p-stylize');
+        stylEl.value = p.stylize;
+        document.getElementById('stylize-val').textContent = p.stylize;
+      }
+      // Mark active button
       document.querySelectorAll('.preset-btn').forEach(function(btn) {
         btn.classList.toggle('active', btn.dataset.preset === key);
       });
