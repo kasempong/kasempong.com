@@ -23,7 +23,7 @@
     .inner {
       max-width: 680px;
       margin: 0 auto;
-      padding: 0 20px 56px;
+      padding: 0 20px 64px;
     }
 
     /* Header */
@@ -190,7 +190,7 @@
       gap: 12px;
     }
 
-    /* Params grid */
+    /* Params */
     .params-selects {
       display: grid;
       grid-template-columns: 1fr 1fr 1fr;
@@ -272,7 +272,7 @@
       padding: 13px 20px;
       border-bottom: 1px solid rgba(255,255,255,0.04);
     }
-    .output-title {
+    .output-title-row {
       display: flex;
       align-items: center;
       gap: 8px;
@@ -285,7 +285,7 @@
       box-shadow: 0 0 7px rgba(201,162,84,0.7);
       flex-shrink: 0;
     }
-    .output-label {
+    .output-lbl {
       font-size: 10px;
       letter-spacing: 0.17em;
       color: #56421e;
@@ -306,15 +306,9 @@
       font-weight: 500;
       white-space: nowrap;
     }
-    .copy-btn:hover {
-      background: rgba(201,162,84,0.13);
-      border-color: rgba(201,162,84,0.42);
-    }
-    .copy-btn.copied {
-      background: rgba(80,190,80,0.07);
-      border-color: rgba(80,190,80,0.28);
-      color: #80d480;
-    }
+    .copy-btn:hover { background: rgba(201,162,84,0.13); border-color: rgba(201,162,84,0.42); }
+    .copy-btn.copied { background: rgba(80,190,80,0.07); border-color: rgba(80,190,80,0.28); color: #80d480; }
+
     .output-body { padding: 18px 20px 22px; }
     .output-text {
       margin: 0;
@@ -324,11 +318,82 @@
       word-break: break-word;
       letter-spacing: 0.01em;
     }
-    #prompt-main { color: #c2bdb3; }
+    #prompt-main   { color: #c2bdb3; }
     #prompt-params { color: rgba(201,162,84,0.72); }
 
+    /* Examples gallery */
+    .examples-section {
+      margin-top: 28px;
+    }
+    .examples-header {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      margin-bottom: 14px;
+    }
+    .examples-title {
+      font-size: 10px;
+      letter-spacing: 0.17em;
+      color: #46361a;
+      text-transform: uppercase;
+      font-weight: 600;
+    }
+    .examples-rule {
+      flex: 1;
+      height: 1px;
+      background: rgba(255,255,255,0.04);
+    }
+    .examples-hint {
+      font-size: 10px;
+      color: #2e2e3a;
+      letter-spacing: 0.02em;
+    }
+    .example-card {
+      background: #0f0f13;
+      border: 1px solid rgba(255,255,255,0.05);
+      border-radius: 10px;
+      padding: 14px 16px;
+      margin-bottom: 10px;
+      cursor: pointer;
+      transition: border-color 0.12s ease, background 0.12s ease;
+      position: relative;
+    }
+    .example-card:hover {
+      border-color: rgba(201,162,84,0.25);
+      background: #111116;
+    }
+    .example-card:last-child { margin-bottom: 0; }
+    .example-tag {
+      font-size: 9.5px;
+      color: #4a3a1a;
+      letter-spacing: 0.12em;
+      text-transform: uppercase;
+      margin-bottom: 7px;
+      font-family: 'SF Mono', 'Fira Code', monospace;
+    }
+    .example-text {
+      font-size: 12px;
+      line-height: 1.7;
+      color: #6e6a62;
+      font-family: 'SF Mono', 'Fira Code', 'Courier New', monospace;
+      word-break: break-word;
+    }
+    .example-text .param { color: rgba(201,162,84,0.5); }
+    .example-copy {
+      position: absolute;
+      top: 12px;
+      right: 14px;
+      font-size: 9.5px;
+      color: #2e2e3a;
+      letter-spacing: 0.08em;
+      text-transform: uppercase;
+      transition: color 0.12s ease;
+    }
+    .example-card:hover .example-copy { color: #5a4220; }
+    .example-copy.copied { color: #80d480 !important; }
+
     .footer {
-      margin-top: 30px;
+      margin-top: 32px;
       text-align: center;
       font-size: 9.5px;
       color: #1e1e2e;
@@ -336,8 +401,15 @@
       text-transform: uppercase;
     }
 
+    @media (max-width: 480px) {
+      .camera-grid { grid-template-columns: 1fr 1fr; }
+      .camera-grid .field-group:first-child { grid-column: 1 / -1; }
+      .params-selects { grid-template-columns: 1fr 1fr; }
+      .params-selects .field-group:last-child { grid-column: 1 / -1; }
+    }
+
     @media (prefers-reduced-motion: reduce) {
-      input.mj, select.mj, .preset-btn, .copy-btn { transition: none; }
+      input.mj, select.mj, .preset-btn, .copy-btn, .example-card { transition: none; }
       input[type=range].mj::-webkit-slider-thumb { transition: none; }
     }
   </style>
@@ -360,6 +432,9 @@
       <button class="preset-btn active" data-preset="nature">Nature / Floral</button>
       <button class="preset-btn" data-preset="portrait">Portrait</button>
       <button class="preset-btn" data-preset="landscape">Landscape</button>
+      <button class="preset-btn" data-preset="street">Street Life</button>
+      <button class="preset-btn" data-preset="wildlife">Wildlife</button>
+      <button class="preset-btn" data-preset="architecture">Architecture</button>
       <button class="preset-btn" data-preset="custom">Custom</button>
     </div>
 
@@ -477,14 +552,53 @@
     <!-- Output -->
     <div class="output-card">
       <div class="output-header">
-        <div class="output-title">
+        <div class="output-title-row">
           <div class="output-dot"></div>
-          <span class="output-label">Generated Prompt</span>
+          <span class="output-lbl">Generated Prompt</span>
         </div>
         <button class="copy-btn" id="copyBtn">Copy Prompt</button>
       </div>
       <div class="output-body">
         <p class="output-text"><span id="prompt-main"></span><span id="prompt-params"></span></p>
+      </div>
+    </div>
+
+    <!-- Examples Gallery -->
+    <div class="examples-section">
+      <div class="examples-header">
+        <span class="examples-title">Ready-to-Use Examples</span>
+        <div class="examples-rule"></div>
+        <span class="examples-hint">tap to copy</span>
+      </div>
+
+      <div class="example-card" data-prompt="elderly Thai monk at dawn, saffron robe slightly worn at the hem, physical details: deep forehead wrinkles, sun-darkened skin, bare feet on cold stone, eyes closed mid-prayer, in Chiang Mai temple courtyard surrounded by lotus offerings, soft diffused golden light from low sun through temple windows, reverent, timeless, NatGeo documentary, Shot on Leica M11, 50mm lens, f/2.0, shallow depth of field, photorealistic --v 6.1 --style raw --ar 3:2 --s 180 --q 2">
+        <div class="example-tag">Portrait — Monk at Dawn</div>
+        <div class="example-text">elderly Thai monk at dawn, saffron robe slightly worn at the hem, physical details: deep wrinkles, sun-darkened skin, bare feet on cold stone, in Chiang Mai temple courtyard... <span class="param">--v 6.1 --style raw --ar 3:2</span></div>
+        <span class="example-copy" id="ec-0">Copy</span>
+      </div>
+
+      <div class="example-card" data-prompt="night market street vendor in Bangkok Chinatown, steam rising from charcoal wok, physical details: sweat-stained apron, calloused hands, chipped ceramic bowls, neon sign reflections on wet pavement, stirring pad see ew over open flame, in Yaowarat Road at 11pm, harsh overhead neon mixed with warm orange fire glow, deep shadows under awning, gritty cinematic documentary, Shot on Leica Q3, 28mm lens, f/1.7, shallow depth of field, photorealistic --v 6.1 --style raw --ar 9:16 --s 200 --q 2">
+        <div class="example-tag">Street — Bangkok Night Market</div>
+        <div class="example-text">night market vendor in Bangkok Chinatown, steam rising from wok, neon reflections on wet pavement, stirring pad see ew over open flame... <span class="param">--v 6.1 --style raw --ar 9:16</span></div>
+        <span class="example-copy" id="ec-1">Copy</span>
+      </div>
+
+      <div class="example-card" data-prompt="male Bengal tiger resting on a rocky outcrop, physical details: scarred left ear, muddy paws, flies circling near face, visible ribcage, slow breath causing chest to rise, eyes half-closed in midday heat, in Ranthambore National Park dry scrubland, harsh sun with dust haze, long shadows across golden grass, majestic raw NatGeo documentary, Shot on Nikon Z9, 600mm lens, f/5.6, shallow depth of field, photorealistic --v 6.1 --style raw --ar 16:9 --s 160 --q 2">
+        <div class="example-tag">Wildlife — Bengal Tiger</div>
+        <div class="example-text">male Bengal tiger resting on a rocky outcrop, scarred ear, muddy paws, visible ribcage, in Ranthambore National Park dry scrubland, harsh sun with dust haze... <span class="param">--v 6.1 --style raw --ar 16:9</span></div>
+        <span class="example-copy" id="ec-2">Copy</span>
+      </div>
+
+      <div class="example-card" data-prompt="abandoned Victorian ballroom interior, ornate plaster ceiling partially collapsed, physical details: peeling gold wallpaper, shattered chandelier on floor, thick dust on every surface, pigeons nesting in broken cornice, perfectly still, in decayed New Orleans plantation house, single shaft of pale morning light through boarded window, haunting melancholic American Gothic, Shot on Phase One IQ4, 24mm lens, f/8, deep depth of field, photorealistic --v 6.1 --style raw --ar 4:5 --s 120 --q 2">
+        <div class="example-tag">Architecture — Abandoned Ballroom</div>
+        <div class="example-text">abandoned Victorian ballroom, collapsed ceiling, peeling gold wallpaper, shattered chandelier, dust on every surface, in decayed New Orleans plantation house... <span class="param">--v 6.1 --style raw --ar 4:5</span></div>
+        <span class="example-copy" id="ec-3">Copy</span>
+      </div>
+
+      <div class="example-card" data-prompt="fresh-cut red peonies overflowing a cracked white ceramic vase, physical details: one petal falling mid-air, water droplets on petals, visible pollen dust, small spider on stem, static arrangement, on aged oak farmhouse table with morning light, soft diffused window light with long shadows, pastel bokeh background, intimate romantic editorial, Shot on Canon EOS R5, 100mm macro lens, f/2.8, shallow depth of field, photorealistic --v 6.1 --style raw --ar 1:1 --s 150 --q 2">
+        <div class="example-tag">Still Life — Peonies</div>
+        <div class="example-text">fresh-cut red peonies overflowing a cracked vase, one petal falling mid-air, water droplets, visible pollen dust, small spider on stem, aged oak farmhouse table... <span class="param">--v 6.1 --style raw --ar 1:1</span></div>
+        <span class="example-copy" id="ec-4">Copy</span>
       </div>
     </div>
 
@@ -499,10 +613,8 @@
         action:        'soft wind motion, petals falling',
         setting:       'European garden courtyard',
         lighting:      'golden hour backlight, soft diffused sunlight',
-        camera:        'Sony A7R IV',
-        lens:          '85mm',
-        aperture:      'f/2.0',
-        mood:          'dreamy, romantic, cinematic still',
+        camera: 'Sony A7R IV', lens: '85mm', aperture: 'f/2.0',
+        mood: 'dreamy, romantic, cinematic still',
       },
       portrait: {
         subject:       '55-year-old fisherman, deep facial wrinkles, weathered skin',
@@ -510,10 +622,8 @@
         action:        'gazing into the distance',
         setting:       'foggy harbor dock',
         lighting:      'soft diffused overcast morning light',
-        camera:        'Sony A7R IV',
-        lens:          '85mm',
-        aperture:      'f/2.8',
-        mood:          'melancholic, raw, documentary style',
+        camera: 'Sony A7R IV', lens: '85mm', aperture: 'f/2.8',
+        mood: 'melancholic, raw, documentary style',
       },
       landscape: {
         subject:       'abandoned wooden cabin in a wildflower meadow',
@@ -521,10 +631,35 @@
         action:        'static, peaceful',
         setting:       'rolling hills, vast open field',
         lighting:      'dramatic golden hour backlight, lens flare',
-        camera:        'Canon EOS R5',
-        lens:          '35mm',
-        aperture:      'f/8',
-        mood:          'nostalgic, serene, cinematic',
+        camera: 'Canon EOS R5', lens: '35mm', aperture: 'f/8',
+        mood: 'nostalgic, serene, cinematic',
+      },
+      street: {
+        subject:       'night market street vendor cooking over charcoal flame',
+        imperfections: 'sweat-stained apron, calloused hands, chipped bowls, neon reflections on wet pavement',
+        action:        'stirring the wok, smoke rising',
+        setting:       'Bangkok Chinatown, Yaowarat Road at 11pm',
+        lighting:      'harsh overhead neon mixed with warm orange fire glow, deep shadows under awning',
+        camera: 'Leica Q3', lens: '28mm', aperture: 'f/1.7',
+        mood: 'gritty, cinematic, high-contrast documentary',
+      },
+      wildlife: {
+        subject:       'male Bengal tiger resting on a rocky outcrop',
+        imperfections: 'scarred left ear, muddy paws, flies near face, visible ribcage',
+        action:        'chest slowly rising with breath, eyes half-closed in heat',
+        setting:       'Ranthambore National Park, dry scrubland',
+        lighting:      'harsh midday sun with dust haze, long shadows across golden grass',
+        camera: 'Nikon Z9', lens: '600mm', aperture: 'f/5.6',
+        mood: 'majestic, raw, NatGeo documentary',
+      },
+      architecture: {
+        subject:       'abandoned Victorian ballroom, ornate ceiling partially collapsed',
+        imperfections: 'peeling gold wallpaper, shattered chandelier on floor, thick dust, pigeons in broken cornice',
+        action:        'perfectly still, dust motes floating in light beam',
+        setting:       'decayed New Orleans plantation house interior',
+        lighting:      'single shaft of pale morning light through boarded window',
+        camera: 'Phase One IQ4', lens: '24mm', aperture: 'f/8',
+        mood: 'haunting, melancholic, American Gothic',
       },
       custom: {
         subject: '', imperfections: '', action: '', setting: '',
@@ -548,11 +683,11 @@
       const camera        = getField('camera');
       const lens          = getField('lens');
       const aperture      = getField('aperture');
-      const version       = document.getElementById('p-version').value;
-      const style         = document.getElementById('p-style').value;
-      const ar            = document.getElementById('p-ar').value;
-      const stylize       = document.getElementById('p-stylize').value;
-      const quality       = document.getElementById('p-quality').value;
+      const version  = document.getElementById('p-version').value;
+      const style    = document.getElementById('p-style').value;
+      const ar       = document.getElementById('p-ar').value;
+      const stylize  = document.getElementById('p-stylize').value;
+      const quality  = document.getElementById('p-quality').value;
 
       const parts = [
         subject,
@@ -577,29 +712,29 @@
 
     function applyPreset(key) {
       const p = PRESETS[key];
-      fieldIds.forEach(id => {
-        const el = document.getElementById('f-' + id);
+      fieldIds.forEach(function(id) {
+        var el = document.getElementById('f-' + id);
         if (el) el.value = p[id] || '';
       });
-      document.querySelectorAll('.preset-btn').forEach(btn => {
+      document.querySelectorAll('.preset-btn').forEach(function(btn) {
         btn.classList.toggle('active', btn.dataset.preset === key);
       });
       updatePrompt();
     }
 
     // Preset buttons
-    document.getElementById('presetRow').addEventListener('click', e => {
-      const btn = e.target.closest('.preset-btn');
+    document.getElementById('presetRow').addEventListener('click', function(e) {
+      var btn = e.target.closest('.preset-btn');
       if (btn) applyPreset(btn.dataset.preset);
     });
 
-    // All text inputs
-    document.querySelectorAll('input.mj[type=text]').forEach(el => {
+    // Text inputs
+    document.querySelectorAll('input.mj[type=text]').forEach(function(el) {
       el.addEventListener('input', updatePrompt);
     });
 
     // Selects
-    ['p-version','p-style','p-ar'].forEach(id => {
+    ['p-version','p-style','p-ar'].forEach(function(id) {
       document.getElementById(id).addEventListener('change', updatePrompt);
     });
 
@@ -613,20 +748,37 @@
       updatePrompt();
     });
 
-    // Copy button
+    // Main copy button
     document.getElementById('copyBtn').addEventListener('click', function() {
-      const { main, params } = buildPrompt();
-      navigator.clipboard.writeText(main + ' ' + params).then(() => {
-        this.textContent = 'Copied';
-        this.classList.add('copied');
-        setTimeout(() => {
-          this.textContent = 'Copy Prompt';
-          this.classList.remove('copied');
+      var btn = this;
+      var { main, params } = buildPrompt();
+      navigator.clipboard.writeText(main + ' ' + params).then(function() {
+        btn.textContent = 'Copied';
+        btn.classList.add('copied');
+        setTimeout(function() {
+          btn.textContent = 'Copy Prompt';
+          btn.classList.remove('copied');
         }, 2000);
       });
     });
 
-    // Init with Nature preset
+    // Example card copy buttons
+    document.querySelectorAll('.example-card').forEach(function(card, i) {
+      card.addEventListener('click', function() {
+        var prompt = card.dataset.prompt;
+        var label  = document.getElementById('ec-' + i);
+        navigator.clipboard.writeText(prompt).then(function() {
+          label.textContent = 'Copied!';
+          label.classList.add('copied');
+          setTimeout(function() {
+            label.textContent = 'Copy';
+            label.classList.remove('copied');
+          }, 2000);
+        });
+      });
+    });
+
+    // Init
     applyPreset('nature');
   </script>
 </body>
