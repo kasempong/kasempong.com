@@ -1,0 +1,538 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>MJ Prompt Builder — Hyper-Realistic</title>
+  <script src="https://unpkg.com/react@18/umd/react.production.min.js" crossorigin></script>
+  <script src="https://unpkg.com/react-dom@18/umd/react-dom.production.min.js" crossorigin></script>
+  <script src="https://unpkg.com/@babel/standalone/babel.min.js"></script>
+  <style>
+    html, body { margin: 0; padding: 0; background: #0c0c0f; }
+  </style>
+</head>
+<body>
+  <div id="root"></div>
+
+  <script type="text/babel">
+    const { useState } = React;
+
+    const PRESETS = {
+      nature: {
+        label: "Nature / Floral",
+        subject: "white roses cascading over an ancient stone wall",
+        imperfections: "dewdrops on petals, slightly wilted edges, moss on stone",
+        action: "soft wind motion, petals falling",
+        setting: "European garden courtyard",
+        lighting: "golden hour backlight, soft diffused sunlight",
+        camera: "Sony A7R IV",
+        lens: "85mm",
+        aperture: "f/2.0",
+        mood: "dreamy, romantic, cinematic still",
+      },
+      portrait: {
+        label: "Portrait",
+        subject: "55-year-old fisherman, deep facial wrinkles, weathered skin",
+        imperfections: "visible skin pores, salt-and-pepper beard, sun spots",
+        action: "gazing into the distance",
+        setting: "foggy harbor dock",
+        lighting: "soft diffused overcast morning light",
+        camera: "Sony A7R IV",
+        lens: "85mm",
+        aperture: "f/2.8",
+        mood: "melancholic, raw, documentary style",
+      },
+      landscape: {
+        label: "Landscape",
+        subject: "abandoned wooden cabin in a wildflower meadow",
+        imperfections: "worn roof, broken fence, overgrown weeds",
+        action: "static, peaceful",
+        setting: "rolling hills, vast open field",
+        lighting: "dramatic golden hour backlight, lens flare",
+        camera: "Canon EOS R5",
+        lens: "35mm",
+        aperture: "f/8",
+        mood: "nostalgic, serene, cinematic",
+      },
+      custom: {
+        label: "Custom",
+        subject: "",
+        imperfections: "",
+        action: "",
+        setting: "",
+        lighting: "",
+        camera: "Sony A7R IV",
+        lens: "85mm",
+        aperture: "f/2.8",
+        mood: "",
+      },
+    };
+
+    const VERSIONS = ["6.1", "6.0", "5.2"];
+    const STYLES = ["raw", "scenic", "expressive"];
+    const AR_OPTIONS = ["9:16", "1:1", "16:9", "4:5", "3:2"];
+
+    const CSS = `
+      *, *::before, *::after { box-sizing: border-box; }
+
+      .mj-root {
+        background: #0c0c0f;
+        color: #ede9e2;
+        font-family: 'Inter', 'SF Pro Text', system-ui, -apple-system, sans-serif;
+        min-height: 100vh;
+      }
+
+      .mj-topbar {
+        height: 2px;
+        background: linear-gradient(90deg, transparent 0%, #c9a254 35%, #e8c870 55%, transparent 100%);
+      }
+
+      .mj-inner {
+        max-width: 680px;
+        margin: 0 auto;
+        padding: 0 20px 56px;
+      }
+
+      .mj-input, .mj-select {
+        display: block;
+        width: 100%;
+        background: #101014;
+        border: 1px solid rgba(255,255,255,0.06);
+        border-radius: 8px;
+        padding: 10px 13px;
+        color: #ede9e2;
+        font-size: 13.5px;
+        font-family: inherit;
+        outline: none;
+        -webkit-appearance: none;
+        appearance: none;
+        transition: border-color 0.14s ease, box-shadow 0.14s ease;
+      }
+
+      .mj-input:focus, .mj-select:focus {
+        border-color: rgba(201, 162, 84, 0.55);
+        box-shadow: 0 0 0 3px rgba(201, 162, 84, 0.09);
+      }
+
+      .mj-input::placeholder { color: #30303c; }
+
+      .mj-select {
+        cursor: pointer;
+        padding-right: 30px;
+        background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='10' height='6' fill='none' viewBox='0 0 10 6'%3E%3Cpath d='M1 1l4 4 4-4' stroke='%23505064' stroke-width='1.5' stroke-linecap='round' stroke-linejoin='round'/%3E%3C/svg%3E");
+        background-repeat: no-repeat;
+        background-position: right 11px center;
+      }
+
+      .mj-select option { background: #1a1a22; color: #ede9e2; }
+
+      .mj-preset {
+        background: transparent;
+        border: 1px solid rgba(255,255,255,0.07);
+        border-radius: 6px;
+        padding: 7px 15px;
+        color: #46465a;
+        font-size: 12.5px;
+        font-family: inherit;
+        cursor: pointer;
+        transition: color 0.12s ease, border-color 0.12s ease, background 0.12s ease;
+        letter-spacing: 0.015em;
+        line-height: 1;
+      }
+
+      .mj-preset:hover {
+        color: #7a7a90;
+        border-color: rgba(255,255,255,0.12);
+        background: rgba(255,255,255,0.025);
+      }
+
+      .mj-preset.active {
+        color: #c9a254;
+        border-color: rgba(201, 162, 84, 0.35);
+        background: rgba(201, 162, 84, 0.07);
+      }
+
+      .mj-copy {
+        background: rgba(201, 162, 84, 0.08);
+        border: 1px solid rgba(201, 162, 84, 0.22);
+        border-radius: 7px;
+        padding: 7px 16px;
+        color: #c9a254;
+        font-size: 11px;
+        font-family: inherit;
+        cursor: pointer;
+        transition: all 0.15s ease;
+        letter-spacing: 0.08em;
+        text-transform: uppercase;
+        font-weight: 500;
+        white-space: nowrap;
+      }
+
+      .mj-copy:hover {
+        background: rgba(201, 162, 84, 0.13);
+        border-color: rgba(201, 162, 84, 0.42);
+      }
+
+      .mj-copy.copied {
+        background: rgba(80, 190, 80, 0.07);
+        border-color: rgba(80, 190, 80, 0.28);
+        color: #80d480;
+      }
+
+      .mj-slider {
+        -webkit-appearance: none;
+        appearance: none;
+        display: block;
+        width: 100%;
+        height: 2px;
+        background: rgba(255,255,255,0.08);
+        border-radius: 99px;
+        outline: none;
+        cursor: pointer;
+      }
+
+      .mj-slider::-webkit-slider-thumb {
+        -webkit-appearance: none;
+        width: 14px;
+        height: 14px;
+        border-radius: 50%;
+        background: #c9a254;
+        border: 2px solid #0c0c0f;
+        box-shadow: 0 0 0 1px rgba(201,162,84,0.4);
+        cursor: pointer;
+        transition: box-shadow 0.14s ease;
+      }
+
+      .mj-slider:hover::-webkit-slider-thumb {
+        box-shadow: 0 0 0 4px rgba(201,162,84,0.18);
+      }
+
+      .mj-slider::-moz-range-thumb {
+        width: 14px;
+        height: 14px;
+        border-radius: 50%;
+        background: #c9a254;
+        border: 2px solid #0c0c0f;
+        cursor: pointer;
+      }
+
+      @media (prefers-reduced-motion: reduce) {
+        .mj-input, .mj-select, .mj-preset, .mj-copy { transition: none; }
+        .mj-slider::-webkit-slider-thumb { transition: none; }
+      }
+    `;
+
+    const cardStyle = {
+      background: "#131318",
+      borderRadius: 12,
+      padding: "22px 20px",
+      border: "1px solid rgba(255,255,255,0.055)",
+      marginBottom: 12,
+    };
+
+    function SectionLabel({ n, children }) {
+      return (
+        <div style={{ display: "flex", alignItems: "center", gap: 10, marginBottom: 18 }}>
+          <span style={{
+            fontSize: 9.5,
+            color: "#30304a",
+            fontVariantNumeric: "tabular-nums",
+            letterSpacing: "0.04em",
+            minWidth: 18,
+            fontFamily: "'SF Mono', 'Fira Code', monospace",
+          }}>
+            {String(n).padStart(2, "0")}
+          </span>
+          <span style={{ fontSize: 10, letterSpacing: "0.17em", color: "#564220", textTransform: "uppercase", fontWeight: 600 }}>
+            {children}
+          </span>
+          <div style={{ flex: 1, height: "1px", background: "rgba(255,255,255,0.04)" }} />
+        </div>
+      );
+    }
+
+    function FieldLabel({ children }) {
+      return (
+        <div style={{ fontSize: 11.5, color: "#48485a", marginBottom: 6, letterSpacing: "0.02em" }}>
+          {children}
+        </div>
+      );
+    }
+
+    function MJPromptBuilder() {
+      const [preset, setPreset] = useState("nature");
+      const [fields, setFields] = useState(PRESETS.nature);
+      const [version, setVersion] = useState("6.1");
+      const [style, setStyle] = useState("raw");
+      const [ar, setAr] = useState("9:16");
+      const [stylize, setStylize] = useState(150);
+      const [quality, setQuality] = useState(2);
+      const [copied, setCopied] = useState(false);
+
+      const handlePreset = (key) => {
+        setPreset(key);
+        setFields(PRESETS[key]);
+      };
+
+      const handleField = (key, value) => {
+        setFields((f) => ({ ...f, [key]: value }));
+      };
+
+      const promptMain = [
+        fields.subject,
+        fields.imperfections && `physical details: ${fields.imperfections}`,
+        fields.action,
+        fields.setting && `in ${fields.setting}`,
+        fields.lighting,
+        fields.mood,
+        `Shot on ${fields.camera}, ${fields.lens} lens, ${fields.aperture}, shallow depth of field, photorealistic`,
+      ].filter(Boolean).join(", ");
+
+      const promptParams = `--v ${version} --style ${style} --ar ${ar} --s ${stylize} --q ${quality}`;
+      const fullPrompt = `${promptMain} ${promptParams}`;
+
+      const copyPrompt = () => {
+        navigator.clipboard.writeText(fullPrompt);
+        setCopied(true);
+        setTimeout(() => setCopied(false), 2000);
+      };
+
+      const SCENE_FIELDS = [
+        { key: "subject",       label: "Subject Description",    placeholder: "e.g. white roses cascading over ancient stone" },
+        { key: "imperfections", label: "Physical Imperfections", placeholder: "e.g. dewdrops, wilted edges, moss on surface" },
+        { key: "action",        label: "Motion / Action",        placeholder: "e.g. petals falling in soft wind" },
+        { key: "setting",       label: "Location / Setting",     placeholder: "e.g. European garden courtyard, foggy harbor" },
+        { key: "lighting",      label: "Lighting Conditions",    placeholder: "e.g. golden hour backlight, overcast diffused" },
+        { key: "mood",          label: "Mood & Direction",       placeholder: "e.g. cinematic, melancholic, documentary" },
+      ];
+
+      return (
+        <>
+          <style>{CSS}</style>
+          <div className="mj-root">
+
+            <div className="mj-topbar" />
+
+            <div className="mj-inner">
+
+              {/* Header */}
+              <div style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-start", padding: "36px 0 32px" }}>
+                <div>
+                  <div style={{ fontSize: 10, letterSpacing: "0.2em", color: "#5a4220", textTransform: "uppercase", marginBottom: 10 }}>
+                    Midjourney · Prompt Studio
+                  </div>
+                  <h1 style={{
+                    fontFamily: "'Georgia', 'Times New Roman', serif",
+                    fontSize: 32,
+                    fontWeight: 700,
+                    margin: 0,
+                    color: "#ede9e2",
+                    lineHeight: 1.15,
+                    letterSpacing: "-0.02em",
+                  }}>
+                    Hyper-Realistic<br />Prompt Builder
+                  </h1>
+                  <p style={{ margin: "10px 0 0", fontSize: 13, color: "#3e3e50", lineHeight: 1.55, maxWidth: 340 }}>
+                    Structured formula for cinema-quality AI photography prompts.
+                  </p>
+                </div>
+                <div style={{
+                  border: "1px solid rgba(201,162,84,0.18)",
+                  borderRadius: 8,
+                  padding: "6px 12px",
+                  fontSize: 10.5,
+                  color: "#60481e",
+                  letterSpacing: "0.08em",
+                  background: "rgba(201,162,84,0.04)",
+                  whiteSpace: "nowrap",
+                  marginTop: 2,
+                }}>
+                  v 6.1
+                </div>
+              </div>
+
+              {/* Preset Selector */}
+              <div style={{ marginBottom: 20 }}>
+                <div style={{ fontSize: 10, letterSpacing: "0.16em", color: "#46361a", textTransform: "uppercase", marginBottom: 11 }}>
+                  Scene Preset
+                </div>
+                <div style={{ display: "flex", gap: 8, flexWrap: "wrap" }}>
+                  {Object.entries(PRESETS).map(([key, p]) => (
+                    <button
+                      key={key}
+                      onClick={() => handlePreset(key)}
+                      className={`mj-preset${preset === key ? " active" : ""}`}
+                    >
+                      {p.label}
+                    </button>
+                  ))}
+                </div>
+              </div>
+
+              {/* 01 — Scene */}
+              <div style={cardStyle}>
+                <SectionLabel n={1}>Scene</SectionLabel>
+                <div style={{ display: "flex", flexDirection: "column", gap: 13 }}>
+                  {SCENE_FIELDS.map(({ key, label, placeholder }) => (
+                    <div key={key}>
+                      <FieldLabel>{label}</FieldLabel>
+                      <input
+                        className="mj-input"
+                        value={fields[key]}
+                        onChange={e => handleField(key, e.target.value)}
+                        placeholder={placeholder}
+                        aria-label={label}
+                      />
+                    </div>
+                  ))}
+                </div>
+              </div>
+
+              {/* 02 — Camera */}
+              <div style={cardStyle}>
+                <SectionLabel n={2}>Camera & Lens</SectionLabel>
+                <div style={{ display: "grid", gridTemplateColumns: "2fr 1fr 1fr", gap: 12 }}>
+                  {[
+                    { key: "camera",   label: "Camera Body" },
+                    { key: "lens",     label: "Focal Length" },
+                    { key: "aperture", label: "Aperture" },
+                  ].map(({ key, label }) => (
+                    <div key={key}>
+                      <FieldLabel>{label}</FieldLabel>
+                      <input
+                        className="mj-input"
+                        value={fields[key]}
+                        onChange={e => handleField(key, e.target.value)}
+                        aria-label={label}
+                      />
+                    </div>
+                  ))}
+                </div>
+              </div>
+
+              {/* 03 — Parameters */}
+              <div style={cardStyle}>
+                <SectionLabel n={3}>Parameters</SectionLabel>
+
+                <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr 1fr", gap: 12, marginBottom: 22 }}>
+                  <div>
+                    <FieldLabel>Version</FieldLabel>
+                    <select className="mj-input mj-select" value={version} onChange={e => setVersion(e.target.value)} aria-label="Version">
+                      {VERSIONS.map(v => <option key={v} value={v}>v {v}</option>)}
+                    </select>
+                  </div>
+                  <div>
+                    <FieldLabel>Style</FieldLabel>
+                    <select className="mj-input mj-select" value={style} onChange={e => setStyle(e.target.value)} aria-label="Style">
+                      {STYLES.map(s => <option key={s} value={s}>{s}</option>)}
+                    </select>
+                  </div>
+                  <div>
+                    <FieldLabel>Aspect Ratio</FieldLabel>
+                    <select className="mj-input mj-select" value={ar} onChange={e => setAr(e.target.value)} aria-label="Aspect Ratio">
+                      {AR_OPTIONS.map(a => <option key={a} value={a}>{a}</option>)}
+                    </select>
+                  </div>
+                </div>
+
+                <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 24 }}>
+                  {[
+                    { label: "Stylize", value: stylize, min: 0,  max: 1000, step: 10, onChange: setStylize },
+                    { label: "Quality", value: quality, min: 1,  max: 2,    step: 1,  onChange: setQuality },
+                  ].map(({ label, value, min, max, step, onChange }) => (
+                    <div key={label}>
+                      <div style={{ display: "flex", justifyContent: "space-between", alignItems: "baseline", marginBottom: 9 }}>
+                        <FieldLabel>{label}</FieldLabel>
+                        <span style={{
+                          fontSize: 12,
+                          color: "#c9a254",
+                          fontVariantNumeric: "tabular-nums",
+                          fontFamily: "'SF Mono', 'Fira Code', monospace",
+                        }}>
+                          {value}
+                        </span>
+                      </div>
+                      <input
+                        type="range"
+                        className="mj-slider"
+                        min={min} max={max} step={step} value={value}
+                        onChange={e => onChange(Number(e.target.value))}
+                        aria-label={label}
+                      />
+                      <div style={{ display: "flex", justifyContent: "space-between", marginTop: 5 }}>
+                        <span style={{ fontSize: 9.5, color: "#28283a" }}>{min}</span>
+                        <span style={{ fontSize: 9.5, color: "#28283a" }}>{max}</span>
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              </div>
+
+              {/* Output */}
+              <div style={{
+                background: "#0a0a0e",
+                borderRadius: 12,
+                border: "1px solid rgba(201,162,84,0.13)",
+                overflow: "hidden",
+              }}>
+                <div style={{
+                  display: "flex",
+                  justifyContent: "space-between",
+                  alignItems: "center",
+                  padding: "13px 20px",
+                  borderBottom: "1px solid rgba(255,255,255,0.04)",
+                }}>
+                  <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
+                    <div style={{
+                      width: 6,
+                      height: 6,
+                      borderRadius: "50%",
+                      background: "#c9a254",
+                      boxShadow: "0 0 7px rgba(201,162,84,0.7)",
+                      flexShrink: 0,
+                    }} />
+                    <span style={{ fontSize: 10, letterSpacing: "0.17em", color: "#56421e", textTransform: "uppercase" }}>
+                      Generated Prompt
+                    </span>
+                  </div>
+                  <button onClick={copyPrompt} className={`mj-copy${copied ? " copied" : ""}`}>
+                    {copied ? "Copied" : "Copy Prompt"}
+                  </button>
+                </div>
+                <div style={{ padding: "18px 20px 22px" }}>
+                  <p style={{
+                    margin: 0,
+                    fontSize: 13,
+                    lineHeight: 1.78,
+                    fontFamily: "'SF Mono', 'Fira Code', 'Courier New', monospace",
+                    wordBreak: "break-word",
+                    letterSpacing: "0.01em",
+                  }}>
+                    <span style={{ color: "#c2bdb3" }}>{promptMain} </span>
+                    <span style={{ color: "rgba(201,162,84,0.72)" }}>{promptParams}</span>
+                  </p>
+                </div>
+              </div>
+
+              <div style={{
+                marginTop: 30,
+                textAlign: "center",
+                fontSize: 9.5,
+                color: "#1e1e2e",
+                letterSpacing: "0.14em",
+                textTransform: "uppercase",
+              }}>
+                Wondervisionary · Hyper-Realistic Formula
+              </div>
+
+            </div>
+          </div>
+        </>
+      );
+    }
+
+    const root = ReactDOM.createRoot(document.getElementById("root"));
+    root.render(<MJPromptBuilder />);
+  </script>
+</body>
+</html>
