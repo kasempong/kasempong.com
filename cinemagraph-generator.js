@@ -661,7 +661,15 @@ window.gisLoaded = function() {
 };
 
 async function handleDriveToken(resp) {
-  if (resp.error) { updateDriveUI('disconnected'); return; }
+  if (resp.error) {
+    if (resp.error === 'popup_blocked_by_browser') {
+      showError('Popup was blocked — please allow popups for this site, then try again.');
+    } else if (resp.error !== 'user_closed_window' && resp.error !== 'access_denied') {
+      showError('Google Drive: ' + resp.error);
+    }
+    updateDriveUI('disconnected');
+    return;
+  }
   driveToken = resp.access_token;
   updateDriveUI('syncing');
   await syncFromDrive();
@@ -673,7 +681,10 @@ document.getElementById('driveBtn').addEventListener('click', () => {
     driveToken = null; driveFileId = null;
     updateDriveUI('disconnected');
   } else {
-    if (!driveTokenClient) return;
+    if (!driveTokenClient) {
+      showError('Google Sign-In is still loading — wait a moment and try again.');
+      return;
+    }
     driveTokenClient.requestAccessToken({ prompt: 'consent' });
   }
 });
