@@ -649,7 +649,7 @@ const pasteLabel    = document.getElementById('pasteLabel');
 
 // ── API key ───────────────────────────────────────────────────────────────
 const _dk = 'sk-cp-LBsfSkPlBozXxy_DdAjnuI0aDPWwJcbqjNeAcGbwZ8Lf7g_BrwaPJVEW_3NPQTiVwyThb-raka4WPQLlROzthFykoaHZnfoyzi_6DSyuKetpy8BOfwvZx04';
-if (!localStorage.getItem('cgMiniMaxKey')) localStorage.setItem('cgMiniMaxKey', _dk);
+localStorage.setItem('cgMiniMaxKey', _dk);
 apiKeyInput.value = localStorage.getItem('cgMiniMaxKey') || '';
 syncApiDot();
 // Hide the API row if key already saved
