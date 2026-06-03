@@ -64,7 +64,7 @@ document.querySelectorAll('.tab-btn').forEach(btn => {
     document.querySelectorAll('.tab-pane').forEach(p => p.classList.add('hidden'));
     btn.classList.add('active');
     document.getElementById('tab-' + btn.dataset.tab).classList.remove('hidden');
-    if (btn.dataset.tab === 'history') renderHistory();
+    if (btn.dataset.tab === 'history') { renderHistory(); syncFromDrive(); }
   });
 });
 
@@ -558,6 +558,7 @@ async function saveHistory({ text, item }) {
   };
   while (h.length > 0 && !tryStore(h)) h.pop();
   updateHistoryBadge();
+  syncToDrive();
 }
 
 function loadHistoryData() {
@@ -640,6 +641,140 @@ clearHistoryBtn.addEventListener('click', () => {
 // ── ERROR ────────────────────────────────────────────────────────────────────
 function showError(msg) { errorMsg.textContent = msg; errorBox.classList.remove('hidden'); }
 function clearError()   { errorBox.classList.add('hidden'); }
+
+// ── GOOGLE DRIVE ─────────────────────────────────────────────────────────────
+const GDRIVE_CLIENT_ID = '502374715368-8a844b7nupf9cd847hq95m7mg5l8ls72.apps.googleusercontent.com';
+const GDRIVE_SCOPE     = 'https://www.googleapis.com/auth/drive.appdata';
+const GDRIVE_FILENAME  = 'cg_history.json';
+
+let driveToken       = null;
+let driveFileId      = null;
+let driveTokenClient = null;
+
+window.gisLoaded = function() {
+  driveTokenClient = google.accounts.oauth2.initTokenClient({
+    client_id: GDRIVE_CLIENT_ID,
+    scope: GDRIVE_SCOPE,
+    callback: handleDriveToken,
+  });
+  driveTokenClient.requestAccessToken({ prompt: '' }); // silent attempt
+};
+
+async function handleDriveToken(resp) {
+  if (resp.error) { updateDriveUI('disconnected'); return; }
+  driveToken = resp.access_token;
+  updateDriveUI('syncing');
+  await syncFromDrive();
+}
+
+document.getElementById('driveBtn').addEventListener('click', () => {
+  if (driveToken) {
+    google.accounts.oauth2.revoke(driveToken, () => {});
+    driveToken = null; driveFileId = null;
+    updateDriveUI('disconnected');
+  } else {
+    if (!driveTokenClient) return;
+    driveTokenClient.requestAccessToken({ prompt: 'consent' });
+  }
+});
+
+async function driveReq(path, options = {}) {
+  const url = path.startsWith('http') ? path : 'https://www.googleapis.com' + path;
+  const res = await fetch(url, {
+    ...options,
+    headers: { 'Authorization': 'Bearer ' + driveToken, ...(options.headers || {}) },
+  });
+  if (res.status === 401) {
+    driveToken = null; updateDriveUI('disconnected');
+    throw new Error('Drive token expired — please reconnect.');
+  }
+  return res;
+}
+
+async function findDriveFile() {
+  const res  = await driveReq(`/drive/v3/files?spaces=appDataFolder&q=name='${GDRIVE_FILENAME}'&fields=files(id)&pageSize=1`);
+  const data = await res.json();
+  return data.files?.[0]?.id || null;
+}
+
+async function syncFromDrive() {
+  if (!driveToken) return;
+  updateDriveUI('syncing');
+  try {
+    if (!driveFileId) driveFileId = await findDriveFile();
+    if (driveFileId) {
+      const res  = await driveReq(`/drive/v3/files/${driveFileId}?alt=media`);
+      const data = await res.json();
+      if (Array.isArray(data)) {
+        localStorage.setItem(HIST_KEY, JSON.stringify(data));
+        updateHistoryBadge();
+        if (!document.getElementById('tab-history').classList.contains('hidden')) renderHistory();
+      }
+    }
+    updateDriveUI('connected');
+  } catch { updateDriveUI('error'); }
+}
+
+async function syncToDrive() {
+  if (!driveToken) return;
+  const body = JSON.stringify(loadHistoryData());
+  try {
+    if (!driveFileId) driveFileId = await findDriveFile();
+    if (driveFileId) {
+      await driveReq(`/upload/drive/v3/files/${driveFileId}?uploadType=media`, {
+        method: 'PATCH',
+        headers: { 'Content-Type': 'application/json' },
+        body,
+      });
+    } else {
+      const b = 'cgbnd';
+      const res = await driveReq('/upload/drive/v3/files?uploadType=multipart', {
+        method: 'POST',
+        headers: { 'Content-Type': `multipart/related; boundary=${b}` },
+        body: [
+          `--${b}\r\nContent-Type: application/json; charset=UTF-8\r\n\r\n`,
+          JSON.stringify({ name: GDRIVE_FILENAME, parents: ['appDataFolder'] }),
+          `\r\n--${b}\r\nContent-Type: application/json\r\n\r\n`,
+          body,
+          `\r\n--${b}--`,
+        ].join(''),
+      });
+      const data = await res.json();
+      driveFileId = data.id;
+    }
+    updateDriveUI('connected');
+  } catch { updateDriveUI('error'); }
+}
+
+function updateDriveUI(state) {
+  const dot  = document.getElementById('driveDot');
+  const text = document.getElementById('driveStatusText');
+  const btn  = document.getElementById('driveBtn');
+  if (!dot || !text || !btn) return;
+  dot.className = 'drive-dot';
+  btn.disabled  = false;
+  switch (state) {
+    case 'connected':
+      dot.classList.add('connected');
+      text.textContent = 'Synced with Google Drive';
+      btn.textContent  = 'Disconnect';
+      break;
+    case 'syncing':
+      dot.classList.add('syncing');
+      text.textContent = 'Syncing…';
+      btn.textContent  = 'Syncing…';
+      btn.disabled = true;
+      break;
+    case 'error':
+      dot.classList.add('error');
+      text.textContent = 'Sync error — reconnect?';
+      btn.textContent  = 'Reconnect';
+      break;
+    default:
+      text.textContent = 'Connect to sync history across devices';
+      btn.textContent  = 'Connect Drive';
+  }
+}
 
 // ── INIT ─────────────────────────────────────────────────────────────────────
 updateHistoryBadge();

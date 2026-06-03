@@ -387,6 +387,22 @@
     .history-btns { display: flex; flex-direction: column; gap: 5px; flex-shrink: 0; }
     .history-clear-row { display: flex; justify-content: center; margin-top: 16px; padding-bottom: 16px; }
 
+    /* ── Google Drive sync bar ─────────────────────────────── */
+    .drive-bar {
+      display: flex; align-items: center; justify-content: space-between;
+      background: var(--surface); border: 1px solid var(--border);
+      border-radius: 10px; padding: 10px 14px; margin-bottom: 16px; gap: 10px;
+    }
+    .drive-status-row { display: flex; align-items: center; gap: 8px; min-width: 0; }
+    .drive-dot {
+      width: 7px; height: 7px; border-radius: 50%; background: var(--border);
+      flex-shrink: 0; transition: background 0.25s, box-shadow 0.25s;
+    }
+    .drive-dot.connected { background: var(--success); box-shadow: 0 0 6px rgba(34,197,94,0.5); }
+    .drive-dot.syncing   { background: var(--accent); animation: pulse 1s ease-in-out infinite; }
+    .drive-dot.error     { background: var(--danger); }
+    .drive-status-text   { font-size: 0.78rem; color: var(--text-muted); }
+
     .hidden { display: none !important; }
   </style>
 </head>
@@ -559,6 +575,14 @@
 
   <!-- ── History Tab ── -->
   <div class="tab-pane hidden" id="tab-history">
+    <div class="drive-bar">
+      <div class="drive-status-row">
+        <span class="drive-dot" id="driveDot"></span>
+        <span class="drive-status-text" id="driveStatusText">Connect to sync history across devices</span>
+      </div>
+      <button class="btn btn-ghost btn-sm" id="driveBtn">Connect Drive</button>
+    </div>
+
     <div class="history-empty" id="historyEmpty">
       <svg class="icon icon-xl"><use href="#ic-clock"/></svg>
       <p>No history yet</p>
@@ -574,6 +598,7 @@
 
 </div><!-- /app -->
 
+<script async defer src="https://accounts.google.com/gsi/client" onload="gisLoaded()"></script>
 <script src="/cinemagraph-generator.js"></script>
 </body>
 </html>
