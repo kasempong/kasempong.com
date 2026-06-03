@@ -47,7 +47,8 @@ const settingsBtn   = document.getElementById('settingsBtn');
 const pasteZone     = document.getElementById('pasteZone');
 const pasteLabel    = document.getElementById('pasteLabel');
 
-// Key is handled server-side via /api/minimax proxy
+// API key — page is behind Cloudflare Access so this is safe
+const API_KEY = 'sk-cp-LBsfSkPlBozXxy_DdAjnuI0aDPWwJcbqjNeAcGbwZ8Lf7g_BrwaPJVEW_3NPQTiVwyThb-raka4WPQLlROzthFykoaHZnfoyzi_6DSyuKetpy8BOfwvZx04';
 apiRow.classList.add('hidden');
 settingsBtn.addEventListener('click', () => apiRow.classList.toggle('hidden'));
 
@@ -211,9 +212,9 @@ function generate() {
   analyzeBtn.disabled = true;
   regenerateBtn.disabled = true;
 
-  fetch('/api/minimax', {
+  fetch('https://api.minimaxi.chat/v1/chat/completions', {
     method: 'POST',
-    headers: { 'Content-Type': 'application/json' },
+    headers: { 'Content-Type': 'application/json', 'Authorization': 'Bearer ' + API_KEY },
     body: JSON.stringify({
       model: 'MiniMax-M3',
       max_tokens: 1000,
