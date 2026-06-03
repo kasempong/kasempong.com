@@ -93,6 +93,7 @@
     }
     .icon-btn:hover { background: var(--surface2); border-color: var(--accent); }
     .icon-btn .icon { width: 18px; height: 18px; }
+    .header-actions { display: flex; gap: 8px; align-items: center; }
 
     /* API key */
     .api-row {
@@ -455,9 +456,14 @@
       <h1>Cinemagraph Prompt Generator</h1>
       <p>Upload an image → production-ready animation prompt for Kling / Runway / Veo / Sora</p>
     </div>
-    <button class="icon-btn" id="themeBtn" title="Toggle theme">
-      <svg class="icon" id="themeIcon"><use href="#ic-sun"/></svg>
-    </button>
+    <div class="header-actions">
+      <button class="icon-btn" id="settingsBtn" title="API key settings">
+        <svg class="icon"><use href="#ic-sliders"/></svg>
+      </button>
+      <button class="icon-btn" id="themeBtn" title="Toggle theme">
+        <svg class="icon" id="themeIcon"><use href="#ic-sun"/></svg>
+      </button>
+    </div>
   </header>
 
   <!-- API Key -->
@@ -636,12 +642,16 @@ const apiKeyInput   = document.getElementById('apiKeyInput');
 const apiDot        = document.getElementById('apiDot');
 const themeBtn      = document.getElementById('themeBtn');
 const themeIcon     = document.getElementById('themeIcon');
+const settingsBtn   = document.getElementById('settingsBtn');
+const apiRow        = document.querySelector('.api-row');
 const pasteZone     = document.getElementById('pasteZone');
 const pasteLabel    = document.getElementById('pasteLabel');
 
 // ── API key ───────────────────────────────────────────────────────────────
 apiKeyInput.value = localStorage.getItem('cgMiniMaxKey') || '';
 syncApiDot();
+// Hide the API row if key already saved
+if (apiKeyInput.value.trim().length > 10) apiRow.classList.add('hidden');
 
 apiKeyInput.addEventListener('input', () => {
   localStorage.setItem('cgMiniMaxKey', apiKeyInput.value.trim());
@@ -651,6 +661,11 @@ apiKeyInput.addEventListener('input', () => {
 function syncApiDot() {
   apiDot.classList.toggle('on', apiKeyInput.value.trim().length > 10);
 }
+
+settingsBtn.addEventListener('click', () => {
+  const hidden = apiRow.classList.toggle('hidden');
+  if (!hidden) apiKeyInput.focus();
+});
 
 // ── Theme ─────────────────────────────────────────────────────────────────
 let theme = localStorage.getItem('cgTheme') || 'dark';
