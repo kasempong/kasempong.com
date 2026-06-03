@@ -255,8 +255,30 @@
       background: var(--border); flex-shrink: 0;
       transition: background 0.3s ease, box-shadow 0.3s ease;
     }
-    .loading-step.active { color: var(--accent-light); }
-    .loading-step.active::before { background: var(--accent); box-shadow: 0 0 8px rgba(124,58,237,0.7); }
+    .loading-step.active {
+      color: var(--accent-light);
+      animation: step-shimmer 1.5s ease-in-out infinite;
+    }
+    .loading-step.active::before {
+      background: var(--accent);
+      box-shadow: 0 0 8px rgba(124,58,237,0.7);
+    }
+    .loading-step.active::after {
+      content: ' ✦';
+      display: inline-block;
+      animation: sparkle-ping 1s ease-in-out infinite;
+      color: #c4b5fd;
+      font-size: 0.82em;
+    }
+    @keyframes step-shimmer {
+      0%, 100% { color: var(--accent-light); text-shadow: 0 0 6px rgba(139,92,246,0.35); }
+      50%       { color: #d4bbff; text-shadow: 0 0 16px rgba(139,92,246,0.85), 0 0 4px rgba(255,255,255,0.3); }
+    }
+    @keyframes sparkle-ping {
+      0%, 100% { opacity: 1;   transform: scale(1)   rotate(0deg); }
+      35%       { opacity: 0.3; transform: scale(0.65) rotate(90deg); }
+      70%       { opacity: 0.9; transform: scale(1.25) rotate(180deg); }
+    }
     .loading-step.done { color: var(--success); }
     .loading-step.done::before { background: var(--success); }
 
@@ -517,10 +539,10 @@
     <div class="loading-box hidden" id="loadingBox">
       <div class="spinner"></div>
       <div class="loading-steps" id="loadingSteps">
-        <div class="loading-step" data-step="0">Scanning scene composition</div>
-        <div class="loading-step" data-step="1">Identifying animation elements</div>
-        <div class="loading-step" data-step="2">Crafting motion description</div>
-        <div class="loading-step" data-step="3">Finalising cinemagraph prompt</div>
+        <div class="loading-step" data-step="0">Reading the room...</div>
+        <div class="loading-step" data-step="1">Spotting what wants to move...</div>
+        <div class="loading-step" data-step="2">Writing the vibes...</div>
+        <div class="loading-step" data-step="3">Almost cooked, hang tight...</div>
       </div>
     </div>
 
