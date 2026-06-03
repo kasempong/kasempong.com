@@ -332,7 +332,7 @@
 
   <!-- Drop Zone -->
   <input type="file" id="fileInput" accept="image/*" style="display:none">
-  <label class="drop-zone" id="dropZone" for="fileInput">
+  <label class="drop-zone" id="dropZone" for="fileInput" tabindex="0">
     <i class="ti ti-photo-up"></i>
     <h2>Drop an image here</h2>
     <p>Click to browse · Drag from file system · Drag from browser tab · Paste Ctrl+V</p>
@@ -523,14 +523,37 @@ dropZone.addEventListener('drop', async e => {
 
 // ── Paste ──────────────────────────────────────────────────────────────────
 document.addEventListener('paste', async e => {
-  for (const item of (e.clipboardData?.items || [])) {
+  // Skip if user is pasting into the API key input
+  if (e.target === apiKeyInput) return;
+
+  // Try event clipboardData first (works in most cases)
+  const items = Array.from(e.clipboardData?.items || []);
+  for (const item of items) {
     if (item.type.startsWith('image/')) {
-      loadFile(item.getAsFile());
-      return;
+      const file = item.getAsFile();
+      if (file) { loadFile(file); return; }
     }
   }
-  const text = e.clipboardData.getData('text/plain').trim();
-  if (/^https?:\/\//.test(text)) await processUrl(text);
+
+  // Check for image URL in text
+  const text = (e.clipboardData?.getData('text/plain') || '').trim();
+  if (/^https?:\/\//.test(text)) { await processUrl(text); return; }
+
+  // Fallback: Clipboard API (handles screenshots and some OS clipboard formats)
+  if (navigator.clipboard?.read) {
+    try {
+      const clipItems = await navigator.clipboard.read();
+      for (const item of clipItems) {
+        const imgType = item.types.find(t => t.startsWith('image/'));
+        if (imgType) {
+          const blob = await item.getType(imgType);
+          const ext = imgType.split('/')[1] || 'png';
+          loadFile(new File([blob], `paste.${ext}`, { type: imgType }));
+          return;
+        }
+      }
+    } catch { /* permission denied or no image — ignore */ }
+  }
 });
 
 // ── File helpers ───────────────────────────────────────────────────────────
