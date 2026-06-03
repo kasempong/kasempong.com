@@ -1,0 +1,716 @@
+<!DOCTYPE html>
+<html lang="en" data-theme="dark">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Cinemagraph Prompt Generator</title>
+  <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/@tabler/icons-webfont@3.10.0/dist/tabler-icons.min.css">
+  <style>
+    :root[data-theme="dark"] {
+      --bg: #0f0f11;
+      --surface: #18181b;
+      --surface2: #1f1f23;
+      --border: #2e2e35;
+      --text: #f4f4f5;
+      --text-muted: #71717a;
+      --accent: #7c3aed;
+      --accent-light: #8b5cf6;
+      --accent-dim: rgba(124,58,237,0.12);
+      --success: #22c55e;
+      --danger: #ef4444;
+    }
+    :root[data-theme="light"] {
+      --bg: #f4f4f6;
+      --surface: #ffffff;
+      --surface2: #f1f1f4;
+      --border: #e4e4e7;
+      --text: #18181b;
+      --text-muted: #71717a;
+      --accent: #7c3aed;
+      --accent-light: #6d28d9;
+      --accent-dim: rgba(124,58,237,0.08);
+      --success: #16a34a;
+      --danger: #dc2626;
+    }
+
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+
+    body {
+      font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+      background: var(--bg);
+      color: var(--text);
+      min-height: 100vh;
+      padding: 28px 16px 60px;
+    }
+
+    .app { max-width: 660px; margin: 0 auto; }
+
+    /* Header */
+    header {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      margin-bottom: 24px;
+    }
+    .header-left h1 {
+      font-size: 1.2rem;
+      font-weight: 700;
+      letter-spacing: -0.02em;
+    }
+    .header-left p {
+      font-size: 0.78rem;
+      color: var(--text-muted);
+      margin-top: 3px;
+    }
+    .icon-btn {
+      background: var(--surface);
+      border: 1px solid var(--border);
+      color: var(--text);
+      width: 36px; height: 36px;
+      border-radius: 8px;
+      cursor: pointer;
+      display: flex; align-items: center; justify-content: center;
+      font-size: 1.05rem;
+      transition: background 0.15s, border-color 0.15s;
+    }
+    .icon-btn:hover { background: var(--surface2); border-color: var(--accent); }
+
+    /* API key */
+    .api-row {
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-radius: 12px;
+      padding: 12px 14px;
+      margin-bottom: 18px;
+      display: flex;
+      align-items: center;
+      gap: 10px;
+    }
+    .api-dot {
+      width: 8px; height: 8px;
+      border-radius: 50%;
+      background: var(--border);
+      flex-shrink: 0;
+      transition: background 0.2s;
+    }
+    .api-dot.on { background: var(--success); }
+    .api-row label {
+      font-size: 0.78rem;
+      color: var(--text-muted);
+      font-weight: 500;
+      white-space: nowrap;
+    }
+    .api-row input {
+      flex: 1;
+      background: var(--surface2);
+      border: 1px solid var(--border);
+      border-radius: 7px;
+      padding: 6px 11px;
+      color: var(--text);
+      font-size: 0.83rem;
+      font-family: monospace;
+      outline: none;
+      transition: border-color 0.15s;
+    }
+    .api-row input:focus { border-color: var(--accent); }
+
+    /* Drop zone */
+    .drop-zone {
+      border: 2px dashed var(--border);
+      border-radius: 16px;
+      padding: 56px 24px;
+      text-align: center;
+      cursor: pointer;
+      background: var(--surface);
+      transition: border-color 0.18s, background 0.18s;
+    }
+    .drop-zone:hover,
+    .drop-zone.drag-over {
+      border-color: var(--accent);
+      background: var(--accent-dim);
+    }
+    .drop-zone .ti { font-size: 2.4rem; color: var(--text-muted); display: block; margin-bottom: 12px; }
+    .drop-zone h2 { font-size: 0.98rem; font-weight: 600; margin-bottom: 6px; }
+    .drop-zone p { font-size: 0.8rem; color: var(--text-muted); line-height: 1.55; }
+    .drop-zone input[type="file"] { display: none; }
+
+    /* Image card */
+    .image-card {
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-radius: 12px;
+      padding: 12px 14px;
+      display: flex;
+      align-items: center;
+      gap: 12px;
+      margin-bottom: 14px;
+    }
+    .img-thumb {
+      width: 64px; height: 64px;
+      border-radius: 8px;
+      object-fit: cover;
+      flex-shrink: 0;
+      border: 1px solid var(--border);
+    }
+    .img-info { flex: 1; min-width: 0; }
+    .img-filename {
+      font-size: 0.86rem;
+      font-weight: 500;
+      white-space: nowrap;
+      overflow: hidden;
+      text-overflow: ellipsis;
+    }
+    .img-meta { font-size: 0.76rem; color: var(--text-muted); margin-top: 3px; }
+    .card-actions { display: flex; gap: 8px; flex-shrink: 0; }
+
+    /* Buttons */
+    .btn {
+      display: inline-flex; align-items: center; gap: 6px;
+      padding: 7px 13px;
+      border-radius: 8px;
+      font-size: 0.83rem;
+      font-weight: 500;
+      cursor: pointer;
+      border: 1px solid transparent;
+      transition: all 0.15s;
+      white-space: nowrap;
+    }
+    .btn-primary { background: var(--accent); color: #fff; }
+    .btn-primary:hover { background: var(--accent-light); }
+    .btn-ghost {
+      background: var(--surface2);
+      color: var(--text);
+      border-color: var(--border);
+    }
+    .btn-ghost:hover { border-color: var(--accent); color: var(--accent-light); }
+    .btn:disabled { opacity: 0.45; cursor: not-allowed; pointer-events: none; }
+
+    /* Loading */
+    .loading-box {
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-radius: 12px;
+      padding: 44px 24px;
+      text-align: center;
+      margin-bottom: 14px;
+    }
+    .spinner {
+      width: 30px; height: 30px;
+      border: 3px solid var(--border);
+      border-top-color: var(--accent);
+      border-radius: 50%;
+      animation: spin 0.65s linear infinite;
+      margin: 0 auto 14px;
+    }
+    @keyframes spin { to { transform: rotate(360deg); } }
+    .loading-box p { font-size: 0.85rem; color: var(--text-muted); }
+
+    /* Error */
+    .error-box {
+      background: rgba(239,68,68,0.09);
+      border: 1px solid rgba(239,68,68,0.28);
+      border-radius: 10px;
+      padding: 12px 14px;
+      margin-bottom: 14px;
+      font-size: 0.84rem;
+      color: var(--danger);
+      display: flex;
+      gap: 8px;
+      align-items: flex-start;
+    }
+    .error-box .ti { flex-shrink: 0; margin-top: 1px; }
+
+    /* Result sections */
+    .result-section {
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-radius: 12px;
+      margin-bottom: 10px;
+      overflow: hidden;
+    }
+    .result-header {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      padding: 10px 14px;
+      border-bottom: 1px solid var(--border);
+    }
+    .result-label {
+      font-size: 0.72rem;
+      font-weight: 700;
+      text-transform: uppercase;
+      letter-spacing: 0.07em;
+      color: var(--text-muted);
+      display: flex;
+      align-items: center;
+      gap: 5px;
+    }
+    .result-label .ti { color: var(--accent-light); font-size: 0.88rem; }
+    .copy-btn {
+      background: var(--surface2);
+      border: 1px solid var(--border);
+      color: var(--text-muted);
+      padding: 3px 9px;
+      border-radius: 6px;
+      font-size: 0.73rem;
+      cursor: pointer;
+      display: flex;
+      align-items: center;
+      gap: 4px;
+      transition: all 0.15s;
+    }
+    .copy-btn:hover { border-color: var(--accent); color: var(--accent-light); }
+    .copy-btn.copied { border-color: var(--success); color: var(--success); }
+    .result-body {
+      padding: 12px 14px;
+      font-size: 0.86rem;
+      line-height: 1.65;
+    }
+
+    /* Settings row */
+    .settings-body {
+      padding: 12px 14px;
+      display: flex;
+      align-items: center;
+      gap: 12px;
+    }
+    .settings-label { font-size: 0.8rem; color: var(--text-muted); white-space: nowrap; }
+    .strength-track {
+      flex: 1;
+      height: 5px;
+      background: var(--surface2);
+      border-radius: 100px;
+      overflow: hidden;
+    }
+    .strength-fill {
+      height: 100%;
+      background: linear-gradient(90deg, var(--accent), var(--accent-light));
+      border-radius: 100px;
+      transition: width 0.4s ease;
+    }
+    .tag {
+      display: inline-flex;
+      align-items: center;
+      background: var(--accent-dim);
+      color: var(--accent-light);
+      border: 1px solid rgba(124,58,237,0.22);
+      border-radius: 100px;
+      padding: 2px 9px;
+      font-size: 0.76rem;
+      font-weight: 600;
+      white-space: nowrap;
+    }
+
+    /* Bottom actions */
+    .actions-row {
+      display: flex;
+      gap: 10px;
+      margin-top: 14px;
+    }
+
+    .hidden { display: none !important; }
+  </style>
+</head>
+<body>
+<div class="app">
+
+  <header>
+    <div class="header-left">
+      <h1>Cinemagraph Prompt Generator</h1>
+      <p>Upload an image → production-ready animation prompt for Kling / Runway / Veo / Sora</p>
+    </div>
+    <button class="icon-btn" id="themeBtn" title="Toggle theme">
+      <i class="ti ti-sun"></i>
+    </button>
+  </header>
+
+  <!-- API Key -->
+  <div class="api-row">
+    <div class="api-dot" id="apiDot"></div>
+    <label for="apiKeyInput">MiniMax API Key</label>
+    <input type="password" id="apiKeyInput" placeholder="eyJ…" autocomplete="off" spellcheck="false">
+  </div>
+
+  <!-- Drop Zone -->
+  <div class="drop-zone" id="dropZone">
+    <input type="file" id="fileInput" accept="image/*">
+    <i class="ti ti-photo-up"></i>
+    <h2>Drop an image here</h2>
+    <p>Click to browse · Drag from file system · Drag from browser tab · Paste Ctrl+V</p>
+  </div>
+
+  <!-- Image Card -->
+  <div class="image-card hidden" id="imageCard">
+    <img class="img-thumb" id="imageThumb" src="" alt="">
+    <div class="img-info">
+      <div class="img-filename" id="imgFilename">—</div>
+      <div class="img-meta" id="imgMeta">—</div>
+    </div>
+    <div class="card-actions">
+      <button class="btn btn-ghost" id="newImageBtn"><i class="ti ti-x"></i> New</button>
+      <button class="btn btn-primary" id="analyzeBtn"><i class="ti ti-wand"></i> Generate</button>
+    </div>
+  </div>
+
+  <!-- Loading -->
+  <div class="loading-box hidden" id="loadingBox">
+    <div class="spinner"></div>
+    <p id="loadingMsg">Analyzing image with MiniMax M3…</p>
+  </div>
+
+  <!-- Error -->
+  <div class="error-box hidden" id="errorBox">
+    <i class="ti ti-alert-circle"></i>
+    <span id="errorMsg"></span>
+  </div>
+
+  <!-- Results -->
+  <div id="results" class="hidden">
+
+    <div class="result-section">
+      <div class="result-header">
+        <div class="result-label"><i class="ti ti-focus-2"></i> Element to Animate</div>
+        <button class="copy-btn" data-copy="elementText"><i class="ti ti-copy"></i> Copy</button>
+      </div>
+      <div class="result-body" id="elementText"></div>
+    </div>
+
+    <div class="result-section">
+      <div class="result-header">
+        <div class="result-label"><i class="ti ti-wave-sine"></i> Motion Style</div>
+        <button class="copy-btn" data-copy="motionText"><i class="ti ti-copy"></i> Copy</button>
+      </div>
+      <div class="result-body" id="motionText"></div>
+    </div>
+
+    <div class="result-section">
+      <div class="result-header">
+        <div class="result-label"><i class="ti ti-sparkles"></i> Cinemagraph Prompt</div>
+        <button class="copy-btn" data-copy="promptText"><i class="ti ti-copy"></i> Copy</button>
+      </div>
+      <div class="result-body" id="promptText" style="font-size:0.84rem"></div>
+    </div>
+
+    <div class="result-section">
+      <div class="result-header">
+        <div class="result-label"><i class="ti ti-ban"></i> Negative Prompt</div>
+        <button class="copy-btn" data-copy="negativeText"><i class="ti ti-copy"></i> Copy</button>
+      </div>
+      <div class="result-body" id="negativeText" style="font-size:0.82rem;color:var(--text-muted)"></div>
+    </div>
+
+    <div class="result-section">
+      <div class="result-header">
+        <div class="result-label"><i class="ti ti-adjustments-horizontal"></i> Settings</div>
+      </div>
+      <div class="settings-body">
+        <span class="settings-label">Motion strength</span>
+        <div class="strength-track">
+          <div class="strength-fill" id="strengthFill" style="width:15%"></div>
+        </div>
+        <span class="tag" id="strengthTag">15%</span>
+        <span class="tag" id="arTag">16:9</span>
+        <span class="tag">8 s</span>
+      </div>
+    </div>
+
+    <div class="actions-row">
+      <button class="btn btn-ghost" id="regenerateBtn"><i class="ti ti-refresh"></i> Regenerate</button>
+    </div>
+
+  </div>
+</div>
+
+<script>
+const SYSTEM_PROMPT = `You are a cinemagraph animation expert. Analyze the provided image and generate a production-ready cinemagraph prompt.
+
+Rules:
+- Study the scene: lighting, mood, depth, textures, and all potentially animatable elements.
+- Select EXACTLY ONE element to animate — the one that creates the most natural, seamless ambient loop.
+- NEVER reference people, faces, bodies, skin, or human subjects. Focus strictly on environment, nature, objects, and atmosphere.
+- Motion must be subtle and ambient: strength 10–20% only. No dramatic movement.
+- The loop must be seamless: the final frame must smoothly match the first frame.
+- Aspect ratio: if the image is portrait or square, output 9:16; if landscape, output 16:9.
+- Duration: always 8 seconds.
+- Write the prompt for Kling AI / Runway Gen-3 / Veo 2 / Sora: descriptive, cinematic, precise.
+
+Respond EXACTLY in this format with no extra text before or after:
+
+**Element to animate:** [single specific element]
+
+**Motion style:** [brief motion description, e.g. "slow upward curl and gentle dispersion"]
+
+**Cinemagraph prompt:** [2–4 sentence production prompt — no mention of people or faces]
+
+**Kling / Runway negative prompt:** [comma-separated list]
+
+**Motion strength setting:** [number followed by %, e.g. "15%"]`;
+
+// ── State ──────────────────────────────────────────────────────────────────
+let imageBase64 = null;
+let imageMime   = null;
+let imageW = 0, imageH = 0;
+
+// ── DOM refs ───────────────────────────────────────────────────────────────
+const dropZone      = document.getElementById('dropZone');
+const fileInput     = document.getElementById('fileInput');
+const imageCard     = document.getElementById('imageCard');
+const imageThumb    = document.getElementById('imageThumb');
+const imgFilename   = document.getElementById('imgFilename');
+const imgMeta       = document.getElementById('imgMeta');
+const loadingBox    = document.getElementById('loadingBox');
+const loadingMsg    = document.getElementById('loadingMsg');
+const errorBox      = document.getElementById('errorBox');
+const errorMsg      = document.getElementById('errorMsg');
+const results       = document.getElementById('results');
+const analyzeBtn    = document.getElementById('analyzeBtn');
+const regenerateBtn = document.getElementById('regenerateBtn');
+const newImageBtn   = document.getElementById('newImageBtn');
+const apiKeyInput   = document.getElementById('apiKeyInput');
+const apiDot        = document.getElementById('apiDot');
+const themeBtn      = document.getElementById('themeBtn');
+
+// ── API key persistence ────────────────────────────────────────────────────
+apiKeyInput.value = localStorage.getItem('cgMiniMaxKey') || '';
+syncApiDot();
+
+apiKeyInput.addEventListener('input', () => {
+  localStorage.setItem('cgMiniMaxKey', apiKeyInput.value.trim());
+  syncApiDot();
+});
+
+function syncApiDot() {
+  apiDot.classList.toggle('on', apiKeyInput.value.trim().length > 10);
+}
+
+// ── Theme ──────────────────────────────────────────────────────────────────
+let theme = localStorage.getItem('cgTheme') || 'dark';
+applyTheme(theme);
+
+themeBtn.addEventListener('click', () => {
+  theme = theme === 'dark' ? 'light' : 'dark';
+  localStorage.setItem('cgTheme', theme);
+  applyTheme(theme);
+});
+
+function applyTheme(t) {
+  document.documentElement.setAttribute('data-theme', t);
+  themeBtn.querySelector('i').className = t === 'dark' ? 'ti ti-sun' : 'ti ti-moon';
+}
+
+// ── Drop zone ──────────────────────────────────────────────────────────────
+dropZone.addEventListener('click', () => fileInput.click());
+
+fileInput.addEventListener('change', e => {
+  if (e.target.files[0]) loadFile(e.target.files[0]);
+});
+
+dropZone.addEventListener('dragover', e => {
+  e.preventDefault();
+  dropZone.classList.add('drag-over');
+});
+dropZone.addEventListener('dragleave', () => dropZone.classList.remove('drag-over'));
+
+dropZone.addEventListener('drop', async e => {
+  e.preventDefault();
+  dropZone.classList.remove('drag-over');
+  if (e.dataTransfer.files.length > 0) {
+    loadFile(e.dataTransfer.files[0]);
+    return;
+  }
+  const url = e.dataTransfer.getData('text/uri-list') || e.dataTransfer.getData('text/plain');
+  if (url && /^https?:\/\//.test(url)) await processUrl(url.trim());
+});
+
+// ── Paste ──────────────────────────────────────────────────────────────────
+document.addEventListener('paste', async e => {
+  for (const item of (e.clipboardData?.items || [])) {
+    if (item.type.startsWith('image/')) {
+      loadFile(item.getAsFile());
+      return;
+    }
+  }
+  const text = e.clipboardData.getData('text/plain').trim();
+  if (/^https?:\/\//.test(text)) await processUrl(text);
+});
+
+// ── File helpers ───────────────────────────────────────────────────────────
+async function processUrl(url) {
+  setLoading('Fetching image from URL…');
+  try {
+    const res = await fetch(url);
+    if (!res.ok) throw new Error(`HTTP ${res.status}`);
+    const blob = await res.blob();
+    const name = url.split('/').pop().split('?')[0] || 'image.jpg';
+    setLoading(null);
+    loadFile(new File([blob], name, { type: blob.type }));
+  } catch (err) {
+    setLoading(null);
+    showError('Could not fetch image: ' + err.message);
+  }
+}
+
+function loadFile(file) {
+  if (!file || !file.type.startsWith('image/')) {
+    showError('Please provide an image file (JPG, PNG, WebP, GIF).');
+    return;
+  }
+  clearError();
+  const reader = new FileReader();
+  reader.onload = e => {
+    const dataUrl = e.target.result;
+    const parts = dataUrl.split(',');
+    imageMime   = parts[0].match(/:(.*?);/)[1];
+    imageBase64 = parts[1];
+
+    const tmp = new Image();
+    tmp.onload = () => { imageW = tmp.naturalWidth; imageH = tmp.naturalHeight; };
+    tmp.src = dataUrl;
+
+    imageThumb.src   = dataUrl;
+    imgFilename.textContent = file.name;
+    imgMeta.textContent     = `${(file.size / 1024).toFixed(0)} KB · ${file.type}`;
+
+    dropZone.classList.add('hidden');
+    imageCard.classList.remove('hidden');
+    results.classList.add('hidden');
+    setLoading(null);
+    clearError();
+
+    fileInput.value = '';
+  };
+  reader.readAsDataURL(file);
+}
+
+// ── Generate ───────────────────────────────────────────────────────────────
+analyzeBtn.addEventListener('click', generate);
+regenerateBtn.addEventListener('click', generate);
+
+async function generate() {
+  const apiKey = apiKeyInput.value.trim();
+  if (!apiKey) { showError('Enter your MiniMax API key first.'); return; }
+  if (!imageBase64) { showError('No image loaded.'); return; }
+
+  clearError();
+  results.classList.add('hidden');
+  setLoading('Analyzing image with MiniMax M3…');
+  analyzeBtn.disabled = true;
+  regenerateBtn.disabled = true;
+
+  try {
+    const res = await fetch('https://api.minimax.io/v1/chat/completions', {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        'Authorization': 'Bearer ' + apiKey
+      },
+      body: JSON.stringify({
+        model: 'MiniMax-M3',
+        max_tokens: 1000,
+        messages: [
+          { role: 'system', content: SYSTEM_PROMPT },
+          {
+            role: 'user',
+            content: [
+              {
+                type: 'image_url',
+                image_url: {
+                  url: `data:${imageMime};base64,${imageBase64}`,
+                  detail: 'default'
+                }
+              },
+              { type: 'text', text: 'Analyze this image and generate a cinemagraph prompt following the exact output format.' }
+            ]
+          }
+        ]
+      })
+    });
+
+    if (!res.ok) {
+      const errData = await res.json().catch(() => ({}));
+      throw new Error(errData.error?.message || `API error ${res.status}`);
+    }
+
+    const data = await res.json();
+    const text = data.choices?.[0]?.message?.content || '';
+    if (!text) throw new Error('Empty response from API.');
+    renderResults(text);
+
+  } catch (err) {
+    showError(err.message);
+  } finally {
+    setLoading(null);
+    analyzeBtn.disabled = false;
+    regenerateBtn.disabled = false;
+  }
+}
+
+function renderResults(text) {
+  const get = re => { const m = text.match(re); return m ? m[1].trim() : ''; };
+
+  const element  = get(/\*\*Element to animate:\*\*\s*(.+)/);
+  const motion   = get(/\*\*Motion style:\*\*\s*(.+)/);
+  const prompt   = get(/\*\*Cinemagraph prompt:\*\*\s*([\s\S]+?)(?=\*\*Kling)/);
+  const negative = get(/\*\*Kling \/ Runway negative prompt:\*\*\s*([\s\S]+?)(?=\*\*Motion strength)/);
+  const strengthRaw = get(/\*\*Motion strength setting:\*\*\s*(.+)/);
+
+  document.getElementById('elementText').textContent  = element  || '—';
+  document.getElementById('motionText').textContent   = motion   || '—';
+  document.getElementById('promptText').textContent   = prompt   || '—';
+  document.getElementById('negativeText').textContent = negative || '—';
+
+  const pct = Math.min(100, Math.max(1, parseInt(strengthRaw) || 15));
+  document.getElementById('strengthTag').textContent   = pct + '%';
+  document.getElementById('strengthFill').style.width = pct + '%';
+
+  const ar = imageW > 0 && imageW / imageH >= 1.1 ? '16:9' : '9:16';
+  document.getElementById('arTag').textContent = ar;
+
+  results.classList.remove('hidden');
+}
+
+// ── New image ──────────────────────────────────────────────────────────────
+newImageBtn.addEventListener('click', () => {
+  imageBase64 = null; imageMime = null; imageW = 0; imageH = 0;
+  imageThumb.src = '';
+  imageCard.classList.add('hidden');
+  results.classList.add('hidden');
+  dropZone.classList.remove('hidden');
+  clearError();
+});
+
+// ── Copy buttons ───────────────────────────────────────────────────────────
+document.addEventListener('click', e => {
+  const btn = e.target.closest('[data-copy]');
+  if (!btn) return;
+  const el = document.getElementById(btn.dataset.copy);
+  if (!el) return;
+  navigator.clipboard.writeText(el.textContent).then(() => {
+    const orig = btn.innerHTML;
+    btn.innerHTML = '<i class="ti ti-check"></i> Copied';
+    btn.classList.add('copied');
+    setTimeout(() => { btn.innerHTML = orig; btn.classList.remove('copied'); }, 2000);
+  });
+});
+
+// ── UI helpers ─────────────────────────────────────────────────────────────
+function setLoading(msg) {
+  if (msg) {
+    loadingMsg.textContent = msg;
+    loadingBox.classList.remove('hidden');
+  } else {
+    loadingBox.classList.add('hidden');
+  }
+}
+
+function showError(msg) {
+  errorMsg.textContent = msg;
+  errorBox.classList.remove('hidden');
+}
+
+function clearError() {
+  errorBox.classList.add('hidden');
+}
+</script>
+</body>
+</html>
