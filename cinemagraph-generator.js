@@ -22,37 +22,53 @@ Respond EXACTLY in this format with no extra text before or after:
 
 **Motion strength setting:** [number followed by %, e.g. "15%"]`;
 
-let imageBase64 = null;
-let imageMime   = null;
-let imageW = 0, imageH = 0;
-
-const dropZone      = document.getElementById('dropZone');
-const fileInput     = document.getElementById('fileInput');
-const imageCard     = document.getElementById('imageCard');
-const imageThumb    = document.getElementById('imageThumb');
-const imgFilename   = document.getElementById('imgFilename');
-const imgMeta       = document.getElementById('imgMeta');
-const loadingBox    = document.getElementById('loadingBox');
-const loadingMsg    = document.getElementById('loadingMsg');
-const errorBox      = document.getElementById('errorBox');
-const errorMsg      = document.getElementById('errorMsg');
-const results       = document.getElementById('results');
-const analyzeBtn    = document.getElementById('analyzeBtn');
-const regenerateBtn = document.getElementById('regenerateBtn');
-const newImageBtn   = document.getElementById('newImageBtn');
-const apiRow        = document.querySelector('.api-row');
-const themeBtn      = document.getElementById('themeBtn');
-const themeIcon     = document.getElementById('themeIcon');
-const settingsBtn   = document.getElementById('settingsBtn');
-const pasteZone     = document.getElementById('pasteZone');
-const pasteLabel    = document.getElementById('pasteLabel');
-
-// API key — page is behind Cloudflare Access so this is safe
+// ── API ──────────────────────────────────────────────────────────────────────
 const API_KEY = 'sk-cp-LBsfSkPlBozXxy_DdAjnuI0aDPWwJcbqjNeAcGbwZ8Lf7g_BrwaPJVEW_3NPQTiVwyThb-raka4WPQLlROzthFykoaHZnfoyzi_6DSyuKetpy8BOfwvZx04';
-apiRow.classList.add('hidden');
-settingsBtn.addEventListener('click', () => apiRow.classList.toggle('hidden'));
 
-// Theme
+// ── STATE ────────────────────────────────────────────────────────────────────
+let queue = [];
+let stepTimerId = null;
+let currentStepIndex = 0;
+let cardCounter = 0;
+
+// ── DOM REFS ─────────────────────────────────────────────────────────────────
+const dropZone       = document.getElementById('dropZone');
+const fileInput      = document.getElementById('fileInput');
+const pasteZone      = document.getElementById('pasteZone');
+const pasteLabel     = document.getElementById('pasteLabel');
+const queueStrip     = document.getElementById('queueStrip');
+const queueActions   = document.getElementById('queueActions');
+const queueCount     = document.getElementById('queueCount');
+const clearQueueBtn  = document.getElementById('clearQueueBtn');
+const generateAllBtn = document.getElementById('generateAllBtn');
+const loadingBox     = document.getElementById('loadingBox');
+const errorBox       = document.getElementById('errorBox');
+const errorMsg       = document.getElementById('errorMsg');
+const resultsContainer = document.getElementById('resultsContainer');
+const apiRow         = document.getElementById('apiRow');
+const apiKeyInput    = document.getElementById('apiKeyInput');
+const apiDot         = document.getElementById('apiDot');
+const themeBtn       = document.getElementById('themeBtn');
+const themeIcon      = document.getElementById('themeIcon');
+const settingsBtn    = document.getElementById('settingsBtn');
+const historyBadge   = document.getElementById('historyBadge');
+const historyEmpty   = document.getElementById('historyEmpty');
+const historyList    = document.getElementById('historyList');
+const historyClearRow = document.getElementById('historyClearRow');
+const clearHistoryBtn = document.getElementById('clearHistoryBtn');
+
+// ── TABS ─────────────────────────────────────────────────────────────────────
+document.querySelectorAll('.tab-btn').forEach(btn => {
+  btn.addEventListener('click', () => {
+    document.querySelectorAll('.tab-btn').forEach(b => b.classList.remove('active'));
+    document.querySelectorAll('.tab-pane').forEach(p => p.classList.add('hidden'));
+    btn.classList.add('active');
+    document.getElementById('tab-' + btn.dataset.tab).classList.remove('hidden');
+    if (btn.dataset.tab === 'history') renderHistory();
+  });
+});
+
+// ── THEME ────────────────────────────────────────────────────────────────────
 let theme = localStorage.getItem('cgTheme') || 'dark';
 applyTheme(theme);
 themeBtn.addEventListener('click', () => {
@@ -65,37 +81,38 @@ function applyTheme(t) {
   themeIcon.querySelector('use').setAttribute('href', t === 'dark' ? '#ic-sun' : '#ic-moon');
 }
 
-// Drop zone click
+// ── API KEY ──────────────────────────────────────────────────────────────────
+settingsBtn.addEventListener('click', () => apiRow.classList.toggle('hidden'));
+
+// ── FILE INPUT ───────────────────────────────────────────────────────────────
 dropZone.addEventListener('click', () => fileInput.click());
 dropZone.addEventListener('keydown', e => {
   if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); fileInput.click(); }
 });
 fileInput.addEventListener('change', e => {
-  if (e.target.files[0]) loadFile(e.target.files[0]);
+  Array.from(e.target.files).forEach(f => addToQueue(f));
+  fileInput.value = '';
 });
-dropZone.addEventListener('dragover', e => {
-  e.preventDefault();
-  dropZone.classList.add('drag-over');
-});
+dropZone.addEventListener('dragover', e => { e.preventDefault(); dropZone.classList.add('drag-over'); });
 dropZone.addEventListener('dragleave', e => {
   if (!dropZone.contains(e.relatedTarget)) dropZone.classList.remove('drag-over');
 });
 dropZone.addEventListener('drop', async e => {
   e.preventDefault();
   dropZone.classList.remove('drag-over');
-  if (e.dataTransfer.files.length > 0) { loadFile(e.dataTransfer.files[0]); return; }
+  if (e.dataTransfer.files.length > 0) {
+    Array.from(e.dataTransfer.files).forEach(f => addToQueue(f));
+    return;
+  }
   const url = e.dataTransfer.getData('text/uri-list') || e.dataTransfer.getData('text/plain');
   if (url && /^https?:\/\//.test(url)) await processUrl(url.trim());
 });
 
-// Paste
+// ── PASTE ────────────────────────────────────────────────────────────────────
 document.addEventListener('paste', async e => {
   const items = Array.from(e.clipboardData?.items || []);
   for (const item of items) {
-    if (item.type.startsWith('image/')) {
-      const file = item.getAsFile();
-      if (file) { loadFile(file); return; }
-    }
+    if (item.type.startsWith('image/')) { const f = item.getAsFile(); if (f) { addToQueue(f); return; } }
   }
   const text = (e.clipboardData?.getData('text/plain') || '').trim();
   if (/^https?:\/\//.test(text)) { await processUrl(text); return; }
@@ -106,15 +123,14 @@ document.addEventListener('paste', async e => {
         const imgType = item.types.find(t => t.startsWith('image/'));
         if (imgType) {
           const blob = await item.getType(imgType);
-          loadFile(new File([blob], 'paste.' + (imgType.split('/')[1] || 'png'), { type: imgType }));
+          addToQueue(new File([blob], 'paste.' + (imgType.split('/')[1] || 'png'), { type: imgType }));
           return;
         }
       }
-    } catch(err) {}
+    } catch {}
   }
 });
 
-// Paste zone
 pasteZone.addEventListener('click', async () => {
   if (navigator.clipboard?.read) {
     try {
@@ -123,170 +139,484 @@ pasteZone.addEventListener('click', async () => {
         const imgType = item.types.find(t => t.startsWith('image/'));
         if (imgType) {
           const blob = await item.getType(imgType);
-          loadFile(new File([blob], 'paste.' + (imgType.split('/')[1] || 'png'), { type: imgType }));
+          addToQueue(new File([blob], 'paste.' + (imgType.split('/')[1] || 'png'), { type: imgType }));
           return;
         }
       }
-    } catch(err) {}
+    } catch {}
   }
   pasteZone.classList.add('waiting');
-  pasteLabel.innerHTML = 'Ready -- now press Ctrl+V';
+  pasteLabel.innerHTML = 'Ready — now press <kbd>Ctrl+V</kbd>';
   pasteZone.focus();
 });
 pasteZone.addEventListener('blur', () => {
   pasteZone.classList.remove('waiting');
-  pasteLabel.innerHTML = 'Click here then press Ctrl+V -- or click to read clipboard directly';
+  pasteLabel.innerHTML = 'Click here then press <kbd>Ctrl+V</kbd> — or click to read clipboard directly';
 });
 pasteZone.addEventListener('paste', e => {
   e.preventDefault();
   const items = Array.from(e.clipboardData?.items || []);
   for (const item of items) {
     if (item.type.startsWith('image/')) {
-      const file = item.getAsFile();
-      if (file) { pasteZone.blur(); loadFile(file); return; }
+      const f = item.getAsFile();
+      if (f) { pasteZone.blur(); addToQueue(f); return; }
     }
   }
 });
 
-// File helpers
+// ── QUEUE ────────────────────────────────────────────────────────────────────
+function guessMime(filename) {
+  const ext = (filename || '').split('.').pop().toLowerCase();
+  return { jpg:'image/jpeg', jpeg:'image/jpeg', png:'image/png', webp:'image/webp',
+           gif:'image/gif', bmp:'image/bmp', avif:'image/avif', tiff:'image/tiff' }[ext] || 'image/jpeg';
+}
+
+function addToQueue(file) {
+  if (!file) return;
+  const mime = file.type || guessMime(file.name);
+  if (!mime.startsWith('image/')) { showError('Not an image: ' + (file.name || 'unknown')); return; }
+  clearError();
+  const item = { file, mime, name: file.name || 'pasted image', size: file.size, status: 'pending', dataUrl: null, base64: null, w: 0, h: 0 };
+  queue.push(item);
+  const reader = new FileReader();
+  reader.onload = e => {
+    const dataUrl = e.target.result;
+    item.dataUrl = dataUrl;
+    item.base64  = dataUrl.slice(dataUrl.indexOf(',') + 1);
+    const img = new Image();
+    img.onload = () => { item.w = img.naturalWidth; item.h = img.naturalHeight; };
+    img.src = dataUrl;
+    renderQueueStrip();
+  };
+  reader.readAsDataURL(file);
+}
+
+function removeFromQueue(index) {
+  queue.splice(index, 1);
+  renderQueueStrip();
+  if (queue.length === 0) {
+    dropZone.classList.remove('hidden');
+    pasteZone.classList.remove('hidden');
+    clearError();
+  }
+}
+
+function renderQueueStrip() {
+  if (queue.length === 0) {
+    queueStrip.classList.add('hidden');
+    queueActions.classList.add('hidden');
+    dropZone.classList.remove('hidden');
+    pasteZone.classList.remove('hidden');
+    return;
+  }
+  dropZone.classList.add('hidden');
+  pasteZone.classList.add('hidden');
+  queueStrip.classList.remove('hidden');
+  queueActions.classList.remove('hidden');
+
+  const pending = queue.filter(i => i.status === 'pending').length;
+  const done    = queue.filter(i => i.status === 'done').length;
+  queueCount.textContent = `${queue.length} photo${queue.length !== 1 ? 's' : ''} · ${done} done · ${pending} pending`;
+  generateAllBtn.disabled = pending === 0;
+
+  queueStrip.innerHTML = '';
+  queue.forEach((item, idx) => {
+    const div = document.createElement('div');
+    div.className = 'q-item' + (item.status !== 'pending' ? ' ' + item.status : '');
+
+    const thumb = document.createElement('img');
+    thumb.className = 'q-thumb';
+    thumb.src = item.dataUrl || '';
+    thumb.alt = item.name;
+    div.appendChild(thumb);
+
+    const overlay = document.createElement('div');
+    overlay.className = 'q-overlay';
+    if (item.status === 'done')   overlay.textContent = '✓';
+    if (item.status === 'error')  overlay.textContent = '✗';
+    if (item.status === 'active') overlay.textContent = '…';
+    div.appendChild(overlay);
+
+    if (item.status === 'pending') {
+      const rm = document.createElement('button');
+      rm.className = 'q-remove';
+      rm.textContent = '×';
+      rm.title = 'Remove';
+      rm.addEventListener('click', e => { e.stopPropagation(); removeFromQueue(idx); });
+      div.appendChild(rm);
+    }
+    queueStrip.appendChild(div);
+  });
+
+  // Add-more button
+  const addBtn = document.createElement('button');
+  addBtn.className = 'q-add';
+  addBtn.innerHTML = '<svg class="icon"><use href="#ic-plus"/></svg><span>Add</span>';
+  addBtn.addEventListener('click', () => fileInput.click());
+  queueStrip.appendChild(addBtn);
+}
+
+clearQueueBtn.addEventListener('click', () => {
+  queue = [];
+  renderQueueStrip();
+  resultsContainer.innerHTML = '';
+  clearError();
+});
+
+generateAllBtn.addEventListener('click', generateAll);
+
+async function generateAll() {
+  const pending = queue.filter(i => i.status === 'pending');
+  if (!pending.length) return;
+  generateAllBtn.disabled = true;
+  clearQueueBtn.disabled  = true;
+
+  for (const item of pending) {
+    if (!item.base64) { item.status = 'error'; renderQueueStrip(); continue; }
+    item.status = 'active';
+    renderQueueStrip();
+    try {
+      await generateForItem(item);
+      item.status = 'done';
+    } catch (err) {
+      item.status = 'error';
+      showError(item.name + ': ' + (err.message || 'Request failed'));
+    }
+    renderQueueStrip();
+  }
+
+  generateAllBtn.disabled = false;
+  clearQueueBtn.disabled  = false;
+}
+
+// ── URL FETCH ────────────────────────────────────────────────────────────────
 async function processUrl(url) {
-  setLoading('Fetching image from URL...');
+  startLoadingAnim();
   try {
     const res = await fetch(url);
     if (!res.ok) throw new Error('HTTP ' + res.status);
     const blob = await res.blob();
     const name = url.split('/').pop().split('?')[0] || 'image.jpg';
-    setLoading(null);
-    loadFile(new File([blob], name, { type: blob.type }));
+    stopLoadingAnim();
+    addToQueue(new File([blob], name, { type: blob.type }));
   } catch (err) {
-    setLoading(null);
+    stopLoadingAnim();
     showError('Could not fetch image: ' + err.message);
   }
 }
 
-function guessMime(filename) {
-  const ext = (filename || '').split('.').pop().toLowerCase();
-  return { jpg:'image/jpeg', jpeg:'image/jpeg', png:'image/png',
-           webp:'image/webp', gif:'image/gif', bmp:'image/bmp',
-           avif:'image/avif', tiff:'image/tiff' }[ext] || 'image/jpeg';
+// ── GENERATE ─────────────────────────────────────────────────────────────────
+async function generateForItem(item) {
+  clearError();
+  startLoadingAnim();
+  const key = apiKeyInput.value.trim() || API_KEY;
+
+  let res;
+  try {
+    res = await fetch('https://api.minimaxi.chat/v1/chat/completions', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json', 'Authorization': 'Bearer ' + key },
+      body: JSON.stringify({
+        model: 'MiniMax-M3',
+        max_tokens: 1000,
+        messages: [
+          { role: 'system', content: SYSTEM_PROMPT },
+          { role: 'user', content: [
+            { type: 'image_url', image_url: { url: 'data:' + item.mime + ';base64,' + item.base64, detail: 'default' } },
+            { type: 'text', text: 'Analyze this image and generate a cinemagraph prompt following the exact output format.' }
+          ]}
+        ]
+      })
+    });
+  } finally {
+    stopLoadingAnim();
+  }
+
+  if (!res.ok) {
+    const d = await res.json().catch(() => ({}));
+    throw new Error(d.error?.message || 'API error ' + res.status);
+  }
+  const data = await res.json();
+  const text = data.choices?.[0]?.message?.content || '';
+  if (!text) throw new Error('Empty response from API.');
+
+  renderResultCard(text, item);
+  saveHistory({ text, item });
 }
 
-function loadFile(file) {
-  if (!file) return;
-  const mime = file.type || guessMime(file.name);
-  if (!mime.startsWith('image/')) { showError('Please provide an image file.'); return; }
-  clearError();
-  const reader = new FileReader();
-  reader.onerror = () => showError('Could not read file. Try a different image.');
-  reader.onload = function(e) {
-    const dataUrl = e.target.result;
-    const comma = dataUrl.indexOf(',');
-    imageMime   = mime;
-    imageBase64 = dataUrl.slice(comma + 1);
-    const tmp = new Image();
-    tmp.onload = function() { imageW = tmp.naturalWidth; imageH = tmp.naturalHeight; };
-    tmp.src = dataUrl;
-    imageThumb.src          = dataUrl;
-    imgFilename.textContent = file.name || 'pasted image';
-    imgMeta.textContent     = Math.round(file.size / 1024) + ' KB - ' + mime;
-    dropZone.classList.add('hidden');
-    pasteZone.classList.add('hidden');
-    imageCard.classList.remove('hidden');
-    results.classList.add('hidden');
-    setLoading(null);
-    clearError();
-    fileInput.value = '';
+// ── PARSE ────────────────────────────────────────────────────────────────────
+function parseResults(text) {
+  function get(re) { const m = text.match(re); return m ? m[1].trim() : ''; }
+  return {
+    element:  get(/\*\*Element to animate:\*\*\s*(.+)/)                                    || '—',
+    motion:   get(/\*\*Motion style:\*\*\s*(.+)/)                                          || '—',
+    prompt:   get(/\*\*Cinemagraph prompt:\*\*\s*([\s\S]+?)(?=\*\*Kling)/)                 || '—',
+    negative: get(/\*\*Kling \/ Runway negative prompt:\*\*\s*([\s\S]+?)(?=\*\*Motion strength)/) || '—',
+    strength: Math.min(100, Math.max(1, parseInt(get(/\*\*Motion strength setting:\*\*\s*(.+)/)) || 15)),
   };
-  reader.readAsDataURL(file);
 }
 
-// Generate
-analyzeBtn.addEventListener('click', generate);
-regenerateBtn.addEventListener('click', generate);
+// ── RESULT CARD ───────────────────────────────────────────────────────────────
+function renderResultCard(text, item) {
+  const p  = parseResults(text);
+  const ar = (item.w > 0 && item.w / item.h >= 1.1) ? '16:9' : '9:16';
+  const id = 'r' + (++cardCounter) + '_';
+  const now = new Date();
 
-function generate() {
-  if (!imageBase64) { showError('No image loaded.'); return; }
-  clearError();
-  results.classList.add('hidden');
-  setLoading('Analyzing image with MiniMax M3...');
-  analyzeBtn.disabled = true;
-  regenerateBtn.disabled = true;
+  const card = document.createElement('div');
+  card.className = 'result-card';
+  card.innerHTML = `
+    <div class="result-card-header">
+      <img class="result-card-thumb" src="${escHtml(item.dataUrl)}" alt="">
+      <div class="result-card-info">
+        <div class="result-card-filename">${escHtml(item.name)}</div>
+        <div class="result-card-time">${fmtTime(now)}</div>
+      </div>
+      <button class="btn btn-ghost btn-sm regen-btn" title="Regenerate">
+        <svg class="icon"><use href="#ic-refresh"/></svg>
+      </button>
+      <svg class="icon result-card-chevron" style="width:16px;height:16px"><use href="#ic-chevron-down"/></svg>
+    </div>
+    <div class="result-card-body">
+      ${section('ic-target', 'Element to Animate', p.element, id+'el')}
+      ${section('ic-wave',   'Motion Style',       p.motion,  id+'mo')}
+      ${section('ic-star',   'Cinemagraph Prompt', p.prompt,  id+'pr', 'font-size:0.84rem')}
+      ${section('ic-ban',    'Negative Prompt',    p.negative,id+'ng', 'font-size:0.82rem;color:var(--text-muted)')}
+      <div class="result-section">
+        <div class="result-header">
+          <div class="result-label"><svg class="icon"><use href="#ic-sliders"/></svg> Settings</div>
+        </div>
+        <div class="settings-body">
+          <span class="settings-label">Motion strength</span>
+          <div class="strength-track"><div class="strength-fill" style="width:${p.strength}%"></div></div>
+          <span class="tag">${p.strength}%</span>
+          <span class="tag">${ar}</span>
+          <span class="tag">8 s</span>
+        </div>
+      </div>
+    </div>
+  `;
 
-  fetch('https://api.minimaxi.chat/v1/chat/completions', {
-    method: 'POST',
-    headers: { 'Content-Type': 'application/json', 'Authorization': 'Bearer ' + API_KEY },
-    body: JSON.stringify({
-      model: 'MiniMax-M3',
-      max_tokens: 1000,
-      messages: [
-        { role: 'system', content: SYSTEM_PROMPT },
-        { role: 'user', content: [
-          { type: 'image_url', image_url: { url: 'data:' + imageMime + ';base64,' + imageBase64, detail: 'default' } },
-          { type: 'text', text: 'Analyze this image and generate a cinemagraph prompt following the exact output format.' }
-        ]}
-      ]
-    })
-  })
-  .then(function(res) {
-    if (!res.ok) return res.json().then(function(d) { throw new Error(d.error?.message || 'API error ' + res.status); });
-    return res.json();
-  })
-  .then(function(data) {
-    const text = data.choices?.[0]?.message?.content || '';
-    if (!text) throw new Error('Empty response from API.');
-    renderResults(text);
-  })
-  .catch(function(err) {
-    showError(err.message || 'Request failed. Please try again.');
-  })
-  .finally(function() {
-    setLoading(null);
-    analyzeBtn.disabled = false;
-    regenerateBtn.disabled = false;
+  // collapse toggle
+  const header = card.querySelector('.result-card-header');
+  header.addEventListener('click', e => {
+    if (e.target.closest('.regen-btn')) return;
+    card.classList.toggle('collapsed');
+  });
+
+  // regen
+  card.querySelector('.regen-btn').addEventListener('click', async () => {
+    const btn = card.querySelector('.regen-btn');
+    btn.disabled = true;
+    const origIdx = queue.indexOf(item);
+    if (origIdx >= 0) { item.status = 'active'; renderQueueStrip(); }
+    try {
+      await generateForItem(item);
+      if (origIdx >= 0) { item.status = 'done'; renderQueueStrip(); }
+    } catch (err) {
+      showError(item.name + ': ' + (err.message || 'Failed'));
+      if (origIdx >= 0) { item.status = 'error'; renderQueueStrip(); }
+    }
+    btn.disabled = false;
+  });
+
+  // copy buttons (event delegation)
+  card.addEventListener('click', e => {
+    const btn = e.target.closest('[data-copy]');
+    if (!btn) return;
+    const el = card.querySelector('#' + btn.dataset.copy);
+    if (!el) return;
+    navigator.clipboard.writeText(el.textContent).then(() => {
+      const orig = btn.innerHTML;
+      btn.innerHTML = '<svg style="width:12px;height:12px;fill:none;stroke:currentColor;stroke-width:2.5;stroke-linecap:round;stroke-linejoin:round" viewBox="0 0 24 24"><polyline points="20 6 9 17 4 12"/></svg> Copied';
+      btn.classList.add('copied');
+      setTimeout(() => { btn.innerHTML = orig; btn.classList.remove('copied'); }, 2000);
+    });
+  });
+
+  resultsContainer.prepend(card);
+  setTimeout(() => showSparkles(card), 60);
+  card.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
+}
+
+function section(icon, label, content, id, style) {
+  return `
+    <div class="result-section">
+      <div class="result-header">
+        <div class="result-label"><svg class="icon"><use href="#${icon}"/></svg> ${label}</div>
+        <button class="copy-btn" data-copy="${id}">
+          <svg class="icon"><use href="#ic-copy"/></svg> Copy
+        </button>
+      </div>
+      <div class="result-body" id="${id}"${style ? ` style="${style}"` : ''}>${escHtml(content)}</div>
+    </div>`;
+}
+
+function escHtml(str) {
+  return String(str).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');
+}
+
+function fmtTime(d) {
+  return d.toLocaleDateString('en', { month: 'short', day: 'numeric' }) + ' · ' +
+         d.toLocaleTimeString('en', { hour: '2-digit', minute: '2-digit' });
+}
+
+// ── SPARKLE ──────────────────────────────────────────────────────────────────
+function showSparkles(container) {
+  const colors = ['#c4a247','#e8d87a','#fffbe0','#ffffff','#b8a0f0','#f0b8f0'];
+  const chars  = ['★','✦','✧','·','✨','✶'];
+  for (let i = 0; i < 18; i++) {
+    const el  = document.createElement('span');
+    el.className = 'sparkle-p';
+    const dx  = (Math.random() - 0.5) * 130;
+    const dy  = -(Math.random() * 90 + 20);
+    const dur = (0.65 + Math.random() * 0.55).toFixed(2) + 's';
+    el.style.cssText = [
+      `left:${5 + Math.random() * 90}%`,
+      `top:${5 + Math.random() * 90}%`,
+      `color:${colors[i % colors.length]}`,
+      `font-size:${6 + Math.random() * 10}px`,
+      `animation-delay:${(Math.random() * 0.45).toFixed(2)}s`,
+      `--dur:${dur}`,
+      `--dx:${dx.toFixed(0)}px`,
+      `--dy:${dy.toFixed(0)}px`,
+    ].join(';');
+    el.textContent = chars[Math.floor(Math.random() * chars.length)];
+    container.appendChild(el);
+    el.addEventListener('animationend', () => el.remove(), { once: true });
+  }
+}
+
+// ── LOADING ANIMATION ────────────────────────────────────────────────────────
+function startLoadingAnim() {
+  loadingBox.classList.remove('hidden');
+  currentStepIndex = 0;
+  const steps = loadingBox.querySelectorAll('.loading-step');
+  steps.forEach(s => s.classList.remove('active', 'done'));
+  if (steps[0]) steps[0].classList.add('active');
+  clearInterval(stepTimerId);
+  stepTimerId = setInterval(() => {
+    const steps = loadingBox.querySelectorAll('.loading-step');
+    if (currentStepIndex < steps.length - 1) {
+      steps[currentStepIndex].classList.remove('active');
+      steps[currentStepIndex].classList.add('done');
+      currentStepIndex++;
+      steps[currentStepIndex].classList.add('active');
+    }
+  }, 1400);
+}
+
+function stopLoadingAnim() {
+  clearInterval(stepTimerId);
+  stepTimerId = null;
+  loadingBox.classList.add('hidden');
+  loadingBox.querySelectorAll('.loading-step').forEach(s => s.classList.remove('active', 'done'));
+}
+
+// ── HISTORY ──────────────────────────────────────────────────────────────────
+const HIST_KEY = 'cgHistory';
+const HIST_MAX = 50;
+
+function saveHistory({ text, item }) {
+  const p = parseResults(text);
+  const record = {
+    id: Date.now(),
+    ts: new Date().toISOString(),
+    filename: item.name,
+    thumbnail: item.dataUrl,
+    element: p.element,
+    motion: p.motion,
+    prompt: p.prompt,
+    negative: p.negative,
+    strength: p.strength,
+  };
+  let h = loadHistoryData();
+  h.unshift(record);
+  if (h.length > HIST_MAX) h = h.slice(0, HIST_MAX);
+  localStorage.setItem(HIST_KEY, JSON.stringify(h));
+  updateHistoryBadge();
+}
+
+function loadHistoryData() {
+  try { return JSON.parse(localStorage.getItem(HIST_KEY)) || []; } catch { return []; }
+}
+
+function updateHistoryBadge() {
+  const count = loadHistoryData().length;
+  if (count > 0) {
+    historyBadge.textContent = count > 99 ? '99+' : count;
+    historyBadge.classList.remove('hidden');
+  } else {
+    historyBadge.classList.add('hidden');
+  }
+}
+
+function renderHistory() {
+  const history = loadHistoryData();
+  historyEmpty.classList.toggle('hidden', history.length > 0);
+  historyClearRow.classList.toggle('hidden', history.length === 0);
+  historyList.innerHTML = '';
+
+  history.forEach(rec => {
+    const card = document.createElement('div');
+    card.className = 'history-card';
+    card.innerHTML = `
+      <img class="history-thumb" src="${escHtml(rec.thumbnail || '')}" alt="${escHtml(rec.filename)}">
+      <div class="history-content">
+        <div class="history-fname">${escHtml(rec.filename)}</div>
+        <div class="history-time">${new Date(rec.ts).toLocaleDateString('en',{month:'short',day:'numeric',year:'numeric'})} · ${new Date(rec.ts).toLocaleTimeString('en',{hour:'2-digit',minute:'2-digit'})}</div>
+        <div class="history-preview">${escHtml(rec.prompt)}</div>
+      </div>
+      <div class="history-btns">
+        <button class="btn btn-ghost btn-sm copy-hist-btn">Copy</button>
+        <button class="icon-btn del-hist-btn" title="Delete" style="width:30px;height:30px">
+          <svg class="icon" style="width:13px;height:13px"><use href="#ic-trash"/></svg>
+        </button>
+      </div>
+    `;
+
+    card.querySelector('.copy-hist-btn').addEventListener('click', () => {
+      const full = [
+        'Element: ' + rec.element,
+        'Motion: ' + rec.motion,
+        '',
+        rec.prompt,
+        '',
+        'Negative: ' + rec.negative,
+        'Motion strength: ' + rec.strength + '%',
+      ].join('\n');
+      navigator.clipboard.writeText(full);
+      const btn = card.querySelector('.copy-hist-btn');
+      btn.textContent = 'Copied!';
+      setTimeout(() => { btn.textContent = 'Copy'; }, 2000);
+    });
+
+    card.querySelector('.del-hist-btn').addEventListener('click', () => {
+      deleteHistoryItem(rec.id);
+      renderHistory();
+    });
+
+    historyList.appendChild(card);
   });
 }
 
-function renderResults(text) {
-  function get(re) { var m = text.match(re); return m ? m[1].trim() : ''; }
-  document.getElementById('elementText').textContent  = get(/\*\*Element to animate:\*\*\s*(.+)/) || '--';
-  document.getElementById('motionText').textContent   = get(/\*\*Motion style:\*\*\s*(.+)/) || '--';
-  document.getElementById('promptText').textContent   = get(/\*\*Cinemagraph prompt:\*\*\s*([\s\S]+?)(?=\*\*Kling)/) || '--';
-  document.getElementById('negativeText').textContent = get(/\*\*Kling \/ Runway negative prompt:\*\*\s*([\s\S]+?)(?=\*\*Motion strength)/) || '--';
-  var pct = Math.min(100, Math.max(1, parseInt(get(/\*\*Motion strength setting:\*\*\s*(.+)/)) || 15));
-  document.getElementById('strengthTag').textContent  = pct + '%';
-  document.getElementById('strengthFill').style.width = pct + '%';
-  document.getElementById('arTag').textContent = (imageW > 0 && imageW / imageH >= 1.1) ? '16:9' : '9:16';
-  results.classList.remove('hidden');
+function deleteHistoryItem(id) {
+  let h = loadHistoryData();
+  h = h.filter(r => r.id !== id);
+  localStorage.setItem(HIST_KEY, JSON.stringify(h));
+  updateHistoryBadge();
 }
 
-// New image
-newImageBtn.addEventListener('click', function() {
-  imageBase64 = null; imageMime = null; imageW = 0; imageH = 0;
-  imageThumb.src = '';
-  imageCard.classList.add('hidden');
-  results.classList.add('hidden');
-  dropZone.classList.remove('hidden');
-  pasteZone.classList.remove('hidden');
-  clearError();
+clearHistoryBtn.addEventListener('click', () => {
+  if (!confirm('Clear all history?')) return;
+  localStorage.removeItem(HIST_KEY);
+  updateHistoryBadge();
+  renderHistory();
 });
 
-// Copy buttons
-document.addEventListener('click', function(e) {
-  var btn = e.target.closest('[data-copy]');
-  if (!btn) return;
-  var el = document.getElementById(btn.dataset.copy);
-  if (!el) return;
-  navigator.clipboard.writeText(el.textContent).then(function() {
-    var orig = btn.innerHTML;
-    btn.innerHTML = '<svg style="width:12px;height:12px;fill:none;stroke:currentColor;stroke-width:2.5;stroke-linecap:round;stroke-linejoin:round" viewBox="0 0 24 24"><polyline points="20 6 9 17 4 12"/></svg> Copied';
-    btn.classList.add('copied');
-    setTimeout(function() { btn.innerHTML = orig; btn.classList.remove('copied'); }, 2000);
-  });
-});
-
-function setLoading(msg) {
-  if (msg) { loadingMsg.textContent = msg; loadingBox.classList.remove('hidden'); }
-  else loadingBox.classList.add('hidden');
-}
+// ── ERROR ────────────────────────────────────────────────────────────────────
 function showError(msg) { errorMsg.textContent = msg; errorBox.classList.remove('hidden'); }
-function clearError() { errorBox.classList.add('hidden'); }
+function clearError()   { errorBox.classList.add('hidden'); }
+
+// ── INIT ─────────────────────────────────────────────────────────────────────
+updateHistoryBadge();
