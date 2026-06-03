@@ -341,7 +341,7 @@ async function generateForItem(item) {
   if (!text) throw new Error('Empty response from API.');
 
   renderResultCard(text, item);
-  saveHistory({ text, item });
+  await saveHistory({ text, item });
 }
 
 // ── PARSE ────────────────────────────────────────────────────────────────────
@@ -517,13 +517,30 @@ function stopLoadingAnim() {
 const HIST_KEY = 'cgHistory';
 const HIST_MAX = 50;
 
-function saveHistory({ text, item }) {
-  const p = parseResults(text);
+function createSmallThumb(dataUrl, size = 80) {
+  return new Promise(resolve => {
+    const img = new Image();
+    img.onload = () => {
+      const canvas = document.createElement('canvas');
+      const scale  = Math.min(size / img.width, size / img.height);
+      canvas.width  = Math.round(img.width  * scale);
+      canvas.height = Math.round(img.height * scale);
+      canvas.getContext('2d').drawImage(img, 0, 0, canvas.width, canvas.height);
+      resolve(canvas.toDataURL('image/jpeg', 0.6));
+    };
+    img.onerror = () => resolve('');
+    img.src = dataUrl;
+  });
+}
+
+async function saveHistory({ text, item }) {
+  const p     = parseResults(text);
+  const thumb = await createSmallThumb(item.dataUrl);
   const record = {
     id: Date.now(),
     ts: new Date().toISOString(),
     filename: item.name,
-    thumbnail: item.dataUrl,
+    thumbnail: thumb,
     element: p.element,
     motion: p.motion,
     prompt: p.prompt,
@@ -533,7 +550,13 @@ function saveHistory({ text, item }) {
   let h = loadHistoryData();
   h.unshift(record);
   if (h.length > HIST_MAX) h = h.slice(0, HIST_MAX);
-  localStorage.setItem(HIST_KEY, JSON.stringify(h));
+
+  // If storage is full, drop oldest entries until it fits
+  const tryStore = arr => {
+    try { localStorage.setItem(HIST_KEY, JSON.stringify(arr)); return true; }
+    catch { return false; }
+  };
+  while (h.length > 0 && !tryStore(h)) h.pop();
   updateHistoryBadge();
 }
 
