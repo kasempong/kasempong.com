@@ -778,26 +778,38 @@ async function processUrl(url) {
   }
 }
 
+function guessMime(filename) {
+  const ext = (filename || '').split('.').pop().toLowerCase();
+  return { jpg: 'image/jpeg', jpeg: 'image/jpeg', png: 'image/png',
+           webp: 'image/webp', gif: 'image/gif', bmp: 'image/bmp',
+           avif: 'image/avif', tiff: 'image/tiff' }[ext] || 'image/jpeg';
+}
+
 function loadFile(file) {
-  if (!file || !file.type.startsWith('image/')) {
+  if (!file) return;
+  const mime = file.type || guessMime(file.name);
+  if (!mime.startsWith('image/')) {
     showError('Please provide an image file (JPG, PNG, WebP, GIF).');
     return;
   }
   clearError();
   const reader = new FileReader();
+
+  reader.onerror = () => showError('Could not read file. Try a different image.');
+
   reader.onload = e => {
     const dataUrl = e.target.result;
-    const parts = dataUrl.split(',');
-    imageMime   = parts[0].match(/:(.*?);/)[1];
-    imageBase64 = parts[1];
+    const comma = dataUrl.indexOf(',');
+    imageMime   = mime;
+    imageBase64 = dataUrl.slice(comma + 1);
 
     const tmp = new Image();
     tmp.onload = () => { imageW = tmp.naturalWidth; imageH = tmp.naturalHeight; };
     tmp.src = dataUrl;
 
     imageThumb.src          = dataUrl;
-    imgFilename.textContent = file.name;
-    imgMeta.textContent     = `${(file.size / 1024).toFixed(0)} KB · ${file.type}`;
+    imgFilename.textContent = file.name || 'pasted image';
+    imgMeta.textContent     = `${(file.size / 1024).toFixed(0)} KB · ${mime}`;
 
     dropZone.classList.add('hidden');
     pasteZone.classList.add('hidden');
@@ -806,7 +818,11 @@ function loadFile(file) {
     setLoading(null);
     clearError();
     fileInput.value = '';
+
+    // Auto-generate if API key is already saved
+    if (apiKeyInput.value.trim().length > 10) generate();
   };
+
   reader.readAsDataURL(file);
 }
 
@@ -862,7 +878,12 @@ async function generate() {
     renderResults(text);
 
   } catch (err) {
-    showError(err.message);
+    const msg = err.message || '';
+    if (msg.toLowerCase().includes('fetch') || msg.toLowerCase().includes('network') || msg === 'Failed to fetch') {
+      showError('Network error — MiniMax API may be blocking browser requests (CORS). Try opening this page from kasempong.com, not a local file.');
+    } else {
+      showError(msg || 'Unknown error. Check your API key and try again.');
+    }
   } finally {
     setLoading(null);
     analyzeBtn.disabled = false;
