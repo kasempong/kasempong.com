@@ -4,7 +4,6 @@
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>Cinemagraph Prompt Generator</title>
-  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css">
   <style>
     :root[data-theme="dark"] {
       --bg: #0f0f11;
@@ -45,6 +44,25 @@
 
     .app { max-width: 660px; margin: 0 auto; }
 
+    /* SVG icons */
+    .icon {
+      width: 1em; height: 1em;
+      vertical-align: -0.125em;
+      fill: none;
+      stroke: currentColor;
+      stroke-width: 1.75;
+      stroke-linecap: round;
+      stroke-linejoin: round;
+      flex-shrink: 0;
+    }
+    .icon-xl {
+      display: block;
+      width: 2.4rem; height: 2.4rem;
+      margin: 0 auto 12px;
+      stroke-width: 1.5;
+      color: var(--text-muted);
+    }
+
     /* Header */
     header {
       display: flex;
@@ -70,10 +88,11 @@
       border-radius: 8px;
       cursor: pointer;
       display: flex; align-items: center; justify-content: center;
-      font-size: 1.05rem;
+      font-size: 1.1rem;
       transition: background 0.15s, border-color 0.15s;
     }
     .icon-btn:hover { background: var(--surface2); border-color: var(--accent); }
+    .icon-btn .icon { width: 18px; height: 18px; }
 
     /* API key */
     .api-row {
@@ -116,6 +135,7 @@
 
     /* Drop zone */
     .drop-zone {
+      display: block;
       border: 2px dashed var(--border);
       border-radius: 16px;
       padding: 56px 24px;
@@ -123,13 +143,13 @@
       cursor: pointer;
       background: var(--surface);
       transition: border-color 0.18s, background 0.18s;
+      user-select: none;
     }
     .drop-zone:hover,
     .drop-zone.drag-over {
       border-color: var(--accent);
       background: var(--accent-dim);
     }
-    .drop-zone > i { font-size: 2.4rem; color: var(--text-muted); display: block; margin-bottom: 12px; }
     .drop-zone h2 { font-size: 0.98rem; font-weight: 600; margin-bottom: 6px; }
     .drop-zone p { font-size: 0.8rem; color: var(--text-muted); line-height: 1.55; }
 
@@ -183,6 +203,7 @@
     }
     .btn-ghost:hover { border-color: var(--accent); color: var(--accent-light); }
     .btn:disabled { opacity: 0.45; cursor: not-allowed; pointer-events: none; }
+    .btn .icon { width: 14px; height: 14px; }
 
     /* Loading */
     .loading-box {
@@ -217,7 +238,7 @@
       gap: 8px;
       align-items: flex-start;
     }
-    .error-box i { flex-shrink: 0; margin-top: 1px; }
+    .error-box .icon { width: 16px; height: 16px; margin-top: 1px; }
 
     /* Result sections */
     .result-section {
@@ -242,9 +263,9 @@
       color: var(--text-muted);
       display: flex;
       align-items: center;
-      gap: 5px;
+      gap: 6px;
     }
-    .result-label i { color: var(--accent-light); font-size: 0.88rem; }
+    .result-label .icon { width: 13px; height: 13px; color: var(--accent-light); stroke-width: 2; }
     .copy-btn {
       background: var(--surface2);
       border: 1px solid var(--border);
@@ -258,6 +279,7 @@
       gap: 4px;
       transition: all 0.15s;
     }
+    .copy-btn .icon { width: 12px; height: 12px; }
     .copy-btn:hover { border-color: var(--accent); color: var(--accent-light); }
     .copy-btn.copied { border-color: var(--success); color: var(--success); }
     .result-body {
@@ -300,7 +322,6 @@
       white-space: nowrap;
     }
 
-    /* Bottom actions */
     .actions-row {
       display: flex;
       gap: 10px;
@@ -311,6 +332,74 @@
   </style>
 </head>
 <body>
+
+<!-- SVG icon sprite — no CDN, zero dependency -->
+<svg xmlns="http://www.w3.org/2000/svg" style="display:none">
+  <symbol id="ic-sun" viewBox="0 0 24 24">
+    <circle cx="12" cy="12" r="4"/>
+    <path d="M12 2v2M12 20v2M4.93 4.93l1.41 1.41M17.66 17.66l1.41 1.41M2 12h2M20 12h2M4.93 19.07l1.41-1.41M17.66 6.34l1.41-1.41"/>
+  </symbol>
+  <symbol id="ic-moon" viewBox="0 0 24 24">
+    <path d="M21 12.79A9 9 0 1 1 11.21 3 7 7 0 0 0 21 12.79z"/>
+  </symbol>
+  <symbol id="ic-upload" viewBox="0 0 24 24">
+    <polyline points="16 16 12 12 8 16"/>
+    <line x1="12" y1="12" x2="12" y2="21"/>
+    <path d="M20.39 18.39A5 5 0 0 0 18 9h-1.26A8 8 0 1 0 3 16.3"/>
+  </symbol>
+  <symbol id="ic-copy" viewBox="0 0 24 24">
+    <rect x="9" y="9" width="13" height="13" rx="2" ry="2"/>
+    <path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"/>
+  </symbol>
+  <symbol id="ic-check" viewBox="0 0 24 24">
+    <polyline points="20 6 9 17 4 12"/>
+  </symbol>
+  <symbol id="ic-refresh" viewBox="0 0 24 24">
+    <polyline points="23 4 23 10 17 10"/>
+    <polyline points="1 20 1 14 7 14"/>
+    <path d="M3.51 9a9 9 0 0 1 14.85-3.36L23 10M1 14l4.64 4.36A9 9 0 0 0 20.49 15"/>
+  </symbol>
+  <symbol id="ic-x" viewBox="0 0 24 24">
+    <line x1="18" y1="6" x2="6" y2="18"/>
+    <line x1="6" y1="6" x2="18" y2="18"/>
+  </symbol>
+  <symbol id="ic-wand" viewBox="0 0 24 24">
+    <path d="M15 4V2M15 16v-2M8 9H6M15 9h-2M11.5 5.5 10 7M19.5 5.5 18 7M11.5 12.5 10 11M19.5 12.5 18 11"/>
+    <path d="m4 20 8.5-8.5"/>
+  </symbol>
+  <symbol id="ic-warn" viewBox="0 0 24 24">
+    <circle cx="12" cy="12" r="10"/>
+    <line x1="12" y1="8" x2="12" y2="12"/>
+    <line x1="12" y1="16" x2="12.01" y2="16"/>
+  </symbol>
+  <symbol id="ic-target" viewBox="0 0 24 24">
+    <circle cx="12" cy="12" r="10"/>
+    <circle cx="12" cy="12" r="6"/>
+    <circle cx="12" cy="12" r="2"/>
+  </symbol>
+  <symbol id="ic-wave" viewBox="0 0 24 24">
+    <path d="M2 12c1.5-3 3-4.5 4.5-4.5S9 9 10.5 12s3 4.5 4.5 4.5S18 15 19.5 12 21 7.5 22 7.5"/>
+  </symbol>
+  <symbol id="ic-star" viewBox="0 0 24 24">
+    <polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2"/>
+  </symbol>
+  <symbol id="ic-ban" viewBox="0 0 24 24">
+    <circle cx="12" cy="12" r="10"/>
+    <line x1="4.93" y1="4.93" x2="19.07" y2="19.07"/>
+  </symbol>
+  <symbol id="ic-sliders" viewBox="0 0 24 24">
+    <line x1="4" y1="21" x2="4" y2="14"/>
+    <line x1="4" y1="10" x2="4" y2="3"/>
+    <line x1="12" y1="21" x2="12" y2="12"/>
+    <line x1="12" y1="8" x2="12" y2="3"/>
+    <line x1="20" y1="21" x2="20" y2="16"/>
+    <line x1="20" y1="12" x2="20" y2="3"/>
+    <line x1="1" y1="14" x2="7" y2="14"/>
+    <line x1="9" y1="8" x2="15" y2="8"/>
+    <line x1="17" y1="16" x2="23" y2="16"/>
+  </symbol>
+</svg>
+
 <div class="app">
 
   <header>
@@ -319,7 +408,7 @@
       <p>Upload an image → production-ready animation prompt for Kling / Runway / Veo / Sora</p>
     </div>
     <button class="icon-btn" id="themeBtn" title="Toggle theme">
-      <i class="fas fa-sun"></i>
+      <svg class="icon" id="themeIcon"><use href="#ic-sun"/></svg>
     </button>
   </header>
 
@@ -333,7 +422,7 @@
   <!-- Drop Zone -->
   <input type="file" id="fileInput" accept="image/*" style="display:none">
   <label class="drop-zone" id="dropZone" for="fileInput" tabindex="0">
-    <i class="fas fa-cloud-arrow-up"></i>
+    <svg class="icon icon-xl"><use href="#ic-upload"/></svg>
     <h2>Drop an image here</h2>
     <p>Click to browse · Drag from file system · Drag from browser tab · Paste Ctrl+V</p>
   </label>
@@ -346,8 +435,12 @@
       <div class="img-meta" id="imgMeta">—</div>
     </div>
     <div class="card-actions">
-      <button class="btn btn-ghost" id="newImageBtn"><i class="fas fa-xmark"></i> New</button>
-      <button class="btn btn-primary" id="analyzeBtn"><i class="fas fa-wand-magic-sparkles"></i> Generate</button>
+      <button class="btn btn-ghost" id="newImageBtn">
+        <svg class="icon"><use href="#ic-x"/></svg> New
+      </button>
+      <button class="btn btn-primary" id="analyzeBtn">
+        <svg class="icon"><use href="#ic-wand"/></svg> Generate
+      </button>
     </div>
   </div>
 
@@ -359,7 +452,7 @@
 
   <!-- Error -->
   <div class="error-box hidden" id="errorBox">
-    <i class="fas fa-circle-exclamation"></i>
+    <svg class="icon"><use href="#ic-warn"/></svg>
     <span id="errorMsg"></span>
   </div>
 
@@ -368,39 +461,57 @@
 
     <div class="result-section">
       <div class="result-header">
-        <div class="result-label"><i class="fas fa-bullseye"></i> Element to Animate</div>
-        <button class="copy-btn" data-copy="elementText"><i class="fas fa-copy"></i> Copy</button>
+        <div class="result-label">
+          <svg class="icon"><use href="#ic-target"/></svg> Element to Animate
+        </div>
+        <button class="copy-btn" data-copy="elementText">
+          <svg class="icon"><use href="#ic-copy"/></svg> Copy
+        </button>
       </div>
       <div class="result-body" id="elementText"></div>
     </div>
 
     <div class="result-section">
       <div class="result-header">
-        <div class="result-label"><i class="fas fa-wave-square"></i> Motion Style</div>
-        <button class="copy-btn" data-copy="motionText"><i class="fas fa-copy"></i> Copy</button>
+        <div class="result-label">
+          <svg class="icon"><use href="#ic-wave"/></svg> Motion Style
+        </div>
+        <button class="copy-btn" data-copy="motionText">
+          <svg class="icon"><use href="#ic-copy"/></svg> Copy
+        </button>
       </div>
       <div class="result-body" id="motionText"></div>
     </div>
 
     <div class="result-section">
       <div class="result-header">
-        <div class="result-label"><i class="fas fa-wand-magic-sparkles"></i> Cinemagraph Prompt</div>
-        <button class="copy-btn" data-copy="promptText"><i class="fas fa-copy"></i> Copy</button>
+        <div class="result-label">
+          <svg class="icon"><use href="#ic-star"/></svg> Cinemagraph Prompt
+        </div>
+        <button class="copy-btn" data-copy="promptText">
+          <svg class="icon"><use href="#ic-copy"/></svg> Copy
+        </button>
       </div>
       <div class="result-body" id="promptText" style="font-size:0.84rem"></div>
     </div>
 
     <div class="result-section">
       <div class="result-header">
-        <div class="result-label"><i class="fas fa-ban"></i> Negative Prompt</div>
-        <button class="copy-btn" data-copy="negativeText"><i class="fas fa-copy"></i> Copy</button>
+        <div class="result-label">
+          <svg class="icon"><use href="#ic-ban"/></svg> Negative Prompt
+        </div>
+        <button class="copy-btn" data-copy="negativeText">
+          <svg class="icon"><use href="#ic-copy"/></svg> Copy
+        </button>
       </div>
       <div class="result-body" id="negativeText" style="font-size:0.82rem;color:var(--text-muted)"></div>
     </div>
 
     <div class="result-section">
       <div class="result-header">
-        <div class="result-label"><i class="fas fa-sliders"></i> Settings</div>
+        <div class="result-label">
+          <svg class="icon"><use href="#ic-sliders"/></svg> Settings
+        </div>
       </div>
       <div class="settings-body">
         <span class="settings-label">Motion strength</span>
@@ -414,7 +525,9 @@
     </div>
 
     <div class="actions-row">
-      <button class="btn btn-ghost" id="regenerateBtn"><i class="fas fa-arrows-rotate"></i> Regenerate</button>
+      <button class="btn btn-ghost" id="regenerateBtn">
+        <svg class="icon"><use href="#ic-refresh"/></svg> Regenerate
+      </button>
     </div>
 
   </div>
@@ -445,12 +558,12 @@ Respond EXACTLY in this format with no extra text before or after:
 
 **Motion strength setting:** [number followed by %, e.g. "15%"]`;
 
-// ── State ──────────────────────────────────────────────────────────────────
+// ── State ─────────────────────────────────────────────────────────────────
 let imageBase64 = null;
 let imageMime   = null;
 let imageW = 0, imageH = 0;
 
-// ── DOM refs ───────────────────────────────────────────────────────────────
+// ── DOM refs ──────────────────────────────────────────────────────────────
 const dropZone      = document.getElementById('dropZone');
 const fileInput     = document.getElementById('fileInput');
 const imageCard     = document.getElementById('imageCard');
@@ -468,8 +581,9 @@ const newImageBtn   = document.getElementById('newImageBtn');
 const apiKeyInput   = document.getElementById('apiKeyInput');
 const apiDot        = document.getElementById('apiDot');
 const themeBtn      = document.getElementById('themeBtn');
+const themeIcon     = document.getElementById('themeIcon');
 
-// ── API key persistence ────────────────────────────────────────────────────
+// ── API key ───────────────────────────────────────────────────────────────
 apiKeyInput.value = localStorage.getItem('cgMiniMaxKey') || '';
 syncApiDot();
 
@@ -482,7 +596,7 @@ function syncApiDot() {
   apiDot.classList.toggle('on', apiKeyInput.value.trim().length > 10);
 }
 
-// ── Theme ──────────────────────────────────────────────────────────────────
+// ── Theme ─────────────────────────────────────────────────────────────────
 let theme = localStorage.getItem('cgTheme') || 'dark';
 applyTheme(theme);
 
@@ -494,10 +608,10 @@ themeBtn.addEventListener('click', () => {
 
 function applyTheme(t) {
   document.documentElement.setAttribute('data-theme', t);
-  themeBtn.querySelector('i').className = t === 'dark' ? 'fas fa-sun' : 'fas fa-moon';
+  themeIcon.querySelector('use').setAttribute('href', t === 'dark' ? '#ic-sun' : '#ic-moon');
 }
 
-// ── Drop zone ──────────────────────────────────────────────────────────────
+// ── Drop zone ─────────────────────────────────────────────────────────────
 fileInput.addEventListener('change', e => {
   if (e.target.files[0]) loadFile(e.target.files[0]);
 });
@@ -509,7 +623,6 @@ dropZone.addEventListener('dragover', e => {
 dropZone.addEventListener('dragleave', e => {
   if (!dropZone.contains(e.relatedTarget)) dropZone.classList.remove('drag-over');
 });
-
 dropZone.addEventListener('drop', async e => {
   e.preventDefault();
   dropZone.classList.remove('drag-over');
@@ -521,12 +634,10 @@ dropZone.addEventListener('drop', async e => {
   if (url && /^https?:\/\//.test(url)) await processUrl(url.trim());
 });
 
-// ── Paste ──────────────────────────────────────────────────────────────────
+// ── Paste ─────────────────────────────────────────────────────────────────
 document.addEventListener('paste', async e => {
-  // Skip if user is pasting into the API key input
   if (e.target === apiKeyInput) return;
 
-  // Try event clipboardData first (works in most cases)
   const items = Array.from(e.clipboardData?.items || []);
   for (const item of items) {
     if (item.type.startsWith('image/')) {
@@ -535,11 +646,9 @@ document.addEventListener('paste', async e => {
     }
   }
 
-  // Check for image URL in text
   const text = (e.clipboardData?.getData('text/plain') || '').trim();
   if (/^https?:\/\//.test(text)) { await processUrl(text); return; }
 
-  // Fallback: Clipboard API (handles screenshots and some OS clipboard formats)
   if (navigator.clipboard?.read) {
     try {
       const clipItems = await navigator.clipboard.read();
@@ -552,11 +661,11 @@ document.addEventListener('paste', async e => {
           return;
         }
       }
-    } catch { /* permission denied or no image — ignore */ }
+    } catch { /* permission denied or no image */ }
   }
 });
 
-// ── File helpers ───────────────────────────────────────────────────────────
+// ── File helpers ──────────────────────────────────────────────────────────
 async function processUrl(url) {
   setLoading('Fetching image from URL…');
   try {
@@ -589,7 +698,7 @@ function loadFile(file) {
     tmp.onload = () => { imageW = tmp.naturalWidth; imageH = tmp.naturalHeight; };
     tmp.src = dataUrl;
 
-    imageThumb.src   = dataUrl;
+    imageThumb.src          = dataUrl;
     imgFilename.textContent = file.name;
     imgMeta.textContent     = `${(file.size / 1024).toFixed(0)} KB · ${file.type}`;
 
@@ -598,13 +707,12 @@ function loadFile(file) {
     results.classList.add('hidden');
     setLoading(null);
     clearError();
-
     fileInput.value = '';
   };
   reader.readAsDataURL(file);
 }
 
-// ── Generate ───────────────────────────────────────────────────────────────
+// ── Generate ──────────────────────────────────────────────────────────────
 analyzeBtn.addEventListener('click', generate);
 regenerateBtn.addEventListener('click', generate);
 
@@ -636,10 +744,7 @@ async function generate() {
             content: [
               {
                 type: 'image_url',
-                image_url: {
-                  url: `data:${imageMime};base64,${imageBase64}`,
-                  detail: 'default'
-                }
+                image_url: { url: `data:${imageMime};base64,${imageBase64}`, detail: 'default' }
               },
               { type: 'text', text: 'Analyze this image and generate a cinemagraph prompt following the exact output format.' }
             ]
@@ -682,7 +787,7 @@ function renderResults(text) {
   document.getElementById('negativeText').textContent = negative || '—';
 
   const pct = Math.min(100, Math.max(1, parseInt(strengthRaw) || 15));
-  document.getElementById('strengthTag').textContent   = pct + '%';
+  document.getElementById('strengthTag').textContent  = pct + '%';
   document.getElementById('strengthFill').style.width = pct + '%';
 
   const ar = imageW > 0 && imageW / imageH >= 1.1 ? '16:9' : '9:16';
@@ -691,7 +796,7 @@ function renderResults(text) {
   results.classList.remove('hidden');
 }
 
-// ── New image ──────────────────────────────────────────────────────────────
+// ── New image ─────────────────────────────────────────────────────────────
 newImageBtn.addEventListener('click', () => {
   imageBase64 = null; imageMime = null; imageW = 0; imageH = 0;
   imageThumb.src = '';
@@ -701,7 +806,7 @@ newImageBtn.addEventListener('click', () => {
   clearError();
 });
 
-// ── Copy buttons ───────────────────────────────────────────────────────────
+// ── Copy buttons ──────────────────────────────────────────────────────────
 document.addEventListener('click', e => {
   const btn = e.target.closest('[data-copy]');
   if (!btn) return;
@@ -709,30 +814,19 @@ document.addEventListener('click', e => {
   if (!el) return;
   navigator.clipboard.writeText(el.textContent).then(() => {
     const orig = btn.innerHTML;
-    btn.innerHTML = '<i class="fas fa-check"></i> Copied';
+    btn.innerHTML = '<svg class="icon" style="width:12px;height:12px;fill:none;stroke:currentColor;stroke-width:2.5;stroke-linecap:round;stroke-linejoin:round"><polyline points="20 6 9 17 4 12"/></svg> Copied';
     btn.classList.add('copied');
     setTimeout(() => { btn.innerHTML = orig; btn.classList.remove('copied'); }, 2000);
   });
 });
 
-// ── UI helpers ─────────────────────────────────────────────────────────────
+// ── UI helpers ────────────────────────────────────────────────────────────
 function setLoading(msg) {
-  if (msg) {
-    loadingMsg.textContent = msg;
-    loadingBox.classList.remove('hidden');
-  } else {
-    loadingBox.classList.add('hidden');
-  }
+  if (msg) { loadingMsg.textContent = msg; loadingBox.classList.remove('hidden'); }
+  else loadingBox.classList.add('hidden');
 }
-
-function showError(msg) {
-  errorMsg.textContent = msg;
-  errorBox.classList.remove('hidden');
-}
-
-function clearError() {
-  errorBox.classList.add('hidden');
-}
+function showError(msg) { errorMsg.textContent = msg; errorBox.classList.remove('hidden'); }
+function clearError() { errorBox.classList.add('hidden'); }
 </script>
 </body>
 </html>
