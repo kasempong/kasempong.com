@@ -132,7 +132,6 @@
     .drop-zone .ti { font-size: 2.4rem; color: var(--text-muted); display: block; margin-bottom: 12px; }
     .drop-zone h2 { font-size: 0.98rem; font-weight: 600; margin-bottom: 6px; }
     .drop-zone p { font-size: 0.8rem; color: var(--text-muted); line-height: 1.55; }
-    .drop-zone input[type="file"] { display: none; }
 
     /* Image card */
     .image-card {
@@ -507,7 +506,9 @@ dropZone.addEventListener('dragover', e => {
   e.preventDefault();
   dropZone.classList.add('drag-over');
 });
-dropZone.addEventListener('dragleave', () => dropZone.classList.remove('drag-over'));
+dropZone.addEventListener('dragleave', e => {
+  if (!dropZone.contains(e.relatedTarget)) dropZone.classList.remove('drag-over');
+});
 
 dropZone.addEventListener('drop', async e => {
   e.preventDefault();
