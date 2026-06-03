@@ -833,9 +833,6 @@ function loadFile(file) {
     setLoading(null);
     clearError();
     fileInput.value = '';
-
-    // Auto-generate if API key is already saved
-    if (apiKeyInput.value.trim().length > 10) generate();
   };
 
   reader.readAsDataURL(file);
