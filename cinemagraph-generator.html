@@ -4,7 +4,7 @@
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>Cinemagraph Prompt Generator</title>
-  <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/@tabler/icons-webfont@3.10.0/dist/tabler-icons.min.css">
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css">
   <style>
     :root[data-theme="dark"] {
       --bg: #0f0f11;
@@ -129,7 +129,7 @@
       border-color: var(--accent);
       background: var(--accent-dim);
     }
-    .drop-zone .ti { font-size: 2.4rem; color: var(--text-muted); display: block; margin-bottom: 12px; }
+    .drop-zone > i { font-size: 2.4rem; color: var(--text-muted); display: block; margin-bottom: 12px; }
     .drop-zone h2 { font-size: 0.98rem; font-weight: 600; margin-bottom: 6px; }
     .drop-zone p { font-size: 0.8rem; color: var(--text-muted); line-height: 1.55; }
 
@@ -217,7 +217,7 @@
       gap: 8px;
       align-items: flex-start;
     }
-    .error-box .ti { flex-shrink: 0; margin-top: 1px; }
+    .error-box i { flex-shrink: 0; margin-top: 1px; }
 
     /* Result sections */
     .result-section {
@@ -244,7 +244,7 @@
       align-items: center;
       gap: 5px;
     }
-    .result-label .ti { color: var(--accent-light); font-size: 0.88rem; }
+    .result-label i { color: var(--accent-light); font-size: 0.88rem; }
     .copy-btn {
       background: var(--surface2);
       border: 1px solid var(--border);
@@ -319,7 +319,7 @@
       <p>Upload an image → production-ready animation prompt for Kling / Runway / Veo / Sora</p>
     </div>
     <button class="icon-btn" id="themeBtn" title="Toggle theme">
-      <i class="ti ti-sun"></i>
+      <i class="fas fa-sun"></i>
     </button>
   </header>
 
@@ -333,7 +333,7 @@
   <!-- Drop Zone -->
   <input type="file" id="fileInput" accept="image/*" style="display:none">
   <label class="drop-zone" id="dropZone" for="fileInput" tabindex="0">
-    <i class="ti ti-photo-up"></i>
+    <i class="fas fa-cloud-arrow-up"></i>
     <h2>Drop an image here</h2>
     <p>Click to browse · Drag from file system · Drag from browser tab · Paste Ctrl+V</p>
   </label>
@@ -346,8 +346,8 @@
       <div class="img-meta" id="imgMeta">—</div>
     </div>
     <div class="card-actions">
-      <button class="btn btn-ghost" id="newImageBtn"><i class="ti ti-x"></i> New</button>
-      <button class="btn btn-primary" id="analyzeBtn"><i class="ti ti-wand"></i> Generate</button>
+      <button class="btn btn-ghost" id="newImageBtn"><i class="fas fa-xmark"></i> New</button>
+      <button class="btn btn-primary" id="analyzeBtn"><i class="fas fa-wand-magic-sparkles"></i> Generate</button>
     </div>
   </div>
 
@@ -359,7 +359,7 @@
 
   <!-- Error -->
   <div class="error-box hidden" id="errorBox">
-    <i class="ti ti-alert-circle"></i>
+    <i class="fas fa-circle-exclamation"></i>
     <span id="errorMsg"></span>
   </div>
 
@@ -368,39 +368,39 @@
 
     <div class="result-section">
       <div class="result-header">
-        <div class="result-label"><i class="ti ti-focus-2"></i> Element to Animate</div>
-        <button class="copy-btn" data-copy="elementText"><i class="ti ti-copy"></i> Copy</button>
+        <div class="result-label"><i class="fas fa-bullseye"></i> Element to Animate</div>
+        <button class="copy-btn" data-copy="elementText"><i class="fas fa-copy"></i> Copy</button>
       </div>
       <div class="result-body" id="elementText"></div>
     </div>
 
     <div class="result-section">
       <div class="result-header">
-        <div class="result-label"><i class="ti ti-wave-sine"></i> Motion Style</div>
-        <button class="copy-btn" data-copy="motionText"><i class="ti ti-copy"></i> Copy</button>
+        <div class="result-label"><i class="fas fa-wave-square"></i> Motion Style</div>
+        <button class="copy-btn" data-copy="motionText"><i class="fas fa-copy"></i> Copy</button>
       </div>
       <div class="result-body" id="motionText"></div>
     </div>
 
     <div class="result-section">
       <div class="result-header">
-        <div class="result-label"><i class="ti ti-sparkles"></i> Cinemagraph Prompt</div>
-        <button class="copy-btn" data-copy="promptText"><i class="ti ti-copy"></i> Copy</button>
+        <div class="result-label"><i class="fas fa-wand-magic-sparkles"></i> Cinemagraph Prompt</div>
+        <button class="copy-btn" data-copy="promptText"><i class="fas fa-copy"></i> Copy</button>
       </div>
       <div class="result-body" id="promptText" style="font-size:0.84rem"></div>
     </div>
 
     <div class="result-section">
       <div class="result-header">
-        <div class="result-label"><i class="ti ti-ban"></i> Negative Prompt</div>
-        <button class="copy-btn" data-copy="negativeText"><i class="ti ti-copy"></i> Copy</button>
+        <div class="result-label"><i class="fas fa-ban"></i> Negative Prompt</div>
+        <button class="copy-btn" data-copy="negativeText"><i class="fas fa-copy"></i> Copy</button>
       </div>
       <div class="result-body" id="negativeText" style="font-size:0.82rem;color:var(--text-muted)"></div>
     </div>
 
     <div class="result-section">
       <div class="result-header">
-        <div class="result-label"><i class="ti ti-adjustments-horizontal"></i> Settings</div>
+        <div class="result-label"><i class="fas fa-sliders"></i> Settings</div>
       </div>
       <div class="settings-body">
         <span class="settings-label">Motion strength</span>
@@ -414,7 +414,7 @@
     </div>
 
     <div class="actions-row">
-      <button class="btn btn-ghost" id="regenerateBtn"><i class="ti ti-refresh"></i> Regenerate</button>
+      <button class="btn btn-ghost" id="regenerateBtn"><i class="fas fa-arrows-rotate"></i> Regenerate</button>
     </div>
 
   </div>
@@ -494,7 +494,7 @@ themeBtn.addEventListener('click', () => {
 
 function applyTheme(t) {
   document.documentElement.setAttribute('data-theme', t);
-  themeBtn.querySelector('i').className = t === 'dark' ? 'ti ti-sun' : 'ti ti-moon';
+  themeBtn.querySelector('i').className = t === 'dark' ? 'fas fa-sun' : 'fas fa-moon';
 }
 
 // ── Drop zone ──────────────────────────────────────────────────────────────
@@ -709,7 +709,7 @@ document.addEventListener('click', e => {
   if (!el) return;
   navigator.clipboard.writeText(el.textContent).then(() => {
     const orig = btn.innerHTML;
-    btn.innerHTML = '<i class="ti ti-check"></i> Copied';
+    btn.innerHTML = '<i class="fas fa-check"></i> Copied';
     btn.classList.add('copied');
     setTimeout(() => { btn.innerHTML = orig; btn.classList.remove('copied'); }, 2000);
   });
