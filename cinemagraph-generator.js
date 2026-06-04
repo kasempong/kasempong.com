@@ -647,11 +647,25 @@ const GDRIVE_CLIENT_ID = '502374715368-8a844b7nupf9cd847hq95m7mg5l8ls72.apps.goo
 const GDRIVE_SCOPE     = 'https://www.googleapis.com/auth/drive.appdata';
 const GDRIVE_FILENAME  = 'cg_history.json';
 
-let driveToken          = null;
-let driveFileId         = null;
-let driveTokenClient    = null;
-let driveUserTriggered  = false;       // true only when user explicitly clicked Connect
-const DRIVE_CONNECTED_KEY = 'cgDriveConnected';
+let driveToken       = null;
+let driveFileId      = null;
+let driveTokenClient = null;
+const DRIVE_SESSION_KEY = 'cgDriveSession'; // sessionStorage — survives refresh, not tab close
+
+function saveDriveSession(token) {
+  sessionStorage.setItem(DRIVE_SESSION_KEY, JSON.stringify({
+    token,
+    expiry: Date.now() + 55 * 60 * 1000, // 55 min (tokens last 60 min)
+  }));
+}
+
+function loadDriveSession() {
+  try {
+    const s = JSON.parse(sessionStorage.getItem(DRIVE_SESSION_KEY));
+    if (s && s.token && s.expiry > Date.now() + 60000) return s.token;
+  } catch {}
+  return null;
+}
 
 window.gisLoaded = function() {
   driveTokenClient = google.accounts.oauth2.initTokenClient({
@@ -659,44 +673,36 @@ window.gisLoaded = function() {
     scope: GDRIVE_SCOPE,
     callback: handleDriveToken,
   });
-  // Only attempt silent re-auth if user previously connected on this device
-  if (localStorage.getItem(DRIVE_CONNECTED_KEY)) {
-    driveTokenClient.requestAccessToken({ prompt: '' });
+  // If a valid token is in sessionStorage, use it directly — no popup needed
+  const saved = loadDriveSession();
+  if (saved) {
+    driveToken = saved;
+    updateDriveUI('syncing');
+    syncFromDrive();
   }
 };
 
 async function handleDriveToken(resp) {
-  console.log('[Drive] token callback:', JSON.stringify(resp));
   if (resp.error) {
-    console.warn('[Drive] error:', resp.error);
-    if (driveUserTriggered) {
-      // Only show errors when the user explicitly clicked Connect
-      if (resp.error === 'popup_blocked_by_browser') {
-        showError('Google Drive: Popup was blocked — allow popups for this site, then try again.');
-      } else if (resp.error === 'access_denied') {
-        showError('Google Drive: Access denied. If Google showed an "app isn\'t verified" screen, click Advanced → Continue to grant access.');
-      } else if (resp.error !== 'user_closed_window') {
-        showError('Google Drive: ' + resp.error);
-      }
+    if (resp.error === 'popup_blocked_by_browser') {
+      showError('Google Drive: Popup was blocked — allow popups for this site, then try again.');
+    } else if (resp.error === 'access_denied') {
+      showError('Google Drive: Access denied. If Google showed an "app isn\'t verified" screen, click Advanced → Continue to grant access.');
+    } else if (resp.error !== 'user_closed_window') {
+      showError('Google Drive: ' + resp.error);
     }
-    // Silent re-auth failed — clear stored state so we don't keep retrying
-    localStorage.removeItem(DRIVE_CONNECTED_KEY);
+    sessionStorage.removeItem(DRIVE_SESSION_KEY);
     updateDriveUI('disconnected');
-    driveUserTriggered = false;
     return;
   }
   if (!resp.access_token) {
-    console.warn('[Drive] no access_token in response:', resp);
-    if (driveUserTriggered) showError('Google Drive: No access token received — please try again.');
-    localStorage.removeItem(DRIVE_CONNECTED_KEY);
+    showError('Google Drive: No access token received — please try again.');
+    sessionStorage.removeItem(DRIVE_SESSION_KEY);
     updateDriveUI('disconnected');
-    driveUserTriggered = false;
     return;
   }
-  console.log('[Drive] got token, syncing...');
   driveToken = resp.access_token;
-  localStorage.setItem(DRIVE_CONNECTED_KEY, '1'); // remember for next page load
-  driveUserTriggered = false;
+  saveDriveSession(driveToken);
   updateDriveUI('syncing');
   await syncFromDrive();
 }
@@ -705,14 +711,13 @@ document.getElementById('driveBtn').addEventListener('click', () => {
   if (driveToken) {
     google.accounts.oauth2.revoke(driveToken, () => {});
     driveToken = null; driveFileId = null;
-    localStorage.removeItem(DRIVE_CONNECTED_KEY);
+    sessionStorage.removeItem(DRIVE_SESSION_KEY);
     updateDriveUI('disconnected');
   } else {
     if (!driveTokenClient) {
       showError('Google Sign-In is still loading — wait a moment and try again.');
       return;
     }
-    driveUserTriggered = true;
     driveTokenClient.requestAccessToken({ prompt: 'consent' });
   }
 });
