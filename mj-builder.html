@@ -412,6 +412,86 @@
       input.mj, select.mj, .preset-btn, .copy-btn, .example-card { transition: none; }
       input[type=range].mj::-webkit-slider-thumb { transition: none; }
     }
+
+    /* ── Cinemagraph / I2V section ───────────────────────── */
+    .page-divider {
+      display: flex;
+      align-items: center;
+      gap: 12px;
+      margin: 56px 0 40px;
+    }
+    .page-divider::before,
+    .page-divider::after {
+      content: '';
+      flex: 1;
+      height: 1px;
+      background: rgba(255,255,255,0.055);
+    }
+    .divider-label {
+      font-size: 9.5px;
+      letter-spacing: 0.2em;
+      color: #28283a;
+      text-transform: uppercase;
+      white-space: nowrap;
+    }
+
+    /* Element chips */
+    .chip-row {
+      display: flex;
+      gap: 7px;
+      flex-wrap: wrap;
+      margin-bottom: 11px;
+    }
+    .chip {
+      background: transparent;
+      border: 1px solid rgba(255,255,255,0.07);
+      border-radius: 99px;
+      padding: 5px 13px;
+      color: #46465a;
+      font-size: 11.5px;
+      font-family: inherit;
+      cursor: pointer;
+      transition: color 0.12s ease, border-color 0.12s ease, background 0.12s ease;
+      letter-spacing: 0.02em;
+      line-height: 1;
+    }
+    .chip:hover { color: #7a7a90; border-color: rgba(255,255,255,0.12); }
+    .chip.active {
+      color: #c9a254;
+      border-color: rgba(201,162,84,0.35);
+      background: rgba(201,162,84,0.07);
+    }
+
+    /* 2-col params variant for cinemagraph */
+    .params-2col { grid-template-columns: 1fr 1fr; }
+
+    /* Model note */
+    .model-note {
+      display: none;
+      margin-top: 14px;
+      padding: 11px 14px;
+      background: rgba(201,162,84,0.04);
+      border: 1px solid rgba(201,162,84,0.14);
+      border-radius: 8px;
+      font-size: 11.5px;
+      color: #7a6030;
+      line-height: 1.6;
+      letter-spacing: 0.01em;
+    }
+    .model-note.visible { display: block; }
+    .model-note-icon { color: #c9a254; margin-right: 4px; }
+
+    /* Cinemagraph output negative line */
+    #cine-prompt-neg {
+      color: rgba(201,162,84,0.6);
+      display: block;
+      margin-top: 6px;
+      font-size: 12px;
+    }
+
+    @media (prefers-reduced-motion: reduce) {
+      .chip { transition: none; }
+    }
   </style>
 </head>
 <body>
@@ -602,10 +682,92 @@
       </div>
     </div>
 
+    <!-- ── Cinemagraph / I2V Prompt Builder ──────────────────────────────── -->
+    <div class="page-divider">
+      <span class="divider-label">Image-to-Video · Cinemagraph Prompt</span>
+    </div>
+
+    <div class="section-label" style="margin-bottom:20px">
+      <span class="section-num" style="letter-spacing:0.05em">I2V</span>
+      <span class="section-name">Cinemagraph Builder</span>
+      <div class="section-rule"></div>
+    </div>
+    <p style="font-size:12.5px;color:#3e3e50;margin:-10px 0 24px;line-height:1.6">
+      Turn your MJ image into an ambient loop. Build the I2V prompt for Kling AI, Runway Gen-3, Veo 2, or Sora.
+    </p>
+
+    <div class="field-label" style="margin-bottom:9px">Element to Animate</div>
+    <div class="chip-row" id="cineChipRow">
+      <button class="chip" data-val="smoke drifting upward">smoke</button>
+      <button class="chip" data-val="steam rising slowly">steam</button>
+      <button class="chip" data-val="water surface rippling gently">water</button>
+      <button class="chip" data-val="candle flame flickering softly">flame</button>
+      <button class="chip" data-val="leaves swaying in a gentle breeze">leaves</button>
+      <button class="chip" data-val="petals drifting slowly downward">petals</button>
+      <button class="chip" data-val="clouds drifting slowly overhead">clouds</button>
+      <button class="chip" data-val="tall grass swaying softly">grass</button>
+      <button class="chip" data-val="mist shifting across the scene">mist</button>
+      <button class="chip" data-val="thin curtain billowing gently">curtain</button>
+      <button class="chip" data-val="dust motes floating in the light">dust</button>
+    </div>
+    <div class="field-group">
+      <input class="mj" type="text" id="f-cine-element" placeholder="element to animate (e.g. steam rising from cup)" aria-label="Element to animate">
+    </div>
+
+    <div style="display:grid;grid-template-columns:1fr 1fr;gap:12px;margin-bottom:13px">
+      <div class="field-group" style="margin-bottom:0">
+        <div class="field-label">Motion Style</div>
+        <input class="mj" type="text" id="f-cine-motion" placeholder="e.g. slow upward curl, gentle dispersion" aria-label="Motion style">
+      </div>
+      <div class="field-group" style="margin-bottom:0">
+        <div class="field-label">Scene Context</div>
+        <input class="mj" type="text" id="f-cine-scene" placeholder="e.g. morning light, oak table" aria-label="Scene context">
+      </div>
+    </div>
+
+    <div class="params-selects params-2col">
+      <div class="field-group">
+        <div class="field-label">Aspect Ratio</div>
+        <select class="mj" id="cine-ar" aria-label="Aspect Ratio">
+          <option value="9:16">9:16 — portrait</option>
+          <option value="16:9">16:9 — landscape</option>
+        </select>
+      </div>
+      <div class="field-group">
+        <div class="field-label">Motion Strength</div>
+        <select class="mj" id="cine-strength" aria-label="Motion Strength">
+          <option value="10">10% — barely there</option>
+          <option value="13" selected>13% — ambient loop</option>
+          <option value="17">17% — noticeable drift</option>
+          <option value="20">20% — at the edge</option>
+        </select>
+      </div>
+    </div>
+
+    <div class="output-card">
+      <div class="output-header">
+        <div class="output-title-row">
+          <div class="output-dot"></div>
+          <span class="output-lbl">Cinemagraph Prompt</span>
+        </div>
+        <button class="copy-btn" id="cineCopyBtn">Copy</button>
+      </div>
+      <div class="output-body">
+        <p class="output-text" id="cine-prompt-out" style="min-height:2.5em">—</p>
+        <span id="cine-prompt-neg"></span>
+      </div>
+    </div>
+
+    <div class="model-note visible">
+      <span class="model-note-icon">✦</span>
+      Paste into <strong style="color:#c9a254">Kling AI</strong>, <strong style="color:#c9a254">Runway Gen-3</strong>, <strong style="color:#c9a254">Veo 2</strong>, or <strong style="color:#c9a254">Sora</strong>. Keep motion strength 10–20% for a seamless ambient loop. Duration: 8 seconds.
+    </div>
+
     <div class="footer">Wondervisionary · Hyper-Realistic Formula</div>
   </div>
 
-  <script>
+  <script src="mj-builder.js"></script>
+<!--REMOVED-INLINE-SCRIPT
     const PRESETS = {
       nature: {
         subject:       'white roses cascading over an ancient stone wall',
@@ -806,6 +968,6 @@
 
     // Init
     applyPreset('nature');
-  </script>
+-->
 </body>
 </html>

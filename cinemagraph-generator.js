@@ -661,15 +661,26 @@ window.gisLoaded = function() {
 };
 
 async function handleDriveToken(resp) {
+  console.log('[Drive] token callback:', JSON.stringify(resp));
   if (resp.error) {
+    console.warn('[Drive] error:', resp.error);
     if (resp.error === 'popup_blocked_by_browser') {
-      showError('Popup was blocked — please allow popups for this site, then try again.');
-    } else if (resp.error !== 'user_closed_window' && resp.error !== 'access_denied') {
+      showError('Google Drive: Popup was blocked — allow popups for this site, then try again.');
+    } else if (resp.error === 'access_denied') {
+      showError('Google Drive: Access denied. If Google showed an "app isn\'t verified" screen, click Advanced → Continue to grant access.');
+    } else if (resp.error !== 'user_closed_window') {
       showError('Google Drive: ' + resp.error);
     }
     updateDriveUI('disconnected');
     return;
   }
+  if (!resp.access_token) {
+    console.warn('[Drive] no access_token in response:', resp);
+    showError('Google Drive: No access token received — please try again.');
+    updateDriveUI('disconnected');
+    return;
+  }
+  console.log('[Drive] got token, syncing...');
   driveToken = resp.access_token;
   updateDriveUI('syncing');
   await syncFromDrive();
