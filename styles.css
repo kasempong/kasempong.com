@@ -706,6 +706,100 @@ a { color: inherit; text-decoration: none; }
   background: #fff;
 }
 
+.recent-project-banner {
+  display: flex;
+  align-items: center;
+  gap: 0.9rem;
+  width: min(100%, 520px);
+  margin-top: 1rem;
+  padding: 0.8rem 0.9rem;
+  border-radius: 22px;
+  background: rgba(255, 255, 255, 0.82);
+  border: 1px solid rgba(255, 255, 255, 0.62);
+  box-shadow: 0 12px 34px rgba(0, 0, 0, 0.16);
+  color: #3b1f0e;
+  backdrop-filter: blur(14px);
+  -webkit-backdrop-filter: blur(14px);
+  opacity: 0;
+  animation: fadeUp 0.5s ease forwards 0.58s;
+  transition: transform var(--transition), box-shadow var(--transition), background var(--transition);
+}
+
+.recent-project-banner:hover {
+  transform: translateY(-2px);
+  background: #fff;
+  box-shadow: 0 16px 42px rgba(0, 0, 0, 0.2);
+}
+
+.recent-project-kicker {
+  flex: 0 0 auto;
+  padding: 0.35rem 0.65rem;
+  border-radius: 999px;
+  background: var(--accent);
+  color: #fff;
+  font-size: 0.68rem;
+  font-weight: 800;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+}
+
+.recent-project-copy {
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+  line-height: 1.25;
+}
+
+.recent-project-copy strong {
+  font-family: var(--font-display);
+  font-size: 1rem;
+  color: #2f190d;
+}
+
+.recent-project-copy span {
+  font-size: 0.78rem;
+  font-weight: 700;
+  color: #7a4a2d;
+}
+
+.recent-project-action {
+  margin-left: auto;
+  flex: 0 0 auto;
+  min-height: 38px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  padding: 0 0.85rem;
+  border-radius: 999px;
+  background: #1f2f2a;
+  color: #fffaf2;
+  font-size: 0.78rem;
+  font-weight: 800;
+}
+
+[data-theme="dark"] .recent-project-banner {
+  background: rgba(36, 30, 25, 0.82);
+  border-color: rgba(255, 255, 255, 0.12);
+  color: var(--text);
+}
+
+[data-theme="dark"] .recent-project-banner:hover {
+  background: rgba(44, 36, 30, 0.96);
+}
+
+[data-theme="dark"] .recent-project-copy strong {
+  color: #f0e6d6;
+}
+
+[data-theme="dark"] .recent-project-copy span {
+  color: rgba(240, 230, 214, 0.68);
+}
+
+[data-theme="dark"] .recent-project-action {
+  background: #d4956a;
+  color: #21130c;
+}
+
 /* ============================================================
    CONTACT SECTION
    ============================================================ */
@@ -1846,6 +1940,26 @@ a { color: inherit; text-decoration: none; }
     gap: 0;
   }
   .hero-cta { max-width: 100%; }
+  .recent-project-banner {
+    flex-wrap: wrap;
+    justify-content: center;
+    text-align: center;
+    margin-left: auto;
+    margin-right: auto;
+    padding: 0.9rem;
+  }
+  .recent-project-copy {
+    flex: 1 1 100%;
+    order: 2;
+  }
+  .recent-project-kicker {
+    order: 1;
+  }
+  .recent-project-action {
+    order: 3;
+    margin-left: 0;
+    width: 100%;
+  }
 
   .hero-title { font-size: clamp(2rem, 10vw, 3rem); }
 
