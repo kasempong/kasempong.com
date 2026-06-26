@@ -250,6 +250,33 @@
   <div class="who-modal" id="projectsModal" role="dialog" aria-modal="true" aria-label="My projects" aria-hidden="true">
     <button class="who-close" id="projectsClose" aria-label="Close">✕</button>
     <div class="who-body projects-body">
+      <a class="project-card project-card--link project-card--featured" href="/trip" target="_blank" rel="noopener noreferrer">
+        <div class="project-icon project-icon--globe" aria-hidden="true">
+          <svg viewBox="0 0 48 48" xmlns="http://www.w3.org/2000/svg" width="32" height="32">
+            <defs>
+              <radialGradient id="miniGlobe" cx="35%" cy="32%" r="65%">
+                <stop offset="0%" stop-color="#67e8d8"/>
+                <stop offset="60%" stop-color="#0f9f9a"/>
+                <stop offset="100%" stop-color="#044f4d"/>
+              </radialGradient>
+              <clipPath id="miniClip"><circle cx="24" cy="24" r="20"/></clipPath>
+            </defs>
+            <circle cx="24" cy="24" r="20" fill="url(#miniGlobe)"/>
+            <g clip-path="url(#miniClip)" fill="none" stroke="rgba(255,255,255,0.3)" stroke-width="0.9">
+              <ellipse cx="24" cy="24" rx="20" ry="7"/>
+              <ellipse cx="24" cy="24" rx="6" ry="20"/>
+              <ellipse cx="24" cy="24" rx="14" ry="20"/>
+            </g>
+            <ellipse cx="19" cy="18" rx="5" ry="3" fill="rgba(255,255,255,0.18)" transform="rotate(-20,19,18)"/>
+          </svg>
+          <span class="project-icon-spark">✦</span>
+        </div>
+        <div class="project-info">
+          <h3 class="project-title">Trip Tag Told <span class="project-new-badge">New</span></h3>
+          <p class="project-desc">Group trip planner — plan flights, stays, maps, and expenses with friends in real time.</p>
+          <div class="project-tags"><span>React</span><span>FastAPI</span><span>Supabase</span><span>Live</span></div>
+        </div>
+      </a>
       <a class="project-card project-card--link" href="/mj-builder.html" target="_blank" rel="noopener noreferrer">
         <div class="project-icon">📷</div>
         <div class="project-info">
@@ -316,6 +343,63 @@
       </div>
     </div>
   </div>
+
+  <!-- ===== FEATURED APP — Trip Tag Told ===== -->
+  <section class="featured-app-section">
+    <div class="section-inner">
+      <p class="section-eyebrow">latest app</p>
+      <a href="/trip" class="featured-app-card" aria-label="Open Trip Tag Told">
+
+        <!-- Animated globe + sparkles -->
+        <div class="fag-globe-wrap" aria-hidden="true">
+          <div class="fag-aura"></div>
+          <div class="fag-globe">
+            <svg viewBox="0 0 100 100" xmlns="http://www.w3.org/2000/svg" class="fag-globe-svg">
+              <defs>
+                <radialGradient id="globeGrad" cx="35%" cy="32%" r="65%">
+                  <stop offset="0%" stop-color="#67e8d8"/>
+                  <stop offset="50%" stop-color="#0f9f9a"/>
+                  <stop offset="100%" stop-color="#044f4d"/>
+                </radialGradient>
+                <clipPath id="globeClip"><circle cx="50" cy="50" r="42"/></clipPath>
+              </defs>
+              <circle cx="50" cy="50" r="42" fill="url(#globeGrad)"/>
+              <g clip-path="url(#globeClip)" fill="none" stroke="rgba(255,255,255,0.22)" stroke-width="0.9">
+                <!-- Latitude lines -->
+                <ellipse cx="50" cy="50" rx="42" ry="14"/>
+                <ellipse cx="50" cy="32" rx="36" ry="10"/>
+                <ellipse cx="50" cy="68" rx="36" ry="10"/>
+                <!-- Meridian lines -->
+                <ellipse cx="50" cy="50" rx="13" ry="42"/>
+                <ellipse cx="50" cy="50" rx="29" ry="42"/>
+                <ellipse cx="50" cy="50" rx="42" ry="42"/>
+              </g>
+              <!-- Specular highlight -->
+              <ellipse cx="38" cy="36" rx="12" ry="8" fill="rgba(255,255,255,0.18)" transform="rotate(-20,38,36)"/>
+            </svg>
+          </div>
+          <!-- Orbiting sparkles -->
+          <span class="fag-sp fag-sp-1">✦</span>
+          <span class="fag-sp fag-sp-2">✦</span>
+          <span class="fag-sp fag-sp-3">✦</span>
+          <span class="fag-sp fag-sp-4">✦</span>
+          <span class="fag-sp fag-sp-5">✦</span>
+          <span class="fag-sp fag-sp-6">✦</span>
+          <span class="fag-sp fag-sp-7">✦</span>
+          <span class="fag-sp fag-sp-8">✦</span>
+        </div>
+
+        <!-- Text -->
+        <div class="fag-text">
+          <span class="fag-badge">New</span>
+          <h3 class="fag-title">Trip Tag Told</h3>
+          <p class="fag-desc">Plan group trips with friends — flights, stays, maps &amp; expenses in real time.</p>
+          <span class="fag-cta">Open app ↗</span>
+        </div>
+
+      </a>
+    </div>
+  </section>
 
   <!-- ===== SPOTIFY ===== -->
   <section class="spotify-section">
