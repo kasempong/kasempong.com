@@ -1239,6 +1239,70 @@ a.project-card:hover { transform: translateY(-1px); }
 /* ============================================================
    CHANGELOG
    ============================================================ */
+
+/* ── Latest project pill ── */
+.latest-project-pill {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 6px 14px 6px 10px;
+  border-radius: 999px;
+  border: 1.5px solid var(--border);
+  background: var(--bg-2);
+  font-family: var(--font-sans);
+  font-size: 0.78rem;
+  font-weight: 500;
+  text-decoration: none;
+  color: var(--text-muted);
+  margin-bottom: 18px;
+  transition: border-color 0.2s, background 0.2s, color 0.2s, box-shadow 0.2s;
+  position: relative;
+  box-shadow: 0 1px 6px rgba(160, 100, 70, 0.06);
+}
+.latest-project-pill:hover {
+  border-color: var(--accent);
+  background: color-mix(in srgb, var(--accent) 6%, var(--bg-2));
+  color: var(--text);
+  box-shadow: 0 2px 12px rgba(160, 100, 70, 0.14);
+}
+.lpp-ping {
+  display: inline-block;
+  width: 7px;
+  height: 7px;
+  border-radius: 50%;
+  background: #4ade80;
+  flex-shrink: 0;
+  position: relative;
+}
+.lpp-ping::before {
+  content: '';
+  position: absolute;
+  inset: -3px;
+  border-radius: 50%;
+  background: #4ade80;
+  opacity: 0.35;
+  animation: lpp-pulse 1.8s ease-out infinite;
+}
+@keyframes lpp-pulse {
+  0%   { transform: scale(1); opacity: 0.35; }
+  70%  { transform: scale(2.2); opacity: 0; }
+  100% { transform: scale(2.2); opacity: 0; }
+}
+.lpp-label { color: var(--text-muted); }
+.lpp-sep   { color: var(--border); }
+.lpp-name  { color: var(--accent); font-weight: 600; }
+.lpp-arrow { font-size: 0.85em; opacity: 0.7; transition: transform 0.2s; }
+.latest-project-pill:hover .lpp-arrow { transform: translate(2px, -2px); }
+
+[data-theme="dark"] .latest-project-pill {
+  background: rgba(255,255,255,0.04);
+  border-color: rgba(255,255,255,0.1);
+}
+[data-theme="dark"] .latest-project-pill:hover {
+  background: rgba(212,149,106,0.1);
+  border-color: var(--accent);
+}
+
 .changelog-hero-link {
   background: none;
   border: none;
