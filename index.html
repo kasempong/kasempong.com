@@ -363,26 +363,25 @@
           <div class="fag-globe">
             <svg viewBox="0 0 100 100" xmlns="http://www.w3.org/2000/svg" class="fag-globe-svg">
               <defs>
-                <radialGradient id="globeGrad" cx="35%" cy="32%" r="65%">
-                  <stop offset="0%" stop-color="#67e8d8"/>
-                  <stop offset="50%" stop-color="#0f9f9a"/>
-                  <stop offset="100%" stop-color="#044f4d"/>
-                </radialGradient>
-                <clipPath id="globeClip"><circle cx="50" cy="50" r="42"/></clipPath>
+                <clipPath id="globeClip"><circle cx="50" cy="50" r="41"/></clipPath>
               </defs>
-              <circle cx="50" cy="50" r="42" fill="url(#globeGrad)"/>
-              <g clip-path="url(#globeClip)" fill="none" stroke="rgba(255,255,255,0.22)" stroke-width="0.9">
-                <!-- Latitude lines -->
-                <ellipse cx="50" cy="50" rx="42" ry="14"/>
-                <ellipse cx="50" cy="32" rx="36" ry="10"/>
-                <ellipse cx="50" cy="68" rx="36" ry="10"/>
-                <!-- Meridian lines -->
-                <ellipse cx="50" cy="50" rx="13" ry="42"/>
-                <ellipse cx="50" cy="50" rx="29" ry="42"/>
-                <ellipse cx="50" cy="50" rx="42" ry="42"/>
+              <!-- Ocean -->
+              <circle cx="50" cy="50" r="41" fill="#9fd8ea"/>
+              <!-- Continents -->
+              <g clip-path="url(#globeClip)" fill="#8dc44c">
+                <!-- Americas -->
+                <path d="M12,22 Q20,10 34,14 Q46,12 48,24 Q54,32 48,44 Q52,58 44,70 Q38,82 26,78 Q12,72 10,56 Q6,40 8,30 Z"/>
+                <!-- Europe -->
+                <path d="M52,18 Q60,10 68,14 Q76,18 74,28 Q70,36 62,34 Q54,30 52,22 Z"/>
+                <!-- Africa -->
+                <path d="M54,36 Q64,30 72,36 Q80,44 78,58 Q76,72 66,80 Q56,86 48,78 Q40,68 44,56 Q46,44 52,38 Z"/>
+                <!-- Asia -->
+                <path d="M70,12 Q82,6 90,16 Q96,26 92,38 Q88,48 78,48 Q68,46 64,36 Q62,24 68,16 Z"/>
+                <!-- Australia/Oceania -->
+                <path d="M78,58 Q86,54 90,62 Q88,70 80,68 Q74,66 78,58 Z"/>
               </g>
-              <!-- Specular highlight -->
-              <ellipse cx="38" cy="36" rx="12" ry="8" fill="rgba(255,255,255,0.18)" transform="rotate(-20,38,36)"/>
+              <!-- Dark outline ring -->
+              <circle cx="50" cy="50" r="41" fill="none" stroke="#3c5059" stroke-width="5"/>
             </svg>
           </div>
           <!-- Orbiting sparkles -->
