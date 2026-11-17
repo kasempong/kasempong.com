@@ -48,12 +48,17 @@
   var reduceMotion = window.matchMedia &&
     window.matchMedia('(prefers-reduced-motion: reduce)').matches;
 
-  // Fonts for the rarer symbols (Egyptian hieroglyphs, Bamum, extra symbols)
+  // Fonts for every script in the symbol library. Google serves each in
+  // small unicode-range slices, so a browser only downloads the pieces
+  // for symbols that actually appear on screen.
+  var FONT_FAMILIES = ["Noto Sans Symbols 2", "Noto Sans Symbols", "Noto Sans Egyptian Hieroglyphs", "Noto Sans Math", "Noto Sans JP", "Noto Sans KR", "Noto Sans Thai", "Noto Serif Tibetan", "Noto Sans Sinhala", "Noto Sans Georgian", "Noto Sans Devanagari", "Noto Sans Arabic", "Noto Sans Hebrew", "Noto Sans Runic", "Noto Sans Linear B", "Noto Sans Linear A", "Noto Sans Lepcha", "Noto Sans Cham", "Noto Sans Tai Tham", "Noto Sans Buginese", "Noto Sans Batak", "Noto Sans Javanese", "Noto Sans Mongolian", "Noto Sans Inscriptional Pahlavi", "Noto Sans Kannada", "Noto Sans Bengali", "Noto Sans Oriya", "Noto Sans NKo", "Noto Sans Armenian", "Noto Sans Canadian Aboriginal", "Noto Sans Lao", "Noto Sans Telugu", "Noto Sans Malayalam", "Noto Sans Yi", "Noto Sans Bamum"];
   var fonts = document.createElement('link');
   fonts.rel = 'stylesheet';
-  fonts.href = 'https://fonts.googleapis.com/css2?family=Noto+Sans+Egyptian+Hieroglyphs' +
-    '&family=Noto+Sans+Bamum&family=Noto+Sans+Yi&family=Noto+Sans+Symbols+2&display=swap';
+  fonts.href = 'https://fonts.googleapis.com/css2?' + FONT_FAMILIES.map(function (f) {
+    return 'family=' + f.replace(/ /g, '+');
+  }).join('&') + '&display=swap';
   document.head.appendChild(fonts);
+  var FONT_STACK = FONT_FAMILIES.map(function (f) { return '"' + f + '"'; }).join(',');
 
   // Rough ink-edge filter, used by buttons and frames: filter: url(#ink-rough)
   var svgNS = 'http://www.w3.org/2000/svg';
@@ -74,7 +79,7 @@
   css.textContent =
     '.inkfx{position:fixed;z-index:10050;pointer-events:none;white-space:nowrap;' +
     'color:var(--ink,var(--text,#1b1a17));line-height:1;' +
-    'font-family:"Noto Sans Symbols 2","Noto Sans Egyptian Hieroglyphs","Noto Sans Bamum","Noto Sans Yi","Segoe UI Symbol","Apple Symbols",' +
+    'font-family:' + FONT_STACK + ',"Segoe UI Symbol","Apple Symbols",' +
     '"Noto Sans",system-ui,sans-serif;transform:translate(-50%,-50%);' +
     'animation:inkfxFloat var(--d,1.1s) cubic-bezier(.2,.7,.3,1) forwards;}' +
     '@keyframes inkfxFloat{0%{opacity:0;transform:translate(-50%,-50%) scale(.6) rotate(0deg);}' +
@@ -98,10 +103,26 @@
     setTimeout(function () { el.remove(); }, (opts.dur || 1.1) * 1000 + 60);
   }
 
+  // Weighted pick: choose a category by weight, then a symbol inside it.
+  // The original set counts as its own category, "classic".
+  function pickFromLibrary() {
+    var L = window.InkSymbols;
+    if (!L) return pick(SYMBOLS);
+    var cats = [['classic', SYMBOLS, 4]];
+    Object.keys(L.LIB).forEach(function (k) {
+      if (L.LIB[k].length) cats.push([k, L.LIB[k], L.WEIGHTS[k] || 1]);
+    });
+    var total = 0, i;
+    for (i = 0; i < cats.length; i++) total += cats[i][2];
+    var r = Math.random() * total;
+    for (i = 0; i < cats.length; i++) { r -= cats[i][2]; if (r < 0) return pick(cats[i][1]); }
+    return pick(SYMBOLS);
+  }
+
   // One click → one main symbol or face, plus a couple of tiny marks
   function burst(x, y) {
     if (reduceMotion) return;
-    var main = Math.random() < 0.3 ? face() : pick(SYMBOLS);
+    var main = Math.random() < 0.2 ? face() : pickFromLibrary();
     spawn(x, y - 6, main, { size: 19, tx: (Math.random() - 0.5) * 24, ty: -80, dur: 1.7 });
     var n = 2 + Math.floor(Math.random() * 2);
     for (var i = 0; i < n; i++) {
@@ -123,5 +144,5 @@
     burst(e.clientX, e.clientY);
   }, { passive: true });
 
-  window.InkFX = { SYMBOLS: SYMBOLS, SMALL: SMALL, pick: pick, face: face, spawn: spawn, burst: burst };
+  window.InkFX = { SYMBOLS: SYMBOLS, SMALL: SMALL, pick: pick, face: face, pickFromLibrary: pickFromLibrary, spawn: spawn, burst: burst };
 })();
