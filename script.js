@@ -1383,44 +1383,7 @@ window.addEventListener('scroll', () => {
 
 // ── Click-anywhere burst: now handled by ink-fx.js ────────────
 
-// ── Weather-themed background hue shift ──────────────────────
-(function () {
-  // Waits for env panel's fetchAll to store data, then applies hue
-  function applyWeatherHue() {
-    try {
-      var raw = localStorage.getItem('ksp_env_cache');
-      if (!raw) return;
-      var cache = JSON.parse(raw);
-      var aqi  = cache.data && cache.data.aqi;
-      var temp = cache.data && cache.data.temp;
-      var hue = 0, sat = 0, brightness = 1;
+// ── Weather-themed background hue shift: removed ────────────────
+// It set a CSS filter on <body>, which made fixed popups position
+// against the whole page (off-screen on phones) and tinted the paper.
 
-      if (aqi !== null) {
-        if      (aqi <= 50)  { hue = 0;    sat = 0;   }  // clean — no shift
-        else if (aqi <= 100) { hue = 30;   sat = 0.08; } // moderate — faint warm
-        else if (aqi <= 150) { hue = 25;   sat = 0.18; } // unhealthy — amber tint
-        else                 { hue = 20;   sat = 0.28; } // hazey — strong amber
-      }
-      if (temp !== null && temp >= 35) { brightness = 1.06; } // scorching — slightly brighter
-
-      var filter = hue
-        ? 'hue-rotate(' + hue + 'deg) saturate(' + (1 + sat) + ') brightness(' + brightness + ')'
-        : 'brightness(' + brightness + ')';
-
-      document.body.style.transition = 'filter 3s ease';
-      document.body.style.filter = filter;
-
-      // Subtle status hint if air quality is bad
-      var bar = document.getElementById('envAqi');
-      if (bar && aqi > 100) {
-        bar.style.color = aqi > 150 ? '#ff8844' : '#ffcc44';
-      }
-    } catch (_) {}
-  }
-
-  // Try on load (cached data) and again after 6s (fresh fetch may have landed)
-  applyWeatherHue();
-  setTimeout(applyWeatherHue, 6000);
-  // Re-apply whenever env panel refreshes
-  window.addEventListener('envDataUpdated', applyWeatherHue);
-})();

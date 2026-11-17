@@ -26,12 +26,12 @@
   <link rel="preconnect" href="https://fonts.googleapis.com" />
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
   <link
-    href="https://fonts.googleapis.com/css2?family=EB+Garamond:ital,wght@0,400;0,500;0,600;1,400&family=IM+Fell+English:ital@0;1&family=IBM+Plex+Mono:wght@400;500&display=swap"
+    href="https://fonts.googleapis.com/css2?family=EB+Garamond:ital,wght@0,400;0,500;0,600;1,400&family=IM+Fell+English:ital@0;1&family=IM+Fell+English+SC&family=IBM+Plex+Mono:wght@400;500&display=swap"
     rel="stylesheet" crossorigin="anonymous"
   />
 
   <link rel="stylesheet" href="styles.css?v=1" />
-  <link rel="stylesheet" href="ink.css?v=1" />
+  <link rel="stylesheet" href="ink.css?v=2" />
 </head>
 <body>
   <!-- ===== TOP BAR ===== -->
@@ -191,11 +191,17 @@
 
   <!-- ===== WHO MODAL ===== -->
   <div class="who-overlay" id="whoOverlay" aria-hidden="true"></div>
-  <div class="who-modal" id="whoModal" role="dialog" aria-modal="true" aria-label="About Kasempong" aria-hidden="true">
+  <div class="who-modal ink-sheet ink-sheet--note" id="whoModal" role="dialog" aria-modal="true" aria-labelledby="whoTitle" aria-hidden="true">
     <button class="who-close" id="whoClose" aria-label="Close">✕</button>
-    <div class="who-body">
+    <header class="sheet-head">
+      <p class="sheet-kicker">a short introduction</p>
+      <h2 class="sheet-title" id="whoTitle">About me</h2>
+      <p class="sheet-orn" aria-hidden="true">· ✦ ·</p>
+    </header>
+    <div class="sheet-body">
       <p>Hi, my name is <strong>Nueng Kasempong</strong>.</p>
       <p>I am a general dentist learning vibe coding.</p>
+      <p class="sheet-sign">— Nueng</p>
     </div>
   </div>
 
@@ -244,101 +250,88 @@
 
   <!-- ===== PROJECTS MODAL ===== -->
   <div class="who-overlay" id="projectsOverlay" aria-hidden="true"></div>
-  <div class="who-modal" id="projectsModal" role="dialog" aria-modal="true" aria-label="My projects" aria-hidden="true">
+  <div class="who-modal ink-sheet" id="projectsModal" role="dialog" aria-modal="true" aria-labelledby="projectsTitle" aria-hidden="true">
     <button class="who-close" id="projectsClose" aria-label="Close">✕</button>
-    <div class="who-body projects-body">
-      <a class="project-card project-card--link project-card--featured" href="/trip" target="_blank" rel="noopener noreferrer">
-        <div class="project-icon project-icon--globe" aria-hidden="true">
-          <svg viewBox="0 0 48 48" xmlns="http://www.w3.org/2000/svg" width="32" height="32">
-            <defs>
-              <radialGradient id="miniGlobe" cx="35%" cy="32%" r="65%">
-                <stop offset="0%" stop-color="#67e8d8"/>
-                <stop offset="60%" stop-color="#0f9f9a"/>
-                <stop offset="100%" stop-color="#044f4d"/>
-              </radialGradient>
-              <clipPath id="miniClip"><circle cx="24" cy="24" r="20"/></clipPath>
-            </defs>
-            <circle cx="24" cy="24" r="20" fill="url(#miniGlobe)"/>
-            <g clip-path="url(#miniClip)" fill="none" stroke="rgba(255,255,255,0.3)" stroke-width="0.9">
-              <ellipse cx="24" cy="24" rx="20" ry="7"/>
-              <ellipse cx="24" cy="24" rx="6" ry="20"/>
-              <ellipse cx="24" cy="24" rx="14" ry="20"/>
-            </g>
-            <ellipse cx="19" cy="18" rx="5" ry="3" fill="rgba(255,255,255,0.18)" transform="rotate(-20,19,18)"/>
-          </svg>
-          <span class="project-icon-spark">✦</span>
-        </div>
-        <div class="project-info">
-          <h3 class="project-title">Trip Tag Told <span class="project-new-badge">New</span></h3>
-          <p class="project-desc">Group trip planner — plan flights, stays, maps, and expenses with friends in real time.</p>
-          <div class="project-tags"><span>React</span><span>FastAPI</span><span>Supabase</span><span>Live</span></div>
-        </div>
-      </a>
-      <div class="project-card">
-        <div class="project-icon">📷</div>
-        <div class="project-info">
-          <h3 class="project-title">MJ Prompt Builder</h3>
-          <p class="project-desc">Hyper-realistic Midjourney prompt studio — scene formula, camera settings, and parameter controls with one-tap copy.</p>
-          <div class="project-tags"><span>Midjourney</span><span>React</span><span>Live</span></div>
-        </div>
-      </div>
-      <div class="project-card">
-        <div class="project-icon">🎞️</div>
-        <div class="project-info">
-          <h3 class="project-title">Cinemagraph Generator</h3>
-          <p class="project-desc">Upload an image and get a production-ready animation prompt for Kling, Runway, Veo, or Sora — powered by MiniMax M3 vision.</p>
-          <div class="project-tags"><span>MiniMax</span><span>AI Vision</span><span>Live</span></div>
-        </div>
-      </div>
-      <div class="project-card">
-        <div class="project-icon">🏦</div>
-        <div class="project-info">
-          <h3 class="project-title">MarketPulse</h3>
-          <p class="project-desc">Flask stock dashboard for US &amp; Thai SET indices, Chart.js visualizations, deployed on Render.</p>
-          <div class="project-tags"><span>Flask</span><span>Chart.js</span><span>Render</span></div>
-        </div>
-      </div>
-      <div class="project-card">
-        <div class="project-icon">🛠️</div>
-        <div class="project-info">
-          <h3 class="project-title">Prompt Builder</h3>
-          <p class="project-desc">React/Vite app with 5-part prompting framework, Thai/English toggle, dark/light mode, deployed on Vercel.</p>
-          <div class="project-tags"><span>React</span><span>Vite</span><span>Vercel</span></div>
-        </div>
-      </div>
-      <div class="project-card">
-        <div class="project-icon">📰</div>
-        <div class="project-info">
-          <h3 class="project-title">Thai News Scraper</h3>
-          <p class="project-desc">Flask backend + React dashboard scraping BBC Thai, ThaiPBS, and Reddit Thailand.</p>
-          <div class="project-tags"><span>Flask</span><span>React</span><span>Scraping</span></div>
-        </div>
-      </div>
-      <div class="project-card">
-        <div class="project-icon">🎬</div>
-        <div class="project-info">
-          <h3 class="project-title">Thai Short-Form Video Pipeline</h3>
-          <p class="project-desc">Python/Flask + Claude API + ElevenLabs TTS + FFmpeg pipeline targeting TikTok, YouTube Shorts &amp; Instagram Reels.</p>
-          <div class="project-tags"><span>Python</span><span>Claude API</span><span>FFmpeg</span></div>
-        </div>
-      </div>
-      <div class="project-card">
-        <div class="project-icon">🖥️</div>
-        <div class="project-info">
-          <h3 class="project-title">PC Monitoring Animation App</h3>
-          <p class="project-desc">Python/tkinter app visualizing RDP connection performance with borderless mode and UI refinements.</p>
-          <div class="project-tags"><span>Python</span><span>tkinter</span></div>
-        </div>
-      </div>
-      <div class="project-card">
-        <div class="project-icon">🦷</div>
-        <div class="project-info">
-          <h3 class="project-title">HOSxP Dental Data Tool</h3>
-          <p class="project-desc">Excel-based patient data extraction tool built for a dental clinic.</p>
-          <div class="project-tags"><span>Excel</span><span>HOSxP</span></div>
-        </div>
-      </div>
-    </div>
+    <header class="sheet-head">
+      <p class="sheet-kicker">a small catalogue of works</p>
+      <h2 class="sheet-title" id="projectsTitle">My Projects</h2>
+      <p class="sheet-orn" aria-hidden="true">· ✦ ·</p>
+    </header>
+    <ol class="sheet-body works">
+      <li><a class="work work--link" href="/trip" target="_blank" rel="noopener noreferrer">
+          <span class="work-no">No. 01</span>
+          <span class="work-main">
+            <span class="work-title">Trip Tag Told <span class="work-new">New</span></span>
+            <span class="work-desc">Group trip planner — plan flights, stays, maps, and expenses with friends in real time.</span>
+            <span class="work-tags">React · FastAPI · Supabase · Live</span>
+          </span>
+          <span class="work-arrow" aria-hidden="true">↗</span>
+        </a></li>
+      <li><div class="work">
+          <span class="work-no">No. 02</span>
+          <span class="work-main">
+            <span class="work-title">MJ Prompt Builder</span>
+            <span class="work-desc">Hyper-realistic Midjourney prompt studio — scene formula, camera settings, and parameter controls with one-tap copy.</span>
+            <span class="work-tags">Midjourney · React · Live</span>
+          </span>
+        </div></li>
+      <li><div class="work">
+          <span class="work-no">No. 03</span>
+          <span class="work-main">
+            <span class="work-title">Cinemagraph Generator</span>
+            <span class="work-desc">Upload an image and get a production-ready animation prompt for Kling, Runway, Veo, or Sora — powered by MiniMax M3 vision.</span>
+            <span class="work-tags">MiniMax · AI Vision · Live</span>
+          </span>
+        </div></li>
+      <li><div class="work">
+          <span class="work-no">No. 04</span>
+          <span class="work-main">
+            <span class="work-title">MarketPulse</span>
+            <span class="work-desc">Flask stock dashboard for US &amp; Thai SET indices, Chart.js visualizations, deployed on Render.</span>
+            <span class="work-tags">Flask · Chart.js · Render</span>
+          </span>
+        </div></li>
+      <li><div class="work">
+          <span class="work-no">No. 05</span>
+          <span class="work-main">
+            <span class="work-title">Prompt Builder</span>
+            <span class="work-desc">React/Vite app with 5-part prompting framework, Thai/English toggle, dark/light mode, deployed on Vercel.</span>
+            <span class="work-tags">React · Vite · Vercel</span>
+          </span>
+        </div></li>
+      <li><div class="work">
+          <span class="work-no">No. 06</span>
+          <span class="work-main">
+            <span class="work-title">Thai News Scraper</span>
+            <span class="work-desc">Flask backend + React dashboard scraping BBC Thai, ThaiPBS, and Reddit Thailand.</span>
+            <span class="work-tags">Flask · React · Scraping</span>
+          </span>
+        </div></li>
+      <li><div class="work">
+          <span class="work-no">No. 07</span>
+          <span class="work-main">
+            <span class="work-title">Thai Short-Form Video Pipeline</span>
+            <span class="work-desc">Python/Flask + Claude API + ElevenLabs TTS + FFmpeg pipeline targeting TikTok, YouTube Shorts &amp; Instagram Reels.</span>
+            <span class="work-tags">Python · Claude API · FFmpeg</span>
+          </span>
+        </div></li>
+      <li><div class="work">
+          <span class="work-no">No. 08</span>
+          <span class="work-main">
+            <span class="work-title">PC Monitoring Animation App</span>
+            <span class="work-desc">Python/tkinter app visualizing RDP connection performance with borderless mode and UI refinements.</span>
+            <span class="work-tags">Python · tkinter</span>
+          </span>
+        </div></li>
+      <li><div class="work">
+          <span class="work-no">No. 09</span>
+          <span class="work-main">
+            <span class="work-title">HOSxP Dental Data Tool</span>
+            <span class="work-desc">Excel-based patient data extraction tool built for a dental clinic.</span>
+            <span class="work-tags">Excel · HOSxP</span>
+          </span>
+        </div></li>
+    </ol>
   </div>
 
   <!-- ===== FEATURED APP — Trip Tag Told ===== -->
@@ -508,8 +501,8 @@
     </ul>
   </aside>
 
-  <script src="ink-fx.js?v=1" defer></script>
-  <script src="script.js?v=3" defer></script>
+  <script src="ink-fx.js?v=2" defer></script>
+  <script src="script.js?v=4" defer></script>
   <script src="island3d.bundle.js?v=1" defer></script>
 
   <!-- ── Birthday secret password overlay (styles in styles.css, JS in script.js) ── -->

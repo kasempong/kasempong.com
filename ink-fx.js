@@ -55,6 +55,20 @@
     '&family=Noto+Sans+Bamum&family=Noto+Sans+Yi&family=Noto+Sans+Symbols+2&display=swap';
   document.head.appendChild(fonts);
 
+  // Rough ink-edge filter, used by buttons and frames: filter: url(#ink-rough)
+  var svgNS = 'http://www.w3.org/2000/svg';
+  var svg = document.createElementNS(svgNS, 'svg');
+  svg.setAttribute('width', '0'); svg.setAttribute('height', '0');
+  svg.setAttribute('aria-hidden', 'true');
+  svg.style.position = 'absolute';
+  svg.innerHTML =
+    '<filter id="ink-rough" x="-5%" y="-20%" width="110%" height="140%">' +
+    '<feTurbulence type="fractalNoise" baseFrequency="0.045" numOctaves="2" seed="7" result="n"/>' +
+    '<feDisplacementMap in="SourceGraphic" in2="n" scale="1.6" xChannelSelector="R" yChannelSelector="G"/>' +
+    '</filter>';
+  function addSvg() { document.body.appendChild(svg); }
+  if (document.body) addSvg(); else document.addEventListener('DOMContentLoaded', addSvg);
+
   // Inject styles once
   var css = document.createElement('style');
   css.textContent =

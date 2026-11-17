@@ -8,7 +8,7 @@
   <link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>🦷</text></svg>">
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-  <link href="https://fonts.googleapis.com/css2?family=IM+Fell+English:ital@0;1&family=IBM+Plex+Mono:wght@400;500&display=swap" rel="stylesheet">
+  <link href="https://fonts.googleapis.com/css2?family=IM+Fell+English:ital@0;1&family=IM+Fell+English+SC&family=IBM+Plex+Mono:wght@400;500&display=swap" rel="stylesheet">
   <script>try{document.documentElement.setAttribute('data-theme',localStorage.getItem('theme')||'light')}catch(e){}</script>
   <style>
     *, *::before, *::after { margin: 0; padding: 0; box-sizing: border-box; }
@@ -18,7 +18,7 @@
       --ink: #1b1a17;
       --ink-muted: #6f695e;
       --hair: rgba(27, 26, 23, 0.5);
-      --hair-soft: rgba(27, 26, 23, 0.12);
+      --hair-soft: rgba(27, 26, 23, 0.22);
     }
     [data-theme="dark"] {
       --paper: #14130f;
@@ -95,31 +95,6 @@
       to { opacity: 1; transform: translateY(0); filter: blur(0); }
     }
 
-    /* ── Tooth ─────────────────────────────────────────────── */
-    #tooth {
-      font-size: clamp(1.6rem, 5vw, 2.3rem);
-      line-height: 1;
-      opacity: 0;
-      filter: grayscale(1) contrast(1.2) drop-shadow(0 0 0.6px var(--ink)) drop-shadow(0 0 0.6px var(--ink));
-      transform: scale(0.5) rotate(-30deg);
-      will-change: transform, opacity;
-    }
-    #tooth.show {
-      animation: toothPop 0.58s cubic-bezier(0.34, 1.56, 0.64, 1) forwards;
-    }
-    @keyframes toothPop {
-      to { opacity: 1; transform: scale(1) rotate(0deg); }
-    }
-    #tooth.float {
-      opacity: 1;
-      transform: scale(1);
-      animation: toothFloat 3.6s ease-in-out infinite;
-    }
-    @keyframes toothFloat {
-      0%, 100% { transform: scale(1) translateY(0); }
-      50%       { transform: scale(1) translateY(-6px); }
-    }
-
     /* ── Subtitle ──────────────────────────────────────────── */
     #subtitle {
       font-weight: 400;
@@ -133,26 +108,43 @@
     }
     #subtitle.visible { opacity: 1; }
 
-    /* ── Enter button ──────────────────────────────────────── */
+    /* ── Enter button: letterpress stamp ─────────────────── */
     #enter-btn {
-      font-family: 'IBM Plex Mono', ui-monospace, monospace;
-      font-weight: 500;
-      font-size: 0.8rem;
-      text-transform: uppercase;
-      letter-spacing: 0.12em;
+      position: relative;
+      isolation: isolate;
+      font-family: 'IM Fell English SC', 'IM Fell English', Georgia, serif;
+      font-size: 1.2rem;
+      letter-spacing: 0.06em;
       color: var(--ink);
       background: transparent;
-      border: 1px solid var(--hair);
-      border-radius: 999px;
-      padding: 12px 32px;
-      margin-top: 6px;
+      border: none;
+      padding: 12px 34px;
+      margin-top: 10px;
       cursor: pointer;
       opacity: 0;
       transform: translateY(10px);
       pointer-events: none;
       will-change: transform, opacity;
       -webkit-tap-highlight-color: transparent;
-      transition: background 0.2s, color 0.2s, border-color 0.2s;
+      transition: color 0.15s;
+    }
+    #enter-btn::before {
+      content: '';
+      position: absolute; inset: 0;
+      z-index: -1;
+      border: 1.5px solid var(--ink);
+      border-radius: 3px;
+      background: var(--paper);
+      box-shadow: 3px 3px 0 var(--ink);
+      filter: url(#ink-rough);
+      transition: box-shadow 0.15s, background 0.15s;
+    }
+    #enter-btn::after {
+      content: '';
+      position: absolute; inset: 4px;
+      z-index: -1;
+      border: 1px solid var(--hair-soft);
+      pointer-events: none;
     }
     #enter-btn.show {
       animation: btnReveal 0.65s cubic-bezier(0.34, 1.2, 0.64, 1) forwards;
@@ -161,21 +153,14 @@
       opacity: 1;
       transform: translateY(0);
       pointer-events: auto;
-      animation: btnBreath 2.8s ease-in-out infinite;
     }
     @keyframes btnReveal {
       to { opacity: 1; transform: translateY(0); }
     }
-    @keyframes btnBreath {
-      0%, 100% { box-shadow: 0 0 0 0 var(--hair-soft); }
-      50%       { box-shadow: 0 0 0 6px transparent; }
-    }
-    #enter-btn:hover {
-      background: var(--ink);
-      color: var(--paper);
-      border-color: var(--ink);
-    }
-    #enter-btn:active { transform: scale(0.96) !important; }
+    #enter-btn:hover { color: var(--paper); }
+    #enter-btn:hover::before { background: var(--ink); box-shadow: 1.5px 1.5px 0 var(--ink); }
+    #enter-btn:active { transform: translate(3px, 3px) !important; }
+    #enter-btn:active::before { box-shadow: none; }
 
     /* ── Companions (star + moon) ──────────────────────────── */
     .companion {
@@ -219,7 +204,7 @@
     }
 
     @media (prefers-reduced-motion: reduce) {
-      #tooth.float, #enter-btn.pulse { animation: none; }
+      #enter-btn.show { animation: none; opacity: 1; transform: none; }
     }
   </style>
 </head>
@@ -241,7 +226,7 @@
 
 <div id="vortex"></div>
 
-<script src="ink-fx.js?v=1"></script>
+<script src="ink-fx.js?v=2"></script>
 <script src="welcome.js?v=4"></script>
 </body>
 </html>
