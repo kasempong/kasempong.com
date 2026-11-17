@@ -26,12 +26,12 @@
   <link rel="preconnect" href="https://fonts.googleapis.com" />
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
   <link
-    href="https://fonts.googleapis.com/css2?family=EB+Garamond:ital,wght@0,400;0,500;0,600;1,400&family=IM+Fell+English:ital@0;1&family=IM+Fell+English+SC&family=IBM+Plex+Mono:wght@400;500&display=swap"
+    href="https://fonts.googleapis.com/css2?family=EB+Garamond:ital,wght@0,400;0,500;0,600;1,400&family=IM+Fell+English:ital@0;1&family=IM+Fell+English+SC&family=Noto+Serif+Thai:wght@400;600&family=IBM+Plex+Mono:wght@400;500&display=swap"
     rel="stylesheet" crossorigin="anonymous"
   />
 
   <link rel="stylesheet" href="styles.css?v=1" />
-  <link rel="stylesheet" href="ink.css?v=2" />
+  <link rel="stylesheet" href="ink.css?v=4" />
 </head>
 <body>
   <!-- ===== TOP BAR ===== -->
@@ -172,14 +172,38 @@
 
     <!-- Right: ink illustration (desktop only) -->
     <div class="hero-card">
-      <figure class="ink-art">
-        <img id="inkArt" src="ink-land-1.webp" width="720" height="900" alt="Ink drawing of a quiet landscape" />
-        <figcaption>a quiet little place</figcaption>
+      <figure class="ink-art" aria-label="Ink drawings">
+        <div class="ink-frame" id="inkFrame">
+          <img class="ink-slide" alt="" aria-hidden="true">
+          <img class="ink-slide" alt="" aria-hidden="true">
+        </div>
       </figure>
       <script>
         (function () {
-          var n = 1 + Math.floor(Math.random() * 4);
-          document.getElementById('inkArt').src = 'ink-land-' + n + '.webp';
+          var N = 15, HOLD = 7000;
+          var order = [];
+          for (var i = 1; i <= N; i++) order.push(i);
+          for (var j = order.length - 1; j > 0; j--) {
+            var k = Math.floor(Math.random() * (j + 1)), t = order[j]; order[j] = order[k]; order[k] = t;
+          }
+          var slides = document.querySelectorAll('#inkFrame .ink-slide');
+          var pos = 0, front = 0;
+          function src(n) { return 'ink-art-' + (n < 10 ? '0' : '') + n + '.webp'; }
+          function show() {
+            var img = slides[front];
+            img.onload = function () {
+              img.classList.add('on');
+              slides[1 - front].classList.remove('on');
+              front = 1 - front;
+              new Image().src = src(order[(pos + 1) % N]);
+            };
+            img.src = src(order[pos]);
+            pos = (pos + 1) % N;
+          }
+          show();
+          if (!(window.matchMedia && matchMedia('(prefers-reduced-motion: reduce)').matches)) {
+            setInterval(function () { if (!document.hidden) show(); }, HOLD);
+          }
         })();
       </script>
     </div>
@@ -254,17 +278,26 @@
       <p class="sheet-orn" aria-hidden="true">· ✦ ·</p>
     </header>
     <ol class="sheet-body works">
-      <li><a class="work work--link" href="/trip" target="_blank" rel="noopener noreferrer">
+      <li><a class="work work--link" href="/เวชระเบียน" target="_blank" rel="noopener noreferrer">
           <span class="work-no">No. 01</span>
           <span class="work-main">
-            <span class="work-title">Trip Tag Told <span class="work-new">New</span></span>
+            <span class="work-title">Dental Record <span class="work-new">New</span></span>
+            <span class="work-desc"><span lang="th">บันทึกเวชระเบียนทันตกรรม</span> — pick a procedure, tap the teeth, and copy a ready-made note into HOSxP.</span>
+            <span class="work-tags">HOSxP · Google Apps Script · Live</span>
+          </span>
+          <span class="work-arrow" aria-hidden="true">↗</span>
+        </a></li>
+      <li><a class="work work--link" href="/trip" target="_blank" rel="noopener noreferrer">
+          <span class="work-no">No. 02</span>
+          <span class="work-main">
+            <span class="work-title">Trip Tag Told</span>
             <span class="work-desc">Group trip planner — plan flights, stays, maps, and expenses with friends in real time.</span>
             <span class="work-tags">React · FastAPI · Supabase · Live</span>
           </span>
           <span class="work-arrow" aria-hidden="true">↗</span>
         </a></li>
       <li><div class="work">
-          <span class="work-no">No. 02</span>
+          <span class="work-no">No. 03</span>
           <span class="work-main">
             <span class="work-title">MJ Prompt Builder</span>
             <span class="work-desc">Hyper-realistic Midjourney prompt studio — scene formula, camera settings, and parameter controls with one-tap copy.</span>
@@ -272,7 +305,7 @@
           </span>
         </div></li>
       <li><div class="work">
-          <span class="work-no">No. 03</span>
+          <span class="work-no">No. 04</span>
           <span class="work-main">
             <span class="work-title">Cinemagraph Generator</span>
             <span class="work-desc">Upload an image and get a production-ready animation prompt for Kling, Runway, Veo, or Sora — powered by MiniMax M3 vision.</span>
@@ -280,7 +313,7 @@
           </span>
         </div></li>
       <li><div class="work">
-          <span class="work-no">No. 04</span>
+          <span class="work-no">No. 05</span>
           <span class="work-main">
             <span class="work-title">MarketPulse</span>
             <span class="work-desc">Flask stock dashboard for US &amp; Thai SET indices, Chart.js visualizations, deployed on Render.</span>
@@ -288,7 +321,7 @@
           </span>
         </div></li>
       <li><div class="work">
-          <span class="work-no">No. 05</span>
+          <span class="work-no">No. 06</span>
           <span class="work-main">
             <span class="work-title">Prompt Builder</span>
             <span class="work-desc">React/Vite app with 5-part prompting framework, Thai/English toggle, dark/light mode, deployed on Vercel.</span>
@@ -296,7 +329,7 @@
           </span>
         </div></li>
       <li><div class="work">
-          <span class="work-no">No. 06</span>
+          <span class="work-no">No. 07</span>
           <span class="work-main">
             <span class="work-title">Thai News Scraper</span>
             <span class="work-desc">Flask backend + React dashboard scraping BBC Thai, ThaiPBS, and Reddit Thailand.</span>
@@ -304,7 +337,7 @@
           </span>
         </div></li>
       <li><div class="work">
-          <span class="work-no">No. 07</span>
+          <span class="work-no">No. 08</span>
           <span class="work-main">
             <span class="work-title">Thai Short-Form Video Pipeline</span>
             <span class="work-desc">Python/Flask + Claude API + ElevenLabs TTS + FFmpeg pipeline targeting TikTok, YouTube Shorts &amp; Instagram Reels.</span>
@@ -312,7 +345,7 @@
           </span>
         </div></li>
       <li><div class="work">
-          <span class="work-no">No. 08</span>
+          <span class="work-no">No. 09</span>
           <span class="work-main">
             <span class="work-title">PC Monitoring Animation App</span>
             <span class="work-desc">Python/tkinter app visualizing RDP connection performance with borderless mode and UI refinements.</span>
@@ -320,7 +353,7 @@
           </span>
         </div></li>
       <li><div class="work">
-          <span class="work-no">No. 09</span>
+          <span class="work-no">No. 10</span>
           <span class="work-main">
             <span class="work-title">HOSxP Dental Data Tool</span>
             <span class="work-desc">Excel-based patient data extraction tool built for a dental clinic.</span>
@@ -333,18 +366,27 @@
   <!-- ===== FEATURED APP — Trip Tag Told ===== -->
   <section class="featured-app-section">
     <div class="section-inner">
-      <p class="section-eyebrow">latest app</p>
-      <a href="/trip" class="featured-app-card" aria-label="Open Trip Tag Told">
-
-        <!-- Text -->
-        <div class="fag-text">
-          <span class="fag-badge">New</span>
-          <h3 class="fag-title">Trip Tag Told</h3>
-          <p class="fag-desc">Plan group trips with friends — flights, stays, maps &amp; expenses in real time.</p>
-          <span class="fag-cta">Open app ↗</span>
-        </div>
-
-      </a>
+      <p class="section-eyebrow">latest apps</p>
+      <div class="app-shelf">
+        <a href="/เวชระเบียน" class="featured-app-card" target="_blank" rel="noopener noreferrer" aria-label="Open Dental Record (บันทึกเวชระเบียนทันตกรรม)">
+          <div class="fag-text">
+            <span class="fag-badge">New</span>
+            <h3 class="fag-title">Dental Record</h3>
+            <p class="fag-sub" lang="th">บันทึกเวชระเบียนทันตกรรม</p>
+            <p class="fag-desc">Pick a procedure, tap the teeth, and copy a ready-made note straight into HOSxP.</p>
+            <span class="fag-cta">Open tool ↗</span>
+          </div>
+        </a>
+        <a href="/trip" class="featured-app-card" aria-label="Open Trip Tag Told">
+          <div class="fag-text">
+            <span class="fag-badge fag-badge--live">Live</span>
+            <h3 class="fag-title">Trip Tag Told</h3>
+            <p class="fag-sub">group trip planner</p>
+            <p class="fag-desc">Plan group trips with friends — flights, stays, maps &amp; expenses in real time.</p>
+            <span class="fag-cta">Open app ↗</span>
+          </div>
+        </a>
+      </div>
     </div>
   </section>
 
@@ -461,7 +503,8 @@
     </ul>
   </aside>
 
-  <script src="ink-fx.js?v=2" defer></script>
+  <script src="ink-symbols.js?v=1" defer></script>
+  <script src="ink-fx.js?v=3" defer></script>
   <script src="script.js?v=5" defer></script>
   <script src="island3d.bundle.js?v=1" defer></script>
 

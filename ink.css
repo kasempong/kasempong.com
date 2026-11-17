@@ -835,3 +835,95 @@ body::before {
 
 /* Space between the rotating role and the buttons (bio paragraph removed) */
 .hero-role { margin-bottom: 2.2rem; }
+
+/* ── Latest apps shelf (two framed cards) ───────────────── */
+:root {
+  --font-display: 'IM Fell English', 'Noto Serif Thai', 'EB Garamond', Georgia, serif;
+  --font-sans:    'EB Garamond', 'Noto Serif Thai', Georgia, 'Times New Roman', serif;
+}
+.app-shelf {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 1.75rem;
+  max-width: 960px;
+  margin: 0 auto;
+}
+.app-shelf .featured-app-card {
+  max-width: none;
+  margin: 0;
+  height: 100%;
+  padding: 2rem 1.75rem 1.75rem;
+}
+.app-shelf .fag-text { display: flex; flex-direction: column; align-items: center; height: 100%; }
+.app-shelf .fag-desc { flex: 1; max-width: 26rem; }
+.fag-sub {
+  margin: -0.15rem 0 0.6rem;
+  font-family: var(--font-label);
+  font-size: 0.72rem;
+  letter-spacing: 0.08em;
+  color: var(--ink-muted);
+}
+.fag-sub:lang(th) { font-family: 'Noto Serif Thai', serif; font-size: 0.95rem; letter-spacing: 0; color: var(--ink-mid); }
+.fag-badge--live,
+[data-theme="dark"] .fag-badge--live { color: var(--ink-muted); }
+@media (max-width: 720px) {
+  .app-shelf { grid-template-columns: 1fr; gap: 1.4rem; }
+}
+
+/* Hide the "latest project" and status labels */
+.latest-project-pill, .status-bar { display: none !important; }
+
+/* ── Hero: rotating ink drawings, one at a time ─────────── */
+.ink-frame {
+  position: relative;
+  width: 300px;
+  max-width: 100%;
+  aspect-ratio: 600 / 1070;
+}
+.ink-frame .ink-slide {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  max-width: none;
+  object-fit: contain;
+  opacity: 0;
+  transform: scale(0.985);
+  filter: blur(2px);
+  transition: opacity 1.6s ease, transform 2.4s ease, filter 1.6s ease;
+  animation: none;
+}
+.ink-frame .ink-slide.on { opacity: 1; transform: scale(1); filter: blur(0); }
+[data-theme="dark"] .ink-frame .ink-slide.on { filter: invert(0.92) hue-rotate(180deg); }
+.ink-frame { animation: inkFloat 9s ease-in-out infinite; }
+@media (prefers-reduced-motion: reduce) {
+  .ink-frame { animation: none; }
+  .ink-frame .ink-slide { transition: none; }
+}
+
+/* ── Show the drawings on tablets and phones too ────────── */
+@media (max-width: 960px) {
+  .hero { gap: 2.25rem; min-height: auto; }
+  .hero-card { display: flex !important; justify-content: center; order: 2; }
+  .ink-frame {
+    width: auto;
+    height: min(56vh, 520px);
+    height: min(56svh, 520px);
+    max-width: 78vw;
+  }
+}
+@media (max-width: 700px) {
+  .hero { padding-bottom: 2.5rem; }
+  .ink-frame {
+    height: min(52vh, 440px);
+    height: min(52svh, 440px);
+  }
+}
+
+/* Very narrow phones (e.g. iPhone SE): keep the navbar from crowding */
+@media (max-width: 360px) {
+  .navbar { padding-left: 0.85rem; padding-right: 0.85rem; }
+  .nav-logo { font-size: 1.2rem; }
+  .nav-controls { gap: 0.35rem; }
+  .lang-btn { padding: 0.15rem 0.35rem; }
+}
