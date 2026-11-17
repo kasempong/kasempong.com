@@ -7,7 +7,7 @@
   <meta name="description" content="Kasempong — General Dentist by day, experimental coder by night. Portfolio of creative projects in web dev, Python, and more." />
   <title>Kasempong &mdash; Portfolio</title>
   <link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>🦷</text></svg>">
-  <meta name="theme-color" content="#1a0a2e" />
+  <meta name="theme-color" content="#f3efe6" />
   <meta name="robots" content="index, follow" />
 
   <!-- Open Graph -->
@@ -26,11 +26,12 @@
   <link rel="preconnect" href="https://fonts.googleapis.com" />
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
   <link
-    href="https://fonts.googleapis.com/css2?family=Playfair+Display:wght@700;900&family=Nunito:wght@400;500;600;700&display=swap"
+    href="https://fonts.googleapis.com/css2?family=EB+Garamond:ital,wght@0,400;0,500;0,600;1,400&family=IM+Fell+English:ital@0;1&family=IBM+Plex+Mono:wght@400;500&display=swap"
     rel="stylesheet" crossorigin="anonymous"
   />
 
   <link rel="stylesheet" href="styles.css?v=1" />
+  <link rel="stylesheet" href="ink.css?v=1" />
 </head>
 <body>
   <!-- ===== TOP BAR ===== -->
@@ -173,29 +174,12 @@
       <button class="changelog-hero-link" id="changelogBtn">little updates ✦</button>
     </div>
 
-    <!-- Right: info card (desktop only) -->
-    <div class="hero-card" aria-hidden="true">
-      <div class="hero-card-inner">
-        <div class="hc-avatar">🦷</div>
-        <div class="hc-name">Kasempong</div>
-        <div class="hc-role">Dentist &amp; Coder</div>
-        <div class="hc-divider"></div>
-        <div class="hc-stats">
-          <div class="hc-stat">
-            <span class="hc-stat-val">🦷</span>
-            <span class="hc-stat-label">Dentistry</span>
-          </div>
-          <div class="hc-stat">
-            <span class="hc-stat-val">💻</span>
-            <span class="hc-stat-label">Coding</span>
-          </div>
-          <div class="hc-stat">
-            <span class="hc-stat-val">✨</span>
-            <span class="hc-stat-label">Learning</span>
-          </div>
-        </div>
-        <a href="mailto:Contact.craffle@gmail.com" class="hc-contact">Contact.craffle@gmail.com</a>
-      </div>
+    <!-- Right: ink illustration (desktop only) -->
+    <div class="hero-card">
+      <figure class="ink-art">
+        <img src="ink-hand.webp" width="720" height="900" alt="Ink drawing of a hand reaching up toward a bright star" />
+        <figcaption>reach for the little stars</figcaption>
+      </figure>
     </div>
   </section>
 
@@ -518,7 +502,7 @@
     </ul>
   </aside>
 
-  <script src="script.js?v=1" defer></script>
+  <script src="script.js?v=2" defer></script>
   <script src="island3d.bundle.js?v=1" defer></script>
 
   <!-- ── Birthday secret password overlay (styles in styles.css, JS in script.js) ── -->
