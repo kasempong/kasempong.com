@@ -825,3 +825,10 @@ body::before {
 @media (max-width: 700px) {
   .hero-cta .btn { white-space: nowrap; padding: 0.85rem 0.6rem; font-size: 1rem; letter-spacing: 0.02em; min-width: 0; }
 }
+
+/* Kuromi hidden for now */
+#ckuromi-wrap { display: none !important; }
+
+/* Trip Tag Told banner without the globe */
+.featured-app-card { justify-content: center; text-align: center; }
+.fag-text { text-align: center; }
