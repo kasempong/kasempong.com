@@ -31,7 +31,6 @@ const translations = {
     nav_contact:      'Contact',
     hero_pill:        '✦ Available for work',
     hero_greeting:    "Hi, I'm",
-    hero_bio:         "I'm a dentist with a curious mind. By day I do dentistry. By night I learn coding.",
     hero_cta_talk:    "Let's Talk ✉",
     hero_cta_email:   'Email Me ✉',
     contact_eyebrow:  'reach out',
@@ -39,14 +38,13 @@ const translations = {
     contact_subtitle: "I'm always open to new opportunities, collaborations, or just a good conversation.",
     contact_email_label: 'Email',
     footer_made:      'Made with ♡',
-    roles: ['General Dentist', 'Experimental Projects', 'Open-minded', 'Music Lover'],
+    roles: ['Experimental Projects', 'Open-minded', 'Music Lover'],
   },
   th: {
     nav_about:        'เกี่ยวกับ',
     nav_contact:      'ติดต่อ',
     hero_pill:        '✦ พร้อมรับงาน',
     hero_greeting:    'สวัสดี ฉันชื่อ',
-    hero_bio:         'ฉันเป็นทันตแพทย์ที่ช่างสงสัย กลางวันทำฟัน กลางคืนเรียนเขียนโค้ด',
     hero_cta_talk:    'คุยกันเลย ✉',
     hero_cta_email:   'ส่งอีเมล ✉',
     contact_eyebrow:  'ติดต่อฉัน',
@@ -54,14 +52,13 @@ const translations = {
     contact_subtitle: 'ยินดีรับโอกาสใหม่ๆ งานร่วมมือ หรือแค่บทสนทนาดีๆ เสมอ',
     contact_email_label: 'อีเมล',
     footer_made:      'สร้างด้วยความรัก ♡',
-    roles: ['ทันตแพทย์ทั่วไป', 'โปรเจกต์ทดลอง', 'เปิดกว้าง', 'คนรักดนตรี'],
+    roles: ['โปรเจกต์ทดลอง', 'เปิดกว้าง', 'คนรักดนตรี'],
   },
   zh: {
     nav_about:        '关于',
     nav_contact:      '联系',
     hero_pill:        '✦ 接受工作邀约',
     hero_greeting:    '你好，我是',
-    hero_bio:         '我是一名充满好奇心的牙医。白天看诊，晚上学编程。',
     hero_cta_talk:    '联系我 ✉',
     hero_cta_email:   '发邮件 ✉',
     contact_eyebrow:  '联系方式',
@@ -69,7 +66,7 @@ const translations = {
     contact_subtitle: '随时欢迎新机会、合作项目，或一次愉快的交流。',
     contact_email_label: '邮箱',
     footer_made:      '用爱制作 ♡',
-    roles: ['全科牙医', '实验项目', '思想开放', '音乐爱好者'],
+    roles: ['实验项目', '思想开放', '音乐爱好者'],
   },
 };
 
@@ -190,7 +187,7 @@ applyLang(currentLang);
 // ── Header stars ──────────────────────────────────────────────
 (function () {
   const nav   = document.getElementById('navbar');
-  const glyphs = ['✦', '✧', '⋆', '✶', '·', '⊹'];
+  const glyphs = (window.InkFX && window.InkFX.SMALL) || ['✦', '✧', '⋆', '✶', '·', '⊹'];
   const COUNT  = 14;
 
   for (let i = 0; i < COUNT; i++) {
@@ -208,7 +205,7 @@ applyLang(currentLang);
 
 // ── Button glitter ────────────────────────────────────────────
 (function () {
-  const glyphs = ['✦', '✧', '⋆', '✶', '*', '·'];
+  const glyphs = (window.InkFX && window.InkFX.SMALL) || ['✦', '✧', '⋆', '✶', '*', '·'];
 
   function spawnSparks(btn, count) {
     const rect = btn.getBoundingClientRect();
@@ -1314,7 +1311,13 @@ window.addEventListener('scroll', () => {
 
 // ── Cursor sparkle trail ──────────────────────────────────────
 (function () {
-  var COLORS = ['#ff88cc','#ffcc55','#99eeff','#cc99ff','#ffffff','#ffaa88'];
+  var TRAIL_GLYPHS = ['♡', '⋆', '˚', '✧', '₊', '°', '✩'];
+  function inkColor() {
+    return getComputedStyle(document.documentElement).getPropertyValue('--ink').trim() || '#1b1a17';
+  }
+  var ink = inkColor();
+  new MutationObserver(function () { ink = inkColor(); })
+    .observe(document.documentElement, { attributes: true, attributeFilter: ['data-theme'] });
   var sparks = [];
   var mx = -999, my = -999, active = false;
 
@@ -1340,15 +1343,15 @@ window.addEventListener('scroll', () => {
   function tick() {
     ctx2.clearRect(0, 0, canvas.width, canvas.height);
 
-    if (active && ++spawnTick % 3 === 0) {
+    if (active && ++spawnTick % 4 === 0) {
       sparks.push({
         x: mx + (Math.random() - 0.5) * 10,
         y: my + (Math.random() - 0.5) * 10,
         vx: (Math.random() - 0.5) * 1.2,
         vy: (Math.random() - 0.5) * 1.2 - 0.6,
-        r: Math.random() * 3 + 1.5,
-        alpha: 1,
-        color: COLORS[Math.floor(Math.random() * COLORS.length)],
+        r: Math.random() * 1.6 + 0.8,
+        alpha: 0.7,
+        glyph: Math.random() < 0.3 ? TRAIL_GLYPHS[Math.floor(Math.random() * TRAIL_GLYPHS.length)] : null,
       });
     }
 
@@ -1359,92 +1362,25 @@ window.addEventListener('scroll', () => {
       s.r  *= 0.96;
       s.alpha *= 0.91;
       ctx2.globalAlpha = s.alpha;
-      ctx2.fillStyle   = s.color;
-      ctx2.shadowColor = s.color;
-      ctx2.shadowBlur  = 6;
-      ctx2.beginPath();
-      ctx2.arc(s.x, s.y, s.r, 0, Math.PI * 2);
-      ctx2.fill();
+      ctx2.fillStyle   = ink;
+      if (s.glyph) {
+        ctx2.font = '11px serif';
+        ctx2.fillText(s.glyph, s.x, s.y);
+      } else {
+        ctx2.beginPath();
+        ctx2.arc(s.x, s.y, s.r, 0, Math.PI * 2);
+        ctx2.fill();
+      }
     });
     ctx2.globalAlpha = 1;
-    ctx2.shadowBlur  = 0;
     requestAnimationFrame(tick);
   }
   tick();
 })();
 
-// ── Click-anywhere burst ──────────────────────────────────────
-(function () {
-  var GLYPHS = ['💗','✦','⭐','💜','✨','🌸','💫'];
-  document.addEventListener('click', function (e) {
-    // Skip if clicking interactive elements
-    if (e.target.closest('a,button,input,select,textarea,.cmp-wrap,#bdGateOverlay')) return;
-    for (var i = 0; i < 6; i++) {
-      (function (i) {
-        var el = document.createElement('span');
-        el.textContent = GLYPHS[Math.floor(Math.random() * GLYPHS.length)];
-        el.style.cssText = [
-          'position:fixed',
-          'left:' + e.clientX + 'px',
-          'top:'  + e.clientY + 'px',
-          'font-size:' + (Math.random() * 10 + 12) + 'px',
-          'pointer-events:none',
-          'z-index:9990',
-          'user-select:none',
-          'transform:translate(-50%,-50%)',
-          'transition:transform 0.7s ease-out, opacity 0.7s ease-out',
-        ].join(';');
-        document.body.appendChild(el);
-        requestAnimationFrame(function () {
-          var angle = (i / 6) * Math.PI * 2 + (Math.random() - 0.5);
-          var dist  = 40 + Math.random() * 40;
-          el.style.transform = 'translate(calc(-50% + ' + (Math.cos(angle) * dist) + 'px), calc(-50% + ' + (Math.sin(angle) * dist) + 'px))';
-          el.style.opacity   = '0';
-        });
-        setTimeout(function () { el.remove(); }, 750);
-      })(i);
-    }
-  });
-})();
+// ── Click-anywhere burst: now handled by ink-fx.js ────────────
 
-// ── Weather-themed background hue shift ──────────────────────
-(function () {
-  // Waits for env panel's fetchAll to store data, then applies hue
-  function applyWeatherHue() {
-    try {
-      var raw = localStorage.getItem('ksp_env_cache');
-      if (!raw) return;
-      var cache = JSON.parse(raw);
-      var aqi  = cache.data && cache.data.aqi;
-      var temp = cache.data && cache.data.temp;
-      var hue = 0, sat = 0, brightness = 1;
+// ── Weather-themed background hue shift: removed ────────────────
+// It set a CSS filter on <body>, which made fixed popups position
+// against the whole page (off-screen on phones) and tinted the paper.
 
-      if (aqi !== null) {
-        if      (aqi <= 50)  { hue = 0;    sat = 0;   }  // clean — no shift
-        else if (aqi <= 100) { hue = 30;   sat = 0.08; } // moderate — faint warm
-        else if (aqi <= 150) { hue = 25;   sat = 0.18; } // unhealthy — amber tint
-        else                 { hue = 20;   sat = 0.28; } // hazey — strong amber
-      }
-      if (temp !== null && temp >= 35) { brightness = 1.06; } // scorching — slightly brighter
-
-      var filter = hue
-        ? 'hue-rotate(' + hue + 'deg) saturate(' + (1 + sat) + ') brightness(' + brightness + ')'
-        : 'brightness(' + brightness + ')';
-
-      document.body.style.transition = 'filter 3s ease';
-      document.body.style.filter = filter;
-
-      // Subtle status hint if air quality is bad
-      var bar = document.getElementById('envAqi');
-      if (bar && aqi > 100) {
-        bar.style.color = aqi > 150 ? '#ff8844' : '#ffcc44';
-      }
-    } catch (_) {}
-  }
-
-  // Try on load (cached data) and again after 6s (fresh fetch may have landed)
-  applyWeatherHue();
-  setTimeout(applyWeatherHue, 6000);
-  // Re-apply whenever env panel refreshes
-  window.addEventListener('envDataUpdated', applyWeatherHue);
-})();
