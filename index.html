@@ -177,9 +177,15 @@
     <!-- Right: ink illustration (desktop only) -->
     <div class="hero-card">
       <figure class="ink-art">
-        <img src="ink-hand.webp" width="720" height="900" alt="Ink drawing of a hand reaching up toward a bright star" />
-        <figcaption>reach for the little stars</figcaption>
+        <img id="inkArt" src="ink-land-1.webp" width="720" height="900" alt="Ink drawing of a quiet landscape" />
+        <figcaption>a quiet little place</figcaption>
       </figure>
+      <script>
+        (function () {
+          var n = 1 + Math.floor(Math.random() * 4);
+          document.getElementById('inkArt').src = 'ink-land-' + n + '.webp';
+        })();
+      </script>
     </div>
   </section>
 
@@ -188,7 +194,7 @@
   <div class="who-modal" id="whoModal" role="dialog" aria-modal="true" aria-label="About Kasempong" aria-hidden="true">
     <button class="who-close" id="whoClose" aria-label="Close">✕</button>
     <div class="who-body">
-      <p>Hi, my name is <strong>Nueng Kasempong</strong>, 27 years old.</p>
+      <p>Hi, my name is <strong>Nueng Kasempong</strong>.</p>
       <p>I am a general dentist learning vibe coding.</p>
     </div>
   </div>

@@ -259,7 +259,7 @@ initPars();
 requestAnimationFrame(mainLoop);
 
 var _t1 = setTimeout(revealName,    500);
-var _t2 = setTimeout(revealTooth,  1400);
+var _t2 = null; // tooth removed from welcome page
 var _t3 = setTimeout(typeSubtitle, 1900);
 var _t4 = setTimeout(showEnterBtn, 3500);
 
