@@ -832,3 +832,6 @@ body::before {
 /* Trip Tag Told banner without the globe */
 .featured-app-card { justify-content: center; text-align: center; }
 .fag-text { text-align: center; }
+
+/* Space between the rotating role and the buttons (bio paragraph removed) */
+.hero-role { margin-bottom: 2.2rem; }
