@@ -4,7 +4,7 @@
 var canvas  = document.getElementById('bg-canvas');
 var ctx     = canvas.getContext('2d');
 var pars    = [];
-var GLYPHS  = ['✦', '✧', '⋆', '🌙'];
+var GLYPHS  = ['✦', '✧', '⋆', '☾'];
 
 function resizeCanvas() {
   canvas.width  = window.innerWidth;
@@ -20,14 +20,14 @@ function makePar() {
     vy:         0.22 + Math.random() * 0.40,
     vx:         (Math.random() - 0.5) * 0.16,
     opacity:    0,
-    maxOpacity: 0.12 + Math.random() * 0.22,
+    maxOpacity: 0.10 + Math.random() * 0.20,
     dying:      false,
   };
 }
 
 function initPars() {
   pars = [];
-  for (var i = 0; i < 45; i++) {
+  for (var i = 0; i < 30; i++) {
     var p = makePar();
     p.y = Math.random() * (canvas.height + 50);
     pars.push(p);
@@ -47,6 +47,7 @@ function tickPars() {
 
 function drawPars() {
   ctx.clearRect(0, 0, canvas.width, canvas.height);
+  ctx.fillStyle = getComputedStyle(document.documentElement).getPropertyValue('--ink').trim() || '#1b1a17';
   for (var i = 0; i < pars.length; i++) {
     var p = pars[i];
     if (p.opacity <= 0) continue;
@@ -258,7 +259,7 @@ initPars();
 requestAnimationFrame(mainLoop);
 
 var _t1 = setTimeout(revealName,    500);
-var _t2 = setTimeout(revealTooth,  1400);
+var _t2 = null; // tooth removed from welcome page
 var _t3 = setTimeout(typeSubtitle, 1900);
 var _t4 = setTimeout(showEnterBtn, 3500);
 

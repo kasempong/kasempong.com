@@ -181,7 +181,7 @@ function getAutoTheme() {
   const h = new Date().getHours();
   return (h >= 6 && h < 20) ? 'light' : 'dark';
 }
-const savedTheme = localStorage.getItem('theme') || 'dark';
+const savedTheme = localStorage.getItem('theme') || 'light';
 applyTheme(savedTheme);
 applyLang(currentLang);
 
@@ -244,7 +244,7 @@ applyLang(currentLang);
   const ctx    = canvas.getContext('2d');
   const mouse  = { x: -999, y: -999 };
   let particles = [];
-  const COUNT = 55;
+  const COUNT = 26;
 
   function resize() {
     const dpr = window.devicePixelRatio || 1;
@@ -273,8 +273,8 @@ applyLang(currentLang);
       this.vy = (Math.random() - 0.5) * 0.25;
       this.size = Math.random() * 4 + 2;
       const roll = Math.random();
-      this.type = roll < 0.62 ? 'star' : roll < 0.88 ? 'moon' : 'tooth';
-      this.baseOpacity = Math.random() * 0.45 + 0.15;
+      this.type = roll < 0.78 ? 'star' : 'moon';
+      this.baseOpacity = Math.random() * 0.25 + 0.12;
       this.phase = Math.random() * Math.PI * 2;
       this.phaseSpeed = Math.random() * 0.018 + 0.006;
       this.rotation = Math.random() * Math.PI * 2;
@@ -283,8 +283,8 @@ applyLang(currentLang);
 
     color(alpha) {
       return isDark()
-        ? `rgba(230, 195, 155, ${alpha})`
-        : `rgba(160, 95, 65, ${alpha})`;
+        ? `rgba(236, 230, 216, ${alpha})`
+        : `rgba(27, 26, 23, ${alpha})`;
     }
 
     drawStar(alpha) {
@@ -310,14 +310,11 @@ applyLang(currentLang);
       ctx.save();
       ctx.rotate(this.rotation);
       ctx.fillStyle = this.color(alpha);
+      // Crescent: outer circle minus offset inner circle (even-odd fill)
       ctx.beginPath();
       ctx.arc(0, 0, r, 0, Math.PI * 2);
-      ctx.fill();
-      ctx.globalCompositeOperation = 'destination-out';
-      ctx.beginPath();
-      ctx.arc(r * 0.45, -r * 0.1, r * 0.78, 0, Math.PI * 2);
-      ctx.fill();
-      ctx.globalCompositeOperation = 'source-over';
+      ctx.arc(r * 0.45, -r * 0.1, r * 0.78, 0, Math.PI * 2, true);
+      ctx.fill('evenodd');
       ctx.restore();
     }
 
@@ -721,7 +718,8 @@ applyLang(currentLang);
   function scheduleNext() {
     setTimeout(() => { spawnShip(); scheduleNext(); }, 8000 + Math.random() * 7000);
   }
-  setTimeout(scheduleNext, Math.random() * 3000 + 1500);
+  // Ships are switched off in the ink theme.
+  // setTimeout(scheduleNext, Math.random() * 3000 + 1500);
 })();
 
 // ── Scroll animations ─────────────────────────────────────────
