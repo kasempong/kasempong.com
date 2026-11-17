@@ -1,7 +1,8 @@
 // Hero drawings: shuffled, one at a time, crossfading.
 // Kept in its own file because the site's security policy blocks inline scripts.
 (function () {
-  var N = 15, HOLD = 7000;
+  // Number of drawings: ink-art-01.webp … ink-art-NN.webp. Bump when adding more.
+  var N = 28, HOLD = 7000;
   var order = [];
   for (var i = 1; i <= N; i++) order.push(i);
   for (var j = order.length - 1; j > 0; j--) {
