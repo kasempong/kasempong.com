@@ -927,3 +927,36 @@ body::before {
   .nav-controls { gap: 0.35rem; }
   .lang-btn { padding: 0.15rem 0.35rem; }
 }
+
+/* ── Tighter spacing across the homepage ────────────────── */
+.hero {
+  min-height: 0;
+  padding-top: 7.5rem;
+  padding-bottom: 2.5rem;
+  gap: 2.5rem;
+}
+.hero-role { margin-bottom: 1.6rem; }
+.featured-app-section { padding: 2.25rem 1.5rem 2rem; }
+.spotify-section { padding: 2.25rem 1.5rem 2rem; }
+.contact { padding: 2.25rem 1.5rem 2.75rem; }
+.section-eyebrow { margin-bottom: 0.4rem; }
+.section-title { margin-bottom: 0.4rem; }
+.section-subtitle { margin-bottom: 1.5rem; }
+.spotify-title { margin-bottom: 1.1rem; }
+.app-shelf { gap: 1.25rem; }
+.app-shelf .featured-app-card { padding: 1.5rem 1.4rem 1.4rem; }
+.fag-desc { margin-bottom: 0.5rem; }
+.footer { padding-top: 1.4rem; padding-bottom: 1.4rem; }
+
+@media (max-width: 960px) {
+  .hero { padding-top: 6.5rem; gap: 1.5rem; }
+}
+@media (max-width: 700px) {
+  .hero { padding: 7.25rem 1.25rem 1.75rem; gap: 1.25rem; }
+  .hero-role { margin-bottom: 1.2rem; }
+  .featured-app-section,
+  .spotify-section,
+  .contact { padding: 1.75rem 1rem 1.75rem; }
+  .app-shelf { gap: 1rem; }
+  .footer { padding-top: 1.2rem; padding-bottom: max(1.2rem, env(safe-area-inset-bottom)); }
+}
