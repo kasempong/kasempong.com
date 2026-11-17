@@ -960,3 +960,30 @@ body::before {
   .app-shelf { gap: 1rem; }
   .footer { padding-top: 1.2rem; padding-bottom: max(1.2rem, env(safe-area-inset-bottom)); }
 }
+
+/* ── Drawing frame: explicit width AND height ────────────
+   Safari can collapse a box whose width comes only from aspect-ratio
+   when all its children are absolutely positioned, so size both. */
+.ink-frame {
+  --h: 535px;
+  height: var(--h);
+  width: calc(var(--h) * 0.5607);   /* 600 / 1070 */
+  max-width: none;
+  aspect-ratio: auto;
+  flex: none;
+}
+@media (max-width: 960px) {
+  .ink-frame {
+    --h: min(56vh, 520px, 139vw);
+    --h: min(56svh, 520px, 139vw);
+    width: calc(var(--h) * 0.5607);
+    height: var(--h);
+    max-width: none;
+  }
+}
+@media (max-width: 700px) {
+  .ink-frame {
+    --h: min(52vh, 440px, 139vw);
+    --h: min(52svh, 440px, 139vw);
+  }
+}
