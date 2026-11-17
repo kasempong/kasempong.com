@@ -190,7 +190,7 @@ applyLang(currentLang);
 // ── Header stars ──────────────────────────────────────────────
 (function () {
   const nav   = document.getElementById('navbar');
-  const glyphs = ['✦', '✧', '⋆', '✶', '·', '⊹'];
+  const glyphs = (window.InkFX && window.InkFX.SMALL) || ['✦', '✧', '⋆', '✶', '·', '⊹'];
   const COUNT  = 14;
 
   for (let i = 0; i < COUNT; i++) {
@@ -208,7 +208,7 @@ applyLang(currentLang);
 
 // ── Button glitter ────────────────────────────────────────────
 (function () {
-  const glyphs = ['✦', '✧', '⋆', '✶', '*', '·'];
+  const glyphs = (window.InkFX && window.InkFX.SMALL) || ['✦', '✧', '⋆', '✶', '*', '·'];
 
   function spawnSparks(btn, count) {
     const rect = btn.getBoundingClientRect();
@@ -1314,7 +1314,13 @@ window.addEventListener('scroll', () => {
 
 // ── Cursor sparkle trail ──────────────────────────────────────
 (function () {
-  var COLORS = ['#ff88cc','#ffcc55','#99eeff','#cc99ff','#ffffff','#ffaa88'];
+  var TRAIL_GLYPHS = ['♡', '⋆', '˚', '✧', '₊', '°', '✩'];
+  function inkColor() {
+    return getComputedStyle(document.documentElement).getPropertyValue('--ink').trim() || '#1b1a17';
+  }
+  var ink = inkColor();
+  new MutationObserver(function () { ink = inkColor(); })
+    .observe(document.documentElement, { attributes: true, attributeFilter: ['data-theme'] });
   var sparks = [];
   var mx = -999, my = -999, active = false;
 
@@ -1340,15 +1346,15 @@ window.addEventListener('scroll', () => {
   function tick() {
     ctx2.clearRect(0, 0, canvas.width, canvas.height);
 
-    if (active && ++spawnTick % 3 === 0) {
+    if (active && ++spawnTick % 4 === 0) {
       sparks.push({
         x: mx + (Math.random() - 0.5) * 10,
         y: my + (Math.random() - 0.5) * 10,
         vx: (Math.random() - 0.5) * 1.2,
         vy: (Math.random() - 0.5) * 1.2 - 0.6,
-        r: Math.random() * 3 + 1.5,
-        alpha: 1,
-        color: COLORS[Math.floor(Math.random() * COLORS.length)],
+        r: Math.random() * 1.6 + 0.8,
+        alpha: 0.7,
+        glyph: Math.random() < 0.3 ? TRAIL_GLYPHS[Math.floor(Math.random() * TRAIL_GLYPHS.length)] : null,
       });
     }
 
@@ -1359,53 +1365,23 @@ window.addEventListener('scroll', () => {
       s.r  *= 0.96;
       s.alpha *= 0.91;
       ctx2.globalAlpha = s.alpha;
-      ctx2.fillStyle   = s.color;
-      ctx2.shadowColor = s.color;
-      ctx2.shadowBlur  = 6;
-      ctx2.beginPath();
-      ctx2.arc(s.x, s.y, s.r, 0, Math.PI * 2);
-      ctx2.fill();
+      ctx2.fillStyle   = ink;
+      if (s.glyph) {
+        ctx2.font = '11px serif';
+        ctx2.fillText(s.glyph, s.x, s.y);
+      } else {
+        ctx2.beginPath();
+        ctx2.arc(s.x, s.y, s.r, 0, Math.PI * 2);
+        ctx2.fill();
+      }
     });
     ctx2.globalAlpha = 1;
-    ctx2.shadowBlur  = 0;
     requestAnimationFrame(tick);
   }
   tick();
 })();
 
-// ── Click-anywhere burst ──────────────────────────────────────
-(function () {
-  var GLYPHS = ['💗','✦','⭐','💜','✨','🌸','💫'];
-  document.addEventListener('click', function (e) {
-    // Skip if clicking interactive elements
-    if (e.target.closest('a,button,input,select,textarea,.cmp-wrap,#bdGateOverlay')) return;
-    for (var i = 0; i < 6; i++) {
-      (function (i) {
-        var el = document.createElement('span');
-        el.textContent = GLYPHS[Math.floor(Math.random() * GLYPHS.length)];
-        el.style.cssText = [
-          'position:fixed',
-          'left:' + e.clientX + 'px',
-          'top:'  + e.clientY + 'px',
-          'font-size:' + (Math.random() * 10 + 12) + 'px',
-          'pointer-events:none',
-          'z-index:9990',
-          'user-select:none',
-          'transform:translate(-50%,-50%)',
-          'transition:transform 0.7s ease-out, opacity 0.7s ease-out',
-        ].join(';');
-        document.body.appendChild(el);
-        requestAnimationFrame(function () {
-          var angle = (i / 6) * Math.PI * 2 + (Math.random() - 0.5);
-          var dist  = 40 + Math.random() * 40;
-          el.style.transform = 'translate(calc(-50% + ' + (Math.cos(angle) * dist) + 'px), calc(-50% + ' + (Math.sin(angle) * dist) + 'px))';
-          el.style.opacity   = '0';
-        });
-        setTimeout(function () { el.remove(); }, 750);
-      })(i);
-    }
-  });
-})();
+// ── Click-anywhere burst: now handled by ink-fx.js ────────────
 
 // ── Weather-themed background hue shift ──────────────────────
 (function () {

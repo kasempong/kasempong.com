@@ -4,7 +4,7 @@
 var canvas  = document.getElementById('bg-canvas');
 var ctx     = canvas.getContext('2d');
 var pars    = [];
-var GLYPHS  = ['✦', '✧', '⋆', '☾'];
+var GLYPHS  = ['✦', '✧', '⋆', '☾', '♡', '✩', '˚ ༘♡', '⋆｡˚', 'εїз', '₊⋆', '✿', '❅', '☄︎', '౨ৎ'];
 
 function resizeCanvas() {
   canvas.width  = window.innerWidth;
