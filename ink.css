@@ -869,3 +869,34 @@ body::before {
 @media (max-width: 720px) {
   .app-shelf { grid-template-columns: 1fr; gap: 1.4rem; }
 }
+
+/* Hide the "latest project" and status labels */
+.latest-project-pill, .status-bar { display: none !important; }
+
+/* ── Hero: rotating ink drawings, one at a time ─────────── */
+.ink-frame {
+  position: relative;
+  width: 300px;
+  max-width: 100%;
+  aspect-ratio: 600 / 1070;
+}
+.ink-frame .ink-slide {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  max-width: none;
+  object-fit: contain;
+  opacity: 0;
+  transform: scale(0.985);
+  filter: blur(2px);
+  transition: opacity 1.6s ease, transform 2.4s ease, filter 1.6s ease;
+  animation: none;
+}
+.ink-frame .ink-slide.on { opacity: 1; transform: scale(1); filter: blur(0); }
+[data-theme="dark"] .ink-frame .ink-slide.on { filter: invert(0.92) hue-rotate(180deg); }
+.ink-frame { animation: inkFloat 9s ease-in-out infinite; }
+@media (prefers-reduced-motion: reduce) {
+  .ink-frame { animation: none; }
+  .ink-frame .ink-slide { transition: none; }
+}
