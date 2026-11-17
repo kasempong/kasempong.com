@@ -2,7 +2,7 @@
 // Kept in its own file because the site's security policy blocks inline scripts.
 (function () {
   // Number of drawings: ink-art-01.webp … ink-art-NN.webp. Bump when adding more.
-  var N = 43, HOLD = 7000;
+  var N = 48, HOLD = 7000;
   var order = [];
   for (var i = 1; i <= N; i++) order.push(i);
   for (var j = order.length - 1; j > 0; j--) {
