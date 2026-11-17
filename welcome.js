@@ -168,7 +168,7 @@ var nameLetters = nameWrap.querySelectorAll('.name-letter');
 
 function revealName() {
   nameLetters.forEach(function(el, i) {
-    setTimeout(function() { el.classList.add('lit'); }, i * 190);
+    setTimeout(function() { el.classList.add('lit'); }, i * 95);
   });
 }
 
@@ -195,7 +195,7 @@ function typeSubtitle() {
   var iv = setInterval(function() {
     subEl.textContent += SUB[i++];
     if (i >= SUB.length) clearInterval(iv);
-  }, 62);
+  }, 31);
 }
 
 // ── Enter button ──────────────────────────────────────────────────
@@ -208,7 +208,7 @@ function showEnterBtn() {
     enterBtn.style.opacity   = '1';
     enterBtn.style.transform = 'translateY(0)';
     requestAnimationFrame(function() { enterBtn.classList.add('pulse'); });
-  }, 700);
+  }, 350);
 }
 
 // ── Black hole transition ─────────────────────────────────────────
@@ -258,10 +258,10 @@ resizeCanvas();
 initPars();
 requestAnimationFrame(mainLoop);
 
-var _t1 = setTimeout(revealName,    500);
+var _t1 = setTimeout(revealName,    250);
 var _t2 = null; // tooth removed from welcome page
-var _t3 = setTimeout(typeSubtitle, 1900);
-var _t4 = setTimeout(showEnterBtn, 3500);
+var _t3 = setTimeout(typeSubtitle,  950);
+var _t4 = setTimeout(showEnterBtn, 1750);
 
 window.addEventListener('resize', resizeCanvas);
 

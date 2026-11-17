@@ -57,7 +57,11 @@
   fonts.href = 'https://fonts.googleapis.com/css2?' + FONT_FAMILIES.map(function (f) {
     return 'family=' + f.replace(/ /g, '+');
   }).join('&') + '&display=swap';
-  document.head.appendChild(fonts);
+  function addFonts() { if (!fonts.parentNode) document.head.appendChild(fonts); }
+  // Wait until the page has loaded so these fonts never slow the first paint.
+  if (document.readyState === 'complete') setTimeout(addFonts, 300);
+  else window.addEventListener('load', function () { setTimeout(addFonts, 300); });
+  document.addEventListener('pointerdown', addFonts, { once: true });
   var FONT_STACK = FONT_FAMILIES.map(function (f) { return '"' + f + '"'; }).join(',');
 
   // Rough ink-edge filter, used by buttons and frames: filter: url(#ink-rough)

@@ -42,7 +42,7 @@
       position: fixed; inset: 0;
       background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='220' height='220'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='3' stitchTiles='stitch'/%3E%3CfeColorMatrix values='0 0 0 0 0.1  0 0 0 0 0.09  0 0 0 0 0.07  0 0 0 0.55 0'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)'/%3E%3C/svg%3E");
       opacity: 0;
-      animation: bgFade 1.4s 0.1s ease forwards;
+      animation: bgFade 0.7s 0.05s ease forwards;
       pointer-events: none;
       z-index: 0;
     }
@@ -89,7 +89,7 @@
       will-change: transform, opacity, filter;
     }
     .name-letter.lit {
-      animation: letterInk 0.7s ease-out forwards;
+      animation: letterInk 0.35s ease-out forwards;
     }
     @keyframes letterInk {
       to { opacity: 1; transform: translateY(0); filter: blur(0); }
@@ -104,7 +104,7 @@
       letter-spacing: 0.16em;
       min-height: 1.5em;
       opacity: 0;
-      transition: opacity 0.5s ease;
+      transition: opacity 0.25s ease;
     }
     #subtitle.visible { opacity: 1; }
 
@@ -147,7 +147,7 @@
       pointer-events: none;
     }
     #enter-btn.show {
-      animation: btnReveal 0.65s cubic-bezier(0.34, 1.2, 0.64, 1) forwards;
+      animation: btnReveal 0.33s cubic-bezier(0.34, 1.2, 0.64, 1) forwards;
     }
     #enter-btn.pulse {
       opacity: 1;
@@ -227,7 +227,7 @@
 <div id="vortex"></div>
 
 <script src="ink-symbols.js?v=1"></script>
-<script src="ink-fx.js?v=3"></script>
-<script src="welcome.js?v=4"></script>
+<script src="ink-fx.js?v=4"></script>
+<script src="welcome.js?v=5"></script>
 </body>
 </html>
