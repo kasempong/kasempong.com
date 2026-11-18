@@ -987,3 +987,9 @@ body::before {
     --h: min(52svh, 440px, 139vw);
   }
 }
+
+/* Text symbols instead of emoji: theme toggle and little updates */
+.theme-toggle { filter: none; font-family: "Noto Sans Symbols 2", "Segoe UI Symbol", "Apple Symbols", serif; }
+.theme-toggle .icon-light,
+.theme-toggle .icon-dark { font-size: 1.15rem; line-height: 1; color: var(--ink); }
+.cl-sym { color: var(--ink-muted); margin-left: 0.25rem; white-space: nowrap; }
