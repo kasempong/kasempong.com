@@ -71,7 +71,9 @@ const translations = {
 };
 
 // ── Language switcher ─────────────────────────────────────────
-let currentLang = localStorage.getItem('lang') || 'en';
+// Language switcher is hidden for now (see ink.css), so always start in English.
+// To bring it back: restore `localStorage.getItem('lang') || 'en'` and remove the CSS rule.
+let currentLang = 'en';
 let roleIndex = 0, charIndex = 0, deleting = false;
 let typingTimer = null;
 
