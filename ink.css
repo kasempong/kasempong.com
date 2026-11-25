@@ -993,3 +993,6 @@ body::before {
 .theme-toggle .icon-light,
 .theme-toggle .icon-dark { font-size: 1.15rem; line-height: 1; color: var(--ink); }
 .cl-sym { color: var(--ink-muted); margin-left: 0.25rem; white-space: nowrap; }
+
+/* Language switcher hidden for now */
+.lang-switcher { display: none !important; }
